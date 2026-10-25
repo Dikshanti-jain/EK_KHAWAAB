@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /feed
+Allow: /ai-poet
+Allow: /studio
+Allow: /dictionary
+Allow: /guidelines
+Allow: /privacy
+Disallow: /profile
+Disallow: /auth
+Disallow: /letters?*
+
+Sitemap: https://ekkhawaab.in/sitemap.xml

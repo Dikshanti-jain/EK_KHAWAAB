@@ -1,0 +1,104 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@theme inline {
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-crimson: var(--crimson);
+  --color-crimson-hover: var(--crimson-hover);
+  --color-crimson-deep: var(--crimson-deep);
+  --color-blush: var(--blush);
+  --color-royal: var(--royal);
+  --color-vivid: var(--vivid);
+  --color-wash: var(--wash);
+  --color-wash-foreground: var(--wash-foreground);
+  --color-ink: var(--ink);
+  --color-ivory: var(--ivory);
+
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-deva: "Noto Serif Devanagari", serif;
+  --font-urdu: "Noto Nastaliq Urdu", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --shadow-card: 0 8px 30px rgb(15 23 42 / 0.04);
+  --shadow-float: 0 20px 50px rgb(15 23 42 / 0.07);
+}
+
+:root {
+  --background: oklch(1 0 0);               /* #FFFFFF */
+  --foreground: oklch(0.208 0.042 265.8);   /* #0F172A */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.208 0.042 265.8);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.208 0.042 265.8);
+  --primary: oklch(0.514 0.2 16.9);          /* #BE123C crimson CTA */
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.455 0.178 13.7);  /* #9F1239 */
+  --secondary: oklch(0.984 0.003 247.9);     /* #F8FAFC */
+  --secondary-foreground: oklch(0.208 0.042 265.8);
+  --muted: oklch(0.968 0.007 247.9);         /* #F1F5F9 */
+  --muted-foreground: oklch(0.446 0.043 257.3); /* #475569 */
+  --subtle: oklch(0.704 0.04 256.8);         /* #94A3B8 */
+  --accent: oklch(0.969 0.015 12.4);         /* #FFF1F2 */
+  --accent-foreground: oklch(0.514 0.2 16.9);
+  --destructive: oklch(0.514 0.2 16.9);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.929 0.013 255.5);        /* #E2E8F0 */
+  --hairline: oklch(0.968 0.007 247.9);      /* #F1F5F9 */
+  --input: oklch(0.929 0.013 255.5);
+  --ring: oklch(0.379 0.146 265.5);
+  --crimson: oklch(0.514 0.2 16.9);
+  --crimson-hover: oklch(0.455 0.178 13.7);
+  --crimson-deep: oklch(0.41 0.159 10.3);    /* #881337 */
+  --blush: oklch(0.969 0.015 12.4);
+  --royal: oklch(0.379 0.146 265.5);         /* #1E3A8A */
+  --vivid: oklch(0.546 0.215 262.9);         /* #2563EB */
+  --wash: oklch(0.97 0.014 254.6);           /* #EFF6FF */
+  --wash-foreground: oklch(0.424 0.181 265.6); /* #1E40AF */
+  --ink: oklch(0.208 0.042 265.8);
+  --ivory: oklch(0.985 0.005 75);            /* #FAF8F5 */
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { -webkit-font-smoothing: antialiased; }
+  body { background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); }
+  h1, h2, h3 { font-family: var(--font-serif); letter-spacing: -0.015em; }
+}
+
+@utility lughat-word {
+  border-bottom: 1.5px dotted var(--color-crimson);
+  cursor: help;
+}
+@utility urdu { font-family: var(--font-urdu); line-height: 2.4; direction: rtl; }
+@utility deva { font-family: var(--font-deva); line-height: 1.9; }
+@utility ink-ripple { animation: ripple 0.5s ease-out; }
+@utility seal-break { animation: sealbreak 0.7s ease-in forwards; }
+@keyframes ripple { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes sealbreak { 0% { transform: scale(1) rotate(0); opacity: 1; } 100% { transform: scale(1.6) rotate(25deg); opacity: 0; } }
