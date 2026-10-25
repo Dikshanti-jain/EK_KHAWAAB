@@ -79,6 +79,7 @@ function Feed() {
       ...p.hindi,
       ...p.urdu,
       ...p.english,
+      ...(p.tags || []),
     ].join(" ").toLowerCase();
 
     return (

@@ -120,6 +120,21 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
             ))}
           </div>
         )}
+
+        {/* Hashtags displayed on the card below verses (NOT drawn on canvas/downloads) */}
+        {poem.tags && poem.tags.length > 0 && (
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            {poem.tags.map((tag) => (
+              <span
+                key={tag}
+                onClick={() => nav({ to: "/feed", search: {} as any })}
+                className="cursor-pointer rounded-full bg-wash/80 px-3 py-1 font-mono text-xs font-semibold text-royal transition-all hover:bg-royal hover:text-white"
+              >
+                {tag.startsWith("#") ? tag : `#${tag}`}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-1 border-t border-hairline pt-4">

@@ -11,6 +11,7 @@ export type CreatePoemPayload = {
   moodTag: string;
   formatType?: string;
   seedWords?: string[];
+  tags?: string[];
   isGumnaam?: boolean;
 };
 
@@ -91,6 +92,10 @@ export async function fetchPoems(): Promise<Poem[]> {
         daad: row.daad_count ?? 0,
         muqarrar: Math.floor((row.daad_count ?? 0) / 4),
         hashiya: comments,
+        tags:
+          row.seed_words && Array.isArray(row.seed_words) && row.seed_words.length > 0
+            ? row.seed_words.map((w: string) => (w.startsWith("#") ? w : `#${w}`))
+            : [`#${(row.mood_tag || "Shayari").replace(/\s+/g, "")}`],
       };
     });
 
@@ -146,6 +151,7 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
         daad: 0,
         muqarrar: 0,
         hashiya: [],
+        tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
       };
     }
 
@@ -163,6 +169,7 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       daad: data.daad_count ?? 0,
       muqarrar: 0,
       hashiya: [],
+      tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
     };
   } catch (err) {
     console.warn("[PoemsService] Error creating poem, fallback to client memory:", err);
@@ -180,6 +187,7 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       daad: 0,
       muqarrar: 0,
       hashiya: [],
+      tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
     };
   }
 }

@@ -49,7 +49,7 @@ function Home() {
   const activeTickerPoem = tickerPoems[tickerIndex]!;
 
   // Top Trending Shayaris of the Mehfil (sorted by appreciations)
-  const trendingPoems = [...POEMS].sort((a, b) => b.daad - a.daad).slice(0, 4);
+  const trendingPoems = [...POEMS].sort((a, b) => b.daad - a.daad).slice(0, 6);
 
   const toggleLiked = (id: string) => {
     set((st) => ({
@@ -95,6 +95,18 @@ function Home() {
           </div>
           <div className="py-12">
             <Verse lines={demo[s]} script={s} />
+            {demo.tags && demo.tags.length > 0 && (
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                {demo.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-wash/80 px-3 py-1 font-mono text-xs font-semibold text-royal"
+                  >
+                    {tag.startsWith("#") ? tag : `#${tag}`}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-2 border-t border-hairline pt-4">
             <button
@@ -217,6 +229,19 @@ function Home() {
 
                     <div className="py-8">
                       <Verse lines={poem[s]} script={s} />
+                      {poem.tags && poem.tags.length > 0 && (
+                        <div className="mt-6 flex flex-wrap items-center gap-2">
+                          {poem.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              onClick={() => nav({ to: "/feed", search: {} as any })}
+                              className="cursor-pointer rounded-full bg-wash/80 px-2.5 py-0.5 font-mono text-xs font-semibold text-royal transition-all hover:bg-royal hover:text-white"
+                            >
+                              {tag.startsWith("#") ? tag : `#${tag}`}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 

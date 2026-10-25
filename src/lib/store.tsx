@@ -20,7 +20,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<State>(initial);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    try { const raw = localStorage.getItem(KEY); if (raw) setS({ ...initial, ...JSON.parse(raw) }); } catch { /* ignore */ }
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const savedPoems: Poem[] = Array.isArray(parsed.poems) ? parsed.poems : [];
+        const existingIds = new Set(savedPoems.map((p: Poem) => p.id));
+        const merged = [
+          ...POEMS.filter((p) => !existingIds.has(p.id)),
+          ...savedPoems.map((sp: Poem) => {
+            const match = POEMS.find((p) => p.id === sp.id);
+            return match ? { ...match, daad: sp.daad ?? match.daad, hashiya: sp.hashiya ?? match.hashiya } : sp;
+          }),
+        ];
+        setS({ ...initial, ...parsed, poems: merged.length > 0 ? merged : POEMS });
+      }
+    } catch { /* ignore */ }
     setReady(true);
   }, []);
   useEffect(() => { if (ready) localStorage.setItem(KEY, JSON.stringify(s)); }, [s, ready]);
