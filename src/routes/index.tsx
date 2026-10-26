@@ -72,7 +72,10 @@ function Home() {
       {/* Hero Section */}
       <section className="mx-auto grid max-w-6xl items-center gap-16 px-6 py-20 md:px-12 lg:grid-cols-[1.1fr_1fr]">
         <div>
-          <span className="rounded-full bg-wash px-4 py-1.5 text-xs font-semibold tracking-wide text-royal">ANONYMOUS LITERARY SANCTUARY</span>
+          <div className="mb-6 flex items-center gap-3">
+            <img src="/logo-icon.png" alt="Ek Khawaab Insignia" className="size-11 object-contain drop-shadow-sm" />
+            <span className="rounded-full bg-wash px-4 py-1.5 text-xs font-semibold tracking-wide text-royal">ANONYMOUS LITERARY SANCTUARY</span>
+          </div>
           <h1 className="mt-6 text-5xl leading-[1.12] tracking-tight text-ink md:text-6xl">
             Where unspoken feelings find their verse, <span className="italic text-crimson">anonymously.</span>
           </h1>
@@ -313,6 +316,9 @@ function Home() {
       {/* Creator & Founder Section */}
       <section className="border-t border-hairline bg-secondary/40 py-20">
         <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+          <div className="mx-auto mb-6 flex justify-center">
+            <img src="/logo.png" alt="Ek Khawaab Official Monogram" className="h-32 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105" />
+          </div>
           <Pill tone="blue">ABOUT THE CREATOR</Pill>
           <h2 className="mt-4 font-serif text-3xl font-semibold text-ink md:text-4xl">
             "Every heart holds a poem that never found a voice."

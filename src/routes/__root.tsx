@@ -116,14 +116,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:url", content: "https://ek-khawaab.vercel.app" },
       { property: "og:locale", content: "en_IN" },
       { property: "og:locale:alternate", content: "hi_IN" },
+      { property: "og:image", content: "https://ek-khawaab.vercel.app/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Ek Khawaab — Anonymous Poetry Sanctuary" },
       { name: "twitter:description", content: "Anonymous poetry in Hinglish, Hindi, and Urdu. Founded and crafted by Dikshanti Jain." },
+      { name: "twitter:image", content: "https://ek-khawaab.vercel.app/logo.png" },
     ],
     links: [
       { rel: "canonical", href: "https://ek-khawaab.vercel.app" },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Serif+Devanagari:wght@400;600&family=Noto+Nastaliq+Urdu:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" },
@@ -157,7 +161,10 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-20 max-w-6xl items-center gap-8 px-6 md:px-12">
-        <Link to="/" className="font-serif text-2xl font-bold text-ink">Ek Khawaab<span className="text-crimson">.</span></Link>
+        <Link to="/" className="group flex items-center gap-3">
+          <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
+          <span className="font-serif text-2xl font-bold tracking-tight text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
+        </Link>
         <nav className="hidden flex-1 justify-center gap-7 text-sm font-medium lg:flex">
           {NAV.map(([to, l]) => (
             <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="text-muted-foreground transition hover:text-ink" activeProps={{ className: "!text-ink" }}>{l}</Link>
@@ -191,8 +198,9 @@ function Footer() {
         <div className="grid gap-10 md:grid-cols-12 md:gap-8">
           {/* Brand & Vision */}
           <div className="md:col-span-5">
-            <Link to="/" className="font-serif text-2xl font-bold text-ink">
-              Ek Khawaab<span className="text-crimson">.</span>
+            <Link to="/" className="group flex items-center gap-3">
+              <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-11 object-contain transition-transform duration-300 group-hover:scale-105" />
+              <span className="font-serif text-2xl font-bold text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
             </Link>
             <p className="mt-2 font-serif text-sm italic text-muted-foreground">
               "Jis baat ko lafz na milein, usse shayari keh dete hain."
