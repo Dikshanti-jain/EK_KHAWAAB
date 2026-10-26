@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, Flame, ArrowRight, ChevronLeft, ChevronRight, Bookmark } from "lucide-react";
+import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, Flame, ArrowRight, ChevronLeft, ChevronRight, Bookmark, Linkedin, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { POEMS, poetId, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ek Khawaab — Where unspoken feelings find their verse" },
-      { name: "description", content: "Write, read and share poetry in Hinglish, Hindi and Urdu — anonymously, under a pen name." },
-      { property: "og:title", content: "Ek Khawaab — Anonymous Poetry Sanctuary" },
-      { property: "og:description", content: "Anonymous poetry in three scripts, an AI co-writer, card studio and secret letters." },
+      { title: "Ek Khawaab — Anonymous Poetry Sanctuary | Founded by Dikshanti Jain" },
+      { name: "description", content: "Write, read and share poetry in Hinglish, Hindi and Urdu anonymously under a pen name. Created by Dikshanti Jain, featuring an AI co-writer and HD card studio." },
+      { name: "author", content: "Dikshanti Jain" },
+      { property: "og:title", content: "Ek Khawaab — Anonymous Poetry Sanctuary by Dikshanti Jain" },
+      { property: "og:description", content: "Anonymous poetry in three scripts, an AI co-writer, card studio and secret letters. Created by Dikshanti Jain." },
+      { property: "og:url", content: "https://ekkhawaab.in" },
     ],
   }),
   component: Home,
@@ -304,6 +306,37 @@ function Home() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Creator & Founder Section */}
+      <section className="border-t border-hairline bg-secondary/40 py-20">
+        <div className="mx-auto max-w-4xl px-6 text-center md:px-12">
+          <Pill tone="blue">ABOUT THE CREATOR</Pill>
+          <h2 className="mt-4 font-serif text-3xl font-semibold text-ink md:text-4xl">
+            "Every heart holds a poem that never found a voice."
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            <strong>Ek Khawaab</strong> was conceptualized, designed, and built by <strong>Dikshanti Jain</strong> to give poetry lovers an intimate, noise-free sanctuary. A platform where words matter more than follower counts, and every poet is sheltered behind an anonymous pen name.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="https://www.linkedin.com/in/dikshanti-jain-9345723a7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-hairline bg-card px-5 py-2.5 text-sm font-medium text-ink shadow-sm transition hover:border-royal hover:text-royal"
+            >
+              <Linkedin className="size-4 text-royal" />
+              <span>Connect with Dikshanti on LinkedIn</span>
+            </a>
+            <a
+              href="mailto:jaindikahanti@gmail.com"
+              className="inline-flex items-center gap-2 rounded-full border border-hairline bg-card px-5 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition hover:text-ink"
+            >
+              <Mail className="size-4" />
+              <span>Contact: jaindikahanti@gmail.com</span>
+            </a>
           </div>
         </div>
       </section>

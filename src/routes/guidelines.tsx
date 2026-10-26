@@ -4,8 +4,9 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/guidelines")({
   head: () => ({ meta: [
-    { title: "Community Guidelines — Ek Khawaab" },
-    { name: "description", content: "How we keep Ek Khawaab kind, original and properly credited." },
+    { title: "Community Guidelines — Ek Khawaab | Creator Dikshanti Jain" },
+    { name: "description", content: "How we keep Ek Khawaab kind, original and properly credited. Founded by Dikshanti Jain." },
+    { name: "author", content: "Dikshanti Jain" },
     { property: "og:title", content: "Community Guidelines — Ek Khawaab" },
     { property: "og:description", content: "Our etiquette and anti-plagiarism policy." },
   ] }),
@@ -27,6 +28,21 @@ export const Route = createFileRoute("/guidelines")({
         ))}
       </div>
       <div className="mt-8 flex gap-2"><Pill>Original</Pill><Pill tone="red">Tribute · Ghalib</Pill><Pill tone="grey">Anonymous</Pill></div>
+
+      <div className={cn(card, "mt-10 p-7 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-4")}>
+        <div>
+          <h3 className="text-base font-semibold text-ink">Need editorial assistance or want to report an issue?</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Contact platform creator <strong>Dikshanti Jain</strong> directly.
+          </p>
+        </div>
+        <a
+          href="mailto:jaindikahanti@gmail.com"
+          className="whitespace-nowrap rounded-full border border-hairline bg-card px-4 py-2 text-xs font-medium text-ink shadow-sm transition hover:border-royal hover:text-royal"
+        >
+          Email: jaindikahanti@gmail.com
+        </a>
+      </div>
     </div>
   ),
 });

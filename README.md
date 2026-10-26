@@ -64,3 +64,12 @@ Generates production-optimized assets in `.output/public` and Nitro SSR server i
 1. **Zero Public Real-Identity Leakage**: Full names, emails, and phone numbers remain strictly quarantined in the user's private vault; only the public pen name and `#EK-ID` badge are transmitted on feed, comments, and letters.
 2. **Resilient AI Pipeline**: The poetry generator gracefully degrades to curated algorithmic verse if external API credits or network quotas lapse, ensuring 100% demo and company uptime.
 3. **No External Asset Latency**: Audio ambience, dictionary pronunciation, fonts, and canvas card rendering execute locally in the client runtime without relying on brittle third-party media CDNs.
+
+---
+
+## ✍️ Owner & Creator
+
+- **Founder & Creator**: **Dikshanti Jain**
+- **LinkedIn**: [linkedin.com/in/dikshanti-jain](https://www.linkedin.com/in/dikshanti-jain-9345723a7)
+- **Contact Email**: [jaindikahanti@gmail.com](mailto:jaindikahanti@gmail.com)
+
