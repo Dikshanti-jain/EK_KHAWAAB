@@ -10,4 +10,4 @@ Disallow: /profile
 Disallow: /auth
 Disallow: /letters?*
 
-Sitemap: https://ekkhawaab.in/sitemap.xml
+Sitemap: https://ek-khawaab.vercel.app/sitemap.xml

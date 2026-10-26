@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
       { name: "author", content: "Dikshanti Jain" },
       { property: "og:title", content: "Ek Khawaab — Anonymous Poetry Sanctuary by Dikshanti Jain" },
       { property: "og:description", content: "Anonymous poetry in three scripts, an AI co-writer, card studio and secret letters. Created by Dikshanti Jain." },
-      { property: "og:url", content: "https://ekkhawaab.in" },
+      { property: "og:url", content: "https://ek-khawaab.vercel.app" },
     ],
   }),
   component: Home,
