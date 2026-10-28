@@ -29,7 +29,7 @@ const THEMES = {
 type Theme = keyof typeof THEMES;
 const RATIOS = { "9:16 Story": [1080, 1920], "1:1 Square": [1080, 1080], "4:5 Portrait": [1080, 1350] } as const;
 type Ratio = keyof typeof RATIOS;
-const FONT: Record<Script, string> = { hinglish: "Playfair Display", hindi: "Noto Serif Devanagari", urdu: "Noto Nastaliq Urdu" };
+const FONT: Record<Script, string> = { hinglish: "Playfair Display", hindi: "Noto Serif Devanagari", urdu: "Noto Nastaliq Urdu", english: "Playfair Display" };
 
 function draw(c: HTMLCanvasElement, o: { ratio: Ratio; theme: Theme; lines: string[]; sign: string; id: string; showId: boolean; size: number; align: "center" | "left"; script: Script }) {
   const [W, H] = RATIOS[o.ratio];
@@ -39,7 +39,7 @@ function draw(c: HTMLCanvasElement, o: { ratio: Ratio; theme: Theme; lines: stri
   x.fillStyle = t.bg; x.fillRect(0, 0, W, H);
   const font = FONT[o.script];
   const lh = o.size * (o.script === "urdu" ? 2.2 : 1.55);
-  x.font = `${o.script === "hinglish" ? "italic 500" : "400"} ${o.size}px "${font}"`;
+  x.font = `${o.script === "hinglish" || o.script === "english" ? "italic 500" : "400"} ${o.size}px "${font}"`;
   x.fillStyle = t.ink; x.textBaseline = "middle";
   const rtl = o.script === "urdu";
   x.direction = rtl ? "rtl" : "ltr";
@@ -71,7 +71,7 @@ function Studio() {
   const { studio, set, user } = useStore();
   const nav = useNavigate();
   const seed = POEMS[1]!;
-  const match0 = studio && POEMS.find((p) => [p.hinglish, p.hindi, p.urdu].some((v) => v.join("\n") === studio.lines.join("\n")));
+  const match0 = studio && POEMS.find((p) => [p.hinglish, p.hindi, p.urdu, p.english].some((v) => (v ?? []).join("\n") === studio.lines.join("\n")));
   const [script, setScript] = useState<Script>("hinglish");
   const [text, setText] = useState((studio?.lines ?? seed.hinglish).join("\n"));
   const [source, setSource] = useState(match0 ?? (studio ? null : seed));
@@ -84,7 +84,7 @@ function Studio() {
   const ref = useRef<HTMLCanvasElement>(null);
   const id = user && sign === user.penName ? user.poetId : poetId(sign);
 
-  const changeScript = (s: Script) => { setScript(s); if (source) setText(source[s].join("\n")); if (s === "urdu") setSize(54); };
+  const changeScript = (s: Script) => { setScript(s); if (source && source[s]?.length) setText(source[s].join("\n")); if (s === "urdu") setSize(54); };
   useEffect(() => {
     let live = true;
     Promise.all([document.fonts.load(`64px "${FONT[script]}"`), document.fonts.load(`34px "Plus Jakarta Sans"`)]).then(() => document.fonts.ready).then(() => {
@@ -105,10 +105,10 @@ function Studio() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+    <div className="mx-auto max-w-6xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead kicker="CARD STUDIO" title="Design a card worth sharing" sub="Pick a size and a theme, then download a high-resolution PNG for Instagram or WhatsApp." />
-      <div className="grid gap-8 lg:grid-cols-[400px_1fr]">
-        <div className={cn(card, "space-y-6 p-8")}>
+      <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
+        <div className={cn(card, "space-y-5 p-4 sm:p-6 md:p-8")}>
           <div><label className={label}>Poem Script</label><ScriptSwitch value={script} onChange={changeScript} /></div>
           <div>
             <label className={label}>Poem Text</label>
@@ -134,11 +134,11 @@ function Studio() {
             {showId && <input value={sign} onChange={(e) => setSign(e.target.value)} className={cn(input, "mt-2")} />}
           </div>
         </div>
-        <div className="flex flex-col items-center gap-6 rounded-2xl bg-secondary p-8">
-          <canvas ref={ref} aria-label="Card preview" style={{ height: ratio.startsWith("9") ? 640 : 520 }} className="w-auto rounded-xl shadow-float" />
-          <div className="flex flex-wrap justify-center gap-3">
-            <button onClick={download} className={cn(btnPrimary, "px-7 py-3")}><Download className="size-4" /> Download HD PNG Card</button>
-            <button onClick={post} className={cn(btnOutline, "px-7 py-3")}><Send className="size-4" /> Post to Feed</button>
+        <div className="flex flex-col items-center justify-center gap-5 rounded-2xl bg-secondary p-4 sm:p-6 md:p-8">
+          <canvas ref={ref} aria-label="Card preview" style={{ maxHeight: "min(580px, 60vh)", maxWidth: "100%", height: "auto" }} className="w-auto rounded-xl shadow-float object-contain" />
+          <div className="flex w-full flex-col sm:flex-row flex-wrap justify-center gap-2.5 sm:gap-3">
+            <button onClick={download} className={cn(btnPrimary, "w-full sm:w-auto px-5 py-2.5 sm:px-7 sm:py-3")}><Download className="size-4" /> Download HD PNG Card</button>
+            <button onClick={post} className={cn(btnOutline, "w-full sm:w-auto px-5 py-2.5 sm:px-7 sm:py-3")}><Send className="size-4" /> Post to Feed</button>
           </div>
         </div>
       </div>

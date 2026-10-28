@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTriangle, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { poetId, type Poem, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
 import { togglePoemLike, togglePoemBookmark, addPoemComment, deletePoem } from "@/lib/poems.service";
+import { triggerAutoTranslation } from "@/lib/translation.service";
 import { IdBadge, Pill, ScriptSwitch, Verse, card, input, btnPrimary, btnOutline } from "./kit";
 import { cn } from "@/lib/utils";
 
@@ -80,55 +81,115 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
   };
 
   const toStudio = () => {
-    store.set({ studio: { lines: poem[script], penName: poem.takhallus } });
+    const linesToUse = poem[script] && poem[script].length ? poem[script] : poem.hinglish;
+    store.set({ studio: { lines: linesToUse, penName: poem.takhallus } });
     nav({ to: "/studio" });
   };
 
-  const act = "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-ink";
+  // Safe translation lines resolution
+  const canonicalScript = poem.sourceLanguage || "hinglish";
+  const currentLines = poem[script] && poem[script].length > 0 ? poem[script] : null;
+  const canonicalLines =
+    poem[canonicalScript] && poem[canonicalScript].length > 0
+      ? poem[canonicalScript]
+      : poem.hinglish.length
+        ? poem.hinglish
+        : poem.hindi.length
+          ? poem.hindi
+          : poem.urdu;
+
+  const translationStatus = poem.translationStatus?.[script];
+  const isTranslating = translationStatus === "pending" && !currentLines;
+  const isTranslationFailed = translationStatus === "failed" && !currentLines;
+
+  const handleRetryTranslation = () => {
+    store.updatePoem(poem.id, {
+      translationStatus: {
+        ...poem.translationStatus,
+        [script]: "pending",
+      },
+    });
+    toast("Retrying literary translation...");
+    triggerAutoTranslation(poem.id, canonicalLines, canonicalScript, (updates) => {
+      store.updatePoem(poem.id, updates);
+    });
+  };
+
+  const act = "inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 py-1.5 text-xs sm:text-sm text-muted-foreground transition hover:bg-muted hover:text-ink";
 
   return (
-    <article className={cn(card, "p-8 transition hover:shadow-float")}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-ink">@{poem.takhallus}</span>
-        <IdBadge id={poetId(poem.takhallus)} />
-        <Pill tone="red">{poem.mood}</Pill>
-        {isAuthor && (
-          <span className="rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold text-royal">
-            Your Verse
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-2">
+    <article className={cn(card, "p-4 sm:p-6 md:p-8 transition hover:shadow-float")}>
+      {/* Card Header: Author info, ID badge, Mood & Compact Script Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-sm font-semibold text-ink sm:text-base">@{poem.takhallus}</span>
+          <IdBadge id={poetId(poem.takhallus)} />
+          <Pill tone="red">{poem.mood}</Pill>
+          {isAuthor && (
+            <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-semibold text-royal sm:text-xs">
+              Your Verse
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {isAuthor && (
             <button
               title="Delete your poem"
+              aria-label="Delete your poem"
               onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-full p-1.5 text-subtle transition hover:bg-blush hover:text-crimson"
+              className="rounded-full p-1 text-subtle transition hover:bg-blush hover:text-crimson"
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-3.5 sm:size-4" />
             </button>
           )}
           <ScriptSwitch value={script} onChange={setOverride} meaning={meaning} onMeaning={() => setMeaning(!meaning)} />
         </div>
       </div>
 
-      <div className="py-10">
-        <Verse lines={poem[script]} script={script} />
-        {meaning && (
-          <div className="mx-auto mt-6 max-w-lg text-center text-muted-foreground">
+      {/* Poetry Verse Reading Area */}
+      <div className="py-6 sm:py-8 md:py-10">
+        {isTranslating && (
+          <div className="mb-3 flex items-center justify-center gap-2 text-xs text-royal">
+            <Loader2 className="size-3.5 animate-spin" />
+            <span>Translating verse to {script}… Showing original:</span>
+          </div>
+        )}
+
+        {isTranslationFailed && (
+          <div className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <span>Translation temporarily unavailable.</span>
+            <button
+              type="button"
+              onClick={handleRetryTranslation}
+              className="inline-flex items-center gap-1 font-semibold text-royal underline hover:text-ink"
+            >
+              <RotateCcw className="size-3" /> Retry
+            </button>
+          </div>
+        )}
+
+        <Verse
+          lines={currentLines || canonicalLines}
+          script={currentLines ? script : canonicalScript}
+        />
+
+        {/* English poetic meaning if toggled and not already in English */}
+        {meaning && script !== "english" && poem.english && poem.english.length > 0 && (
+          <div className="mx-auto mt-4 max-w-lg border-t border-hairline/70 pt-3 text-center text-xs italic text-muted-foreground sm:text-sm">
             {poem.english.map((l, i) => (
               <p key={i}>{l}</p>
             ))}
           </div>
         )}
 
-        {/* Hashtags displayed on the card below verses (NOT drawn on canvas/downloads) */}
+        {/* Hashtags below verses (NOT drawn on canvas/downloads) */}
         {poem.tags && poem.tags.length > 0 && (
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             {poem.tags.map((tag) => (
               <span
                 key={tag}
                 onClick={() => nav({ to: "/feed", search: {} as any })}
-                className="cursor-pointer rounded-full bg-wash/80 px-3 py-1 font-mono text-xs font-semibold text-royal transition-all hover:bg-royal hover:text-white"
+                className="cursor-pointer rounded-full bg-wash/80 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-royal transition-all hover:bg-royal hover:text-white sm:text-xs"
               >
                 {tag.startsWith("#") ? tag : `#${tag}`}
               </span>
@@ -137,53 +198,86 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1 border-t border-hairline pt-4">
+      {/* Compact, responsive action bar */}
+      <div className="flex flex-wrap items-center justify-between gap-1 border-t border-hairline pt-3 sm:pt-4">
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            aria-label="Appreciate verse"
+            onClick={() => {
+              toggle("liked");
+              setRipple((r) => r + 1);
+            }}
+            className={cn(act, liked && "text-crimson hover:text-crimson font-semibold")}
+          >
+            <Heart key={ripple} className={cn("ink-ripple size-3.5 sm:size-4", liked && "fill-current")} />
+            <span>{poem.daad + (liked ? 1 : 0)}</span>
+          </button>
+
+          <button
+            type="button"
+            aria-label="Comments"
+            onClick={() => setDrawer(true)}
+            className={act}
+          >
+            <MessageCircle className="size-3.5 sm:size-4" />
+            <span>{poem.hashiya.length}</span>
+          </button>
+
+          <button
+            type="button"
+            aria-label={saved ? "Saved in your Basta" : "Save in Basta"}
+            onClick={() => {
+              toggle("saved");
+              toast(saved ? "Removed from your collection" : "Saved to your collection");
+            }}
+            className={cn(act, saved && "text-royal hover:text-royal font-semibold")}
+          >
+            <Bookmark className={cn("size-3.5 sm:size-4", saved && "fill-current")} />
+            <span className="hidden xs:inline">{saved ? "Saved" : "Save"}</span>
+          </button>
+
+          <button
+            type="button"
+            title="Open in Card Studio"
+            aria-label="Open in Card Studio"
+            onClick={toStudio}
+            className={act}
+          >
+            <Palette className="size-3.5 sm:size-4" />
+            <span className="hidden sm:inline">Studio</span>
+          </button>
+
+          <button
+            type="button"
+            title="Send as Secret Letter"
+            aria-label="Send as Secret Letter"
+            onClick={() => {
+              store.set({ studio: { lines: canonicalLines, penName: poem.takhallus } });
+              nav({ to: "/letters", search: {} as any });
+            }}
+            className={act}
+          >
+            <Mail className="size-3.5 sm:size-4" />
+            <span className="hidden md:inline">Letter</span>
+          </button>
+        </div>
+
         <button
-          onClick={() => {
-            toggle("liked");
-            setRipple((r) => r + 1);
-          }}
-          className={cn(act, liked && "text-crimson hover:text-crimson")}
-        >
-          <Heart key={ripple} className={cn("ink-ripple size-4", liked && "fill-current")} /> Appreciate ({poem.daad + (liked ? 1 : 0)})
-        </button>
-        <button onClick={() => setDrawer(true)} className={act}>
-          <MessageCircle className="size-4" /> Comments ({poem.hashiya.length})
-        </button>
-        <button
-          onClick={() => {
-            toggle("saved");
-            toast(saved ? "Removed from your collection" : "Saved to your collection");
-          }}
-          className={cn(act, saved && "text-royal hover:text-royal")}
-        >
-          <Bookmark className={cn("size-4", saved && "fill-current")} /> Save
-        </button>
-        <button onClick={toStudio} className={act}>
-          <Palette className="size-4" /> Open in Card Studio
-        </button>
-        <button
-          onClick={() => {
-            store.set({ studio: { lines: poem.hinglish, penName: poem.takhallus } });
-            nav({ to: "/letters", search: {} as any });
-          }}
-          className={act}
-        >
-          <Mail className="size-4" /> Send as Secret Letter
-        </button>
-        <button
+          type="button"
           title="Report inappropriate content"
+          aria-label="Report inappropriate content"
           onClick={() => setShowReportModal(true)}
-          className="ml-auto rounded-full p-2 text-subtle hover:bg-muted hover:text-ink"
+          className="rounded-full p-1.5 text-subtle hover:bg-muted hover:text-ink"
         >
-          <Flag className="size-3.5" />
+          <Flag className="size-3 sm:size-3.5" />
         </button>
       </div>
 
       {/* Comments Drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 flex justify-end bg-ink/20" onClick={() => setDrawer(false)}>
-          <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-md flex-col bg-background p-8 shadow-float">
+          <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-md flex-col bg-background p-4 sm:p-6 md:p-8 shadow-float">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-semibold">Comments</h3>
               <button aria-label="Close comments" onClick={() => setDrawer(false)} className="rounded-full p-2 hover:bg-muted">

@@ -12,7 +12,10 @@ type State = {
 };
 const initial: State = { user: null, script: "hinglish", poems: POEMS, liked: [], saved: ["p3", "p7"], letters: [], studio: null };
 
-type Ctx = State & { set: (p: Partial<State> | ((s: State) => Partial<State>)) => void };
+type Ctx = State & {
+  set: (p: Partial<State> | ((s: State) => Partial<State>)) => void;
+  updatePoem: (id: string, updates: Partial<Poem>) => void;
+};
 const C = createContext<Ctx | null>(null);
 const KEY = "ek-khawaab-v2";
 
@@ -40,7 +43,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { if (ready) localStorage.setItem(KEY, JSON.stringify(s)); }, [s, ready]);
   const set: Ctx["set"] = (p) => setS((prev) => ({ ...prev, ...(typeof p === "function" ? p(prev) : p) }));
-  return <C.Provider value={{ ...s, set }}>{children}</C.Provider>;
+  const updatePoem: Ctx["updatePoem"] = (id, updates) =>
+    setS((prev) => ({
+      ...prev,
+      poems: prev.poems.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    }));
+  return <C.Provider value={{ ...s, set, updatePoem }}>{children}</C.Provider>;
 }
 export const useStore = () => { const c = useContext(C); if (!c) throw new Error("no store"); return c; };
 export const uid = () => Math.random().toString(36).slice(2, 9);

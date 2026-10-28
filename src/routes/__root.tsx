@@ -1,13 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
-import { Linkedin, Mail } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Linkedin, Mail, Menu, X, Home as HomeIcon, BookOpen, Sparkles, Palette, User as UserIcon } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider, useStore } from "@/lib/store";
 import { IdBadge, btnGhost, btnOutline, btnPrimary } from "@/components/kit";
 import { AmbientAudio } from "@/components/AmbientAudio";
+import { cn } from "@/lib/utils";
 
 function NotFoundComponent() {
   return (
@@ -158,35 +159,78 @@ const NAV = [["/", "Home"], ["/feed", "Explore Feed"], ["/ai-poet", "AI Poet"], 
 
 function TopBar() {
   const { user } = useStore();
+  const [open, setOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-hairline bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-20 max-w-6xl items-center gap-8 px-6 md:px-12">
-        <Link to="/" className="group flex items-center gap-3">
-          <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
-          <span className="font-serif text-2xl font-bold tracking-tight text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
+    <header className="sticky top-0 z-40 border-b border-hairline bg-background/90 backdrop-blur-md">
+      <div className="mx-auto flex h-14 sm:h-16 md:h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 md:px-12">
+        <Link to="/" className="group flex items-center gap-2 sm:gap-3" onClick={() => setOpen(false)}>
+          <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-7 sm:size-8 md:size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
+          <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
         </Link>
-        <nav className="hidden flex-1 justify-center gap-7 text-sm font-medium lg:flex">
+
+        {/* Desktop Nav */}
+        <nav className="hidden flex-1 justify-center gap-6 text-sm font-medium lg:flex">
           {NAV.map(([to, l]) => (
-            <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="text-muted-foreground transition hover:text-ink" activeProps={{ className: "!text-ink" }}>{l}</Link>
+            <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="text-muted-foreground transition hover:text-ink" activeProps={{ className: "!text-ink font-semibold" }}>{l}</Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+
+        {/* Right side controls */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <AmbientAudio />
           {user ? (
-            <Link to="/profile" className="flex items-center gap-2 rounded-full border border-hairline py-1.5 pl-4 pr-1.5 text-sm font-medium text-ink hover:border-royal">
-              @{user.penName} <IdBadge id={user.poetId} />
+            <Link to="/profile" className="flex items-center gap-1.5 rounded-full border border-hairline py-1 pl-3 pr-1 text-xs font-medium text-ink hover:border-royal sm:py-1.5 sm:pl-4 sm:pr-1.5 sm:text-sm">
+              <span className="max-w-[80px] truncate sm:max-w-none">@{user.penName}</span> <IdBadge id={user.poetId} />
             </Link>
           ) : (
-            <>
+            <div className="hidden sm:flex items-center gap-2">
               <Link to="/auth" search={{ mode: "signin" }} className={btnGhost}>Sign In</Link>
-              <Link to="/auth" search={{ mode: "signup" }} className={`${btnPrimary} px-6`}>Get Started</Link>
-            </>
+              <Link to="/auth" search={{ mode: "signup" }} className={cn(btnPrimary, "px-4 py-1.5 text-xs sm:px-6 sm:py-2 sm:text-sm")}>Get Started</Link>
+            </div>
           )}
+
+          {/* Mobile Menu Hamburger Toggle */}
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            onClick={() => setOpen(!open)}
+            className="rounded-full p-2 text-ink hover:bg-muted lg:hidden"
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
-      <nav className="flex gap-5 overflow-x-auto border-t border-hairline px-6 py-3 text-sm lg:hidden">
-        {NAV.map(([to, l]) => <Link key={to} to={to} activeOptions={{ exact: to === "/" }} className="whitespace-nowrap text-muted-foreground" activeProps={{ className: "!text-ink font-medium" }}>{l}</Link>)}
-      </nav>
+
+      {/* Mobile Drawer Dropdown Menu */}
+      {open && (
+        <div className="border-t border-hairline bg-background/95 px-5 py-4 backdrop-blur-md lg:hidden shadow-lg animate-in fade-in slide-in-from-top-2">
+          <nav className="flex flex-col gap-3">
+            {NAV.map(([to, l]) => (
+              <Link
+                key={to}
+                to={to}
+                activeOptions={{ exact: to === "/" }}
+                onClick={() => setOpen(false)}
+                className="py-1 text-base text-muted-foreground transition hover:text-ink"
+                activeProps={{ className: "!text-ink font-semibold" }}
+              >
+                {l}
+              </Link>
+            ))}
+            {!user && (
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-hairline pt-3">
+                <Link to="/auth" search={{ mode: "signin" }} onClick={() => setOpen(false)} className={cn(btnOutline, "flex-1 text-center py-2 text-xs")}>
+                  Sign In
+                </Link>
+                <Link to="/auth" search={{ mode: "signup" }} onClick={() => setOpen(false)} className={cn(btnPrimary, "flex-1 text-center py-2 text-xs")}>
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
@@ -269,14 +313,42 @@ function Footer() {
   );
 }
 
+const BOTTOM_NAV = [
+  { to: "/", label: "Home", icon: HomeIcon, exact: true },
+  { to: "/feed", label: "Feed", icon: BookOpen, exact: false },
+  { to: "/ai-poet", label: "AI Poet", icon: Sparkles, exact: false },
+  { to: "/studio", label: "Studio", icon: Palette, exact: false },
+  { to: "/profile", label: "Profile", icon: UserIcon, exact: false },
+] as const;
+
+function BottomNav() {
+  return (
+    <nav className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-hairline bg-background/95 py-2 px-2 backdrop-blur-md lg:hidden shadow-float">
+      {BOTTOM_NAV.map(({ to, label, icon: Icon, exact }) => (
+        <Link
+          key={to}
+          to={to}
+          activeOptions={{ exact }}
+          className="flex flex-col items-center gap-0.5 px-3 py-1 text-[10px] font-medium text-muted-foreground transition hover:text-ink"
+          activeProps={{ className: "!text-royal !font-semibold" }}
+        >
+          <Icon className="size-5" />
+          <span>{label}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
         <TopBar />
-        <main><Outlet /></main>
+        <main className="pb-16 lg:pb-0"><Outlet /></main>
         <Footer />
+        <BottomNav />
         <Toaster />
       </StoreProvider>
     </QueryClientProvider>

@@ -93,13 +93,13 @@ function Letters() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+    <div className="mx-auto max-w-6xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead
         kicker="SECRET LETTERS"
         title="Say it in verse. Stay a mystery."
         sub="Seal a poem with wax and a riddle. The recipient has to guess it was you."
       />
-      <div className="mb-10 inline-flex rounded-full bg-muted p-1 text-sm font-medium">
+      <div className="mb-6 sm:mb-10 flex flex-wrap rounded-full bg-muted p-1 text-xs sm:text-sm font-medium">
         {(
           [
             ["send", "Send a Secret Letter"],
@@ -109,7 +109,7 @@ function Letters() {
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={cn("rounded-full px-5 py-2", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}
+            className={cn("rounded-full px-3.5 py-1.5 sm:px-5 sm:py-2 transition", tab === k ? "bg-background shadow-sm" : "text-muted-foreground")}
           >
             {t}
           </button>
@@ -117,8 +117,8 @@ function Letters() {
       </div>
 
       {tab === "send" ? (
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className={cn(card, "space-y-5 p-8")}>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className={cn(card, "space-y-5 p-4 sm:p-6 md:p-8")}>
             <div>
               <label className={label}>Choose a poem</label>
               <select
@@ -151,18 +151,18 @@ function Letters() {
                 <button onClick={() => setL({ ...l, seal: "royal" })} className={chip(l.seal === "royal")}>Ink Blue</button>
               </div>
             </div>
-            <div className="space-y-3 rounded-2xl bg-secondary p-5">
+            <div className="space-y-3 rounded-2xl bg-secondary p-4 sm:p-5">
               <p className="text-sm font-semibold text-ink">3-Clue Guessing Cipher</p>
               <div><label className={label}>Clue 1: Where we first met</label><input value={l.clue1} onChange={(e) => setL({ ...l, clue1: e.target.value })} className={input} placeholder="e.g. Same bench at the rain cafe" /></div>
               <div><label className={label}>Clue 2: An inside joke</label><input value={l.clue2} onChange={(e) => setL({ ...l, clue2: e.target.value })} className={input} placeholder="e.g. The cold chai we forgot" /></div>
               <div><label className={label}>Unlock Answer: Secret keyword or name</label><input value={l.answer} onChange={(e) => setL({ ...l, answer: e.target.value })} className={input} placeholder="Secret word to unlock your name" /></div>
             </div>
-            <button disabled={!ready} onClick={seal} className={cn(btnPrimary, "w-full py-3")}>Seal & Send Letter</button>
+            <button disabled={!ready} onClick={seal} className={cn(btnPrimary, "w-full py-2.5 sm:py-3")}>Seal & Send Letter</button>
           </div>
-          <div className={cn(card, "flex flex-col items-center justify-center p-10")}>
+          <div className={cn(card, "flex flex-col items-center justify-center p-4 sm:p-6 md:p-10")}>
             <p className="mb-6 text-xs font-medium uppercase tracking-wider text-subtle">Letter preview</p>
             <Verse lines={l.lines} script="hinglish" />
-            <Seal tone={l.seal} className="mt-10" />
+            <Seal tone={l.seal} className="mt-8 sm:mt-10" />
           </div>
           {letters.length > 0 && (
             <div className="lg:col-span-2">
@@ -249,36 +249,36 @@ function Receiver({ l }: { l: Letter }) {
 
   if (step !== "open")
     return (
-      <div className="flex flex-col items-center py-6">
-        <div className="relative flex h-72 w-full max-w-lg items-center justify-center overflow-hidden rounded-3xl border border-hairline bg-card shadow-float">
+      <div className="flex flex-col items-center py-4 sm:py-6">
+        <div className="relative flex h-56 sm:h-72 w-full max-w-lg items-center justify-center overflow-hidden rounded-3xl border border-hairline bg-card shadow-float">
           <div className="absolute inset-x-0 top-0 h-1/2 bg-secondary [clip-path:polygon(0_0,100%_0,50%_100%)]" />
           <button
             aria-label="Break wax seal"
             onClick={open}
             className={cn("relative z-10", step === "breaking" && "seal-break")}
           >
-            <Seal tone={l.seal} className="size-24 text-3xl" />
+            <Seal tone={l.seal} className="size-20 sm:size-24 text-2xl sm:text-3xl" />
           </button>
         </div>
-        <button onClick={open} className={cn(btnPrimary, "mt-8 px-7 py-3")}>
+        <button onClick={open} className={cn(btnPrimary, "mt-6 sm:mt-8 px-6 py-2.5 sm:px-7 sm:py-3")}>
           Break Wax Seal to Read
         </button>
       </div>
     );
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-      <div className={cn(card, "p-10")}>
+    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className={cn(card, "p-4 sm:p-6 md:p-10")}>
         <div className="flex justify-end">{match && <ScriptSwitch value={script} onChange={setScript} />}</div>
-        <div className="py-10">
+        <div className="py-6 sm:py-10">
           <Verse lines={match ? match[script] : l.lines} script={match ? script : "hinglish"} />
         </div>
         <p className="text-center text-sm text-subtle">
           — {won ? <span className="font-semibold text-ink">@{l.from}</span> : "A secret admirer"}
         </p>
       </div>
-      <div className={cn(card, "space-y-4 p-8")}>
-        <h3 className="text-2xl font-semibold">Who sent this?</h3>
+      <div className={cn(card, "space-y-4 p-4 sm:p-6 md:p-8")}>
+        <h3 className="text-xl sm:text-2xl font-semibold">Who sent this?</h3>
         {[l.clue1, l.clue2].map((c, i) =>
           clues > i ? (
             <p key={i} className="rounded-xl bg-wash p-3 text-sm text-wash-foreground">

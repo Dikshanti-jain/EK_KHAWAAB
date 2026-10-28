@@ -1,10 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
-import { POEMS, type Poem } from "@/data/poems";
+import { POEMS, type Poem, type Script, type TranslationStatus } from "@/data/poems";
+import { detectScript } from "./translation.service";
 
 export type CreatePoemPayload = {
   shayarUid: string;
   takhallus: string;
-  hinglish: string[];
+  lines?: string[];
+  sourceScript?: Script;
+  hinglish?: string[];
   hindi?: string[];
   urdu?: string[];
   english?: string[];
@@ -89,6 +92,13 @@ export async function fetchPoems(): Promise<Poem[]> {
         hindi: hindiLines,
         urdu: urduLines,
         english: englishLines,
+        sourceLanguage: detectScript(row.hinglish_text || row.hindi_text || row.urdu_text || ""),
+        translationStatus: {
+          hinglish: hinglishLines.length ? "completed" : "pending",
+          hindi: hindiLines.length ? "completed" : "pending",
+          urdu: urduLines.length ? "completed" : "pending",
+          english: englishLines.length ? "completed" : "pending",
+        },
         daad: row.daad_count ?? 0,
         muqarrar: Math.floor((row.daad_count ?? 0) / 4),
         hashiya: comments,
@@ -111,12 +121,40 @@ export async function fetchPoems(): Promise<Poem[]> {
 
 /**
  * Publish a new poem to the database.
+ * Preserves the canonical original and establishes initial translation state.
  */
 export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
-  const hinglishJoined = payload.hinglish.join("\n");
-  const hindiJoined = (payload.hindi && payload.hindi.length ? payload.hindi : payload.hinglish).join("\n");
-  const urduJoined = (payload.urdu && payload.urdu.length ? payload.urdu : payload.hinglish).join("\n");
-  const englishJoined = (payload.english ?? []).join("\n");
+  // Determine canonical source lines
+  const rawLines = payload.lines && payload.lines.length
+    ? payload.lines
+    : payload.hinglish && payload.hinglish.length
+      ? payload.hinglish
+      : payload.hindi && payload.hindi.length
+        ? payload.hindi
+        : payload.urdu && payload.urdu.length
+          ? payload.urdu
+          : payload.english ?? [];
+
+  const sourceScript: Script =
+    payload.sourceScript || detectScript(rawLines.join("\n"));
+
+  const hinglishLines = payload.hinglish ?? (sourceScript === "hinglish" ? rawLines : []);
+  const hindiLines = payload.hindi ?? (sourceScript === "hindi" ? rawLines : []);
+  const urduLines = payload.urdu ?? (sourceScript === "urdu" ? rawLines : []);
+  const englishLines = payload.english ?? (sourceScript === "english" ? rawLines : []);
+
+  const hinglishJoined = (hinglishLines.length ? hinglishLines : rawLines).join("\n");
+  const hindiJoined = (hindiLines.length ? hindiLines : rawLines).join("\n");
+  const urduJoined = (urduLines.length ? urduLines : rawLines).join("\n");
+  const englishJoined = englishLines.join("\n");
+
+  const initialStatus: Partial<Record<Script, TranslationStatus>> = {
+    [sourceScript]: "completed",
+    hindi: sourceScript === "hindi" ? "completed" : "pending",
+    urdu: sourceScript === "urdu" ? "completed" : "pending",
+    english: sourceScript === "english" ? "completed" : "pending",
+    hinglish: sourceScript === "hinglish" ? "completed" : "pending",
+  };
 
   try {
     const { data, error } = await supabase
@@ -128,7 +166,7 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
         urdu_text: urduJoined,
         english_translation: englishJoined || null,
         mood_tag: payload.moodTag,
-        format_type: payload.formatType || (payload.hinglish.length === 2 ? "Sher" : "Nazm"),
+        format_type: payload.formatType || (rawLines.length === 2 ? "Sher" : "Nazm"),
         seed_words: payload.seedWords || null,
         is_gumnaam: payload.isGumnaam || false,
       })
@@ -140,14 +178,16 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       return {
         id: Math.random().toString(36).slice(2, 9),
         takhallus: payload.takhallus,
-        format: payload.formatType || (payload.hinglish.length === 2 ? "Sher" : "Nazm"),
+        format: payload.formatType || (rawLines.length === 2 ? "Sher" : "Nazm"),
         mood: payload.moodTag,
         style: "Modern",
         paper: "kora",
-        hinglish: payload.hinglish,
-        hindi: payload.hindi ?? payload.hinglish,
-        urdu: payload.urdu ?? payload.hinglish,
-        english: payload.english ?? [],
+        hinglish: hinglishLines.length ? hinglishLines : rawLines,
+        hindi: hindiLines.length ? hindiLines : rawLines,
+        urdu: urduLines.length ? urduLines : rawLines,
+        english: englishLines,
+        sourceLanguage: sourceScript,
+        translationStatus: initialStatus,
         daad: 0,
         muqarrar: 0,
         hashiya: [],
@@ -162,10 +202,12 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       mood: data.mood_tag,
       style: "Modern",
       paper: "kora",
-      hinglish: payload.hinglish,
-      hindi: payload.hindi ?? payload.hinglish,
-      urdu: payload.urdu ?? payload.hinglish,
-      english: payload.english ?? [],
+      hinglish: hinglishLines.length ? hinglishLines : rawLines,
+      hindi: hindiLines.length ? hindiLines : rawLines,
+      urdu: urduLines.length ? urduLines : rawLines,
+      english: englishLines,
+      sourceLanguage: sourceScript,
+      translationStatus: initialStatus,
       daad: data.daad_count ?? 0,
       muqarrar: 0,
       hashiya: [],
@@ -176,19 +218,49 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
     return {
       id: Math.random().toString(36).slice(2, 9),
       takhallus: payload.takhallus,
-      format: payload.formatType || (payload.hinglish.length === 2 ? "Sher" : "Nazm"),
+      format: payload.formatType || (rawLines.length === 2 ? "Sher" : "Nazm"),
       mood: payload.moodTag,
       style: "Modern",
       paper: "kora",
-      hinglish: payload.hinglish,
-      hindi: payload.hindi ?? payload.hinglish,
-      urdu: payload.urdu ?? payload.hinglish,
-      english: payload.english ?? [],
+      hinglish: hinglishLines.length ? hinglishLines : rawLines,
+      hindi: hindiLines.length ? hindiLines : rawLines,
+      urdu: urduLines.length ? urduLines : rawLines,
+      english: englishLines,
+      sourceLanguage: sourceScript,
+      translationStatus: initialStatus,
       daad: 0,
       muqarrar: 0,
       hashiya: [],
       tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
     };
+  }
+}
+
+/**
+ * Updates an existing poem's translations in the remote database.
+ */
+export async function updatePoemTranslations(
+  poemId: string,
+  translations: {
+    hinglish: string[];
+    hindi: string[];
+    urdu: string[];
+    english: string[];
+  }
+): Promise<void> {
+  try {
+    await supabase
+      .from("poems")
+      .update({
+        hinglish_text: translations.hinglish.join("\n"),
+        hindi_text: translations.hindi.join("\n"),
+        urdu_text: translations.urdu.join("\n"),
+        english_translation: translations.english.join("\n"),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", poemId);
+  } catch (err) {
+    console.warn("[PoemsService] Could not persist translations to Supabase:", err);
   }
 }
 

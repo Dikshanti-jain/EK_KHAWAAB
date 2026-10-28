@@ -304,7 +304,7 @@ export function AiPoet() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-16 md:px-12">
+    <div className="mx-auto max-w-7xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead
         kicker="SHAYAR-E-KHAWAAB · POWERED BY GROQ"
         title="Personalized Poetry Writing Studio"
@@ -312,9 +312,9 @@ export function AiPoet() {
       />
 
       {/* Main Grid: Input Studio & Live Output Canvas */}
-      <div className="mt-10 grid gap-8 lg:grid-cols-[480px_1fr]">
+      <div className="mt-6 sm:mt-10 grid gap-6 lg:grid-cols-[460px_1fr]">
         {/* Left Column: Literary Input Controls */}
-        <div className={cn(card, "space-y-6 p-7 md:p-8")}>
+        <div className={cn(card, "space-y-5 p-4 sm:p-6 md:p-8")}>
           {/* 1. Poetry Form Selector */}
           <div>
             <label className={label}>Poetic Form / Genre</label>
@@ -608,7 +608,7 @@ export function AiPoet() {
           <button
             onClick={run}
             disabled={busy}
-            className={cn(btnPrimary, "w-full py-4 text-base font-semibold shadow-md")}
+            className={cn(btnPrimary, "w-full py-3 sm:py-3.5 text-sm sm:text-base font-semibold shadow-md")}
           >
             {busy ? (
               <span className="flex items-center justify-center gap-2">
@@ -623,7 +623,7 @@ export function AiPoet() {
         </div>
 
         {/* Right Column: Editorial Poetry Output Canvas */}
-        <div className={cn(card, "flex min-h-[36rem] flex-col p-8 md:p-10")}>
+        <div className={cn(card, "flex min-h-[26rem] sm:min-h-[36rem] flex-col p-4 sm:p-6 md:p-8")}>
           {!res ? (
             <div className="m-auto max-w-sm text-center">
               <div className="mx-auto grid size-16 place-items-center rounded-full bg-wash text-royal shadow-sm">
@@ -688,8 +688,8 @@ export function AiPoet() {
               <div
                 dir={script === "urdu" ? "rtl" : "ltr"}
                 className={cn(
-                  "my-auto py-10 text-center text-ink",
-                  script === "urdu" ? "urdu text-2xl" : script === "hindi" ? "deva text-2xl" : "font-serif text-3xl leading-loose"
+                  "my-auto py-6 sm:py-10 text-center text-ink",
+                  script === "urdu" ? "urdu text-xl sm:text-2xl" : script === "hindi" ? "deva text-xl sm:text-2xl" : "font-serif text-xl sm:text-2xl md:text-3xl leading-relaxed sm:leading-loose"
                 )}
               >
                 {res[script].map((line, i) => (
@@ -707,7 +707,7 @@ export function AiPoet() {
                 ))}
 
                 {/* Poetic English Interpretation */}
-                <p className="mx-auto mt-8 max-w-lg font-sans text-sm italic text-muted-foreground" dir="ltr">
+                <p className="mx-auto mt-6 sm:mt-8 max-w-lg font-sans text-xs sm:text-sm italic text-muted-foreground" dir="ltr">
                   "{res.english}"
                 </p>
               </div>
@@ -723,7 +723,7 @@ export function AiPoet() {
                       <button
                         key={idx}
                         onClick={() => chooseContinuation(c)}
-                        className="rounded-2xl border border-hairline bg-card p-3.5 text-left text-xs transition hover:border-royal hover:shadow-sm"
+                        className="rounded-2xl border border-hairline bg-card p-3 text-left text-xs transition hover:border-royal hover:shadow-sm"
                       >
                         <p className={cn("font-serif text-sm font-medium text-ink", script === "urdu" && "urdu")}>
                           {c[script]}
@@ -738,28 +738,28 @@ export function AiPoet() {
               )}
 
               {/* Bottom Action Toolbar */}
-              <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-5">
-                <button onClick={publishToFeed} className={cn(btnPrimary, "px-5")}>
-                  <Send className="size-4" /> Post to Mehfil Feed
+              <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4 sm:pt-5">
+                <button onClick={publishToFeed} className={cn(btnPrimary, "px-4 py-2 text-xs sm:text-sm")}>
+                  <Send className="size-3.5 sm:size-4" /> Post to Mehfil
                 </button>
                 <button
                   onClick={() => {
                     set({ studio: { lines: res.hinglish, penName: "" } });
                     nav({ to: "/studio" });
                   }}
-                  className={cn(btnRoyal, "px-5")}
+                  className={cn(btnRoyal, "px-4 py-2 text-xs sm:text-sm")}
                 >
-                  <Palette className="size-4" /> Card Studio
+                  <Palette className="size-3.5 sm:size-4" /> Card Studio
                 </button>
-                <button onClick={saveToBasta} className={btnOutline}>
-                  <Bookmark className="size-4" /> Save in Basta
+                <button onClick={saveToBasta} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
+                  <Bookmark className="size-3.5 sm:size-4" /> Save in Basta
                 </button>
-                <button onClick={copyToClipboard} className={btnOutline}>
-                  {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                <button onClick={copyToClipboard} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
+                  {copied ? <Check className="size-3.5 sm:size-4 text-emerald-600" /> : <Copy className="size-3.5 sm:size-4" />}
                   {copied ? "Copied" : "Copy"}
                 </button>
-                <button onClick={run} disabled={busy} className={btnOutline}>
-                  <RefreshCw className="size-4" /> Regenerate
+                <button onClick={run} disabled={busy} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
+                  <RefreshCw className="size-3.5 sm:size-4" /> Regenerate
                 </button>
               </div>
             </>

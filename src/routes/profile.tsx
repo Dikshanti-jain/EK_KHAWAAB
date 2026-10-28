@@ -130,66 +130,68 @@ function Profile() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+    <div className="mx-auto max-w-6xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       {/* Header Profile Card */}
-      <div className={cn(card, "flex flex-wrap items-center gap-6 p-8 md:p-10")}>
-        <div className="grid size-20 place-items-center rounded-full bg-wash font-serif text-3xl font-bold text-royal shadow-sm">
+      <div className={cn(card, "flex flex-wrap items-center gap-4 p-4 sm:p-6 md:p-8")}>
+        <div className="grid size-14 place-items-center rounded-full bg-wash font-serif text-2xl font-bold text-royal shadow-sm sm:size-20 sm:text-3xl">
           {u.penName[0]?.toUpperCase()}
         </div>
-        <div className="flex-1">
-          <h1 className="text-3xl font-semibold text-ink">@{u.penName}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="flex-1 min-w-[200px]">
+          <h1 className="text-2xl font-semibold text-ink sm:text-3xl">@{u.penName}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <IdBadge id={u.poetId} />
-            <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] text-muted-foreground sm:text-xs">
               <ShieldCheck className="size-3.5 text-royal" /> Real identity locked in private vault
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-6 text-center md:gap-8">
+        <div className="flex flex-wrap gap-4 text-center sm:gap-6 md:gap-8">
           <div>
-            <p className="font-serif text-3xl font-bold text-ink">{appreciations}</p>
-            <p className="text-xs text-subtle">Appreciations</p>
+            <p className="font-serif text-2xl font-bold text-ink sm:text-3xl">{appreciations}</p>
+            <p className="text-[11px] text-subtle sm:text-xs">Appreciations</p>
           </div>
           <div>
-            <p className="font-serif text-3xl font-bold text-ink">{mine.length}</p>
-            <p className="text-xs text-subtle">Published</p>
+            <p className="font-serif text-2xl font-bold text-ink sm:text-3xl">{mine.length}</p>
+            <p className="text-[11px] text-subtle sm:text-xs">Published</p>
           </div>
           <div>
-            <p className="font-serif text-3xl font-bold text-ink">{saved.length}</p>
-            <p className="text-xs text-subtle">Saved in Basta</p>
+            <p className="font-serif text-2xl font-bold text-ink sm:text-3xl">{saved.length}</p>
+            <p className="text-[11px] text-subtle sm:text-xs">Saved</p>
           </div>
           <div>
-            <p className="font-serif text-3xl font-bold text-ink">{s.letters.length}</p>
-            <p className="text-xs text-subtle">Letters Sent</p>
+            <p className="font-serif text-2xl font-bold text-ink sm:text-3xl">{s.letters.length}</p>
+            <p className="text-[11px] text-subtle sm:text-xs">Letters</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="my-10 inline-flex rounded-full bg-muted p-1 text-sm font-medium">
+      {/* Responsive Segmented Tabs */}
+      <div className="my-6 sm:my-8 flex max-w-full rounded-full bg-muted/90 p-1 text-xs sm:text-sm font-medium">
         {(
           [
-            ["public", "Public Poet Profile"],
-            ["saved", "Saved Collection (Basta)"],
-            ["vault", "Private Vault & Settings"],
+            ["public", "My Verses", "Public Poet Profile"],
+            ["saved", "Saved Basta", "Saved Collection (Basta)"],
+            ["vault", "Vault", "Private Vault & Settings"],
           ] as const
-        ).map(([k, t]) => (
+        ).map(([k, shortLabel, longLabel]) => (
           <button
             key={k}
+            type="button"
             onClick={() => setTab(k)}
             className={cn(
-              "rounded-full px-5 py-2 transition",
+              "flex-1 rounded-full px-2.5 py-1.5 transition text-center whitespace-nowrap sm:px-4 sm:py-2",
               tab === k ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
             )}
           >
-            {t}
+            <span className="sm:hidden">{shortLabel}</span>
+            <span className="hidden sm:inline">{longLabel}</span>
           </button>
         ))}
       </div>
 
       {/* Tab 1: Public Poet Profile */}
       {tab === "public" && (
-        <div className="mx-auto max-w-3xl space-y-6">
+        <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6">
           <div className="rounded-2xl border border-hairline bg-secondary/50 p-4 text-xs text-muted-foreground">
             <b>Public View Preview:</b> Other readers and visitors on the feed only see this profile section with your pen name
             <b> @{u.penName}</b>, poet ID <b>{u.poetId}</b>, and your published verses.

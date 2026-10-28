@@ -175,15 +175,15 @@ function Auth() {
     });
 
   return (
-    <div className="bg-secondary py-16">
-      <div className="mx-auto max-w-xl px-6">
-        <div className="rounded-3xl border border-hairline bg-card p-8 shadow-float md:p-12">
+    <div className="bg-secondary px-3.5 py-6 sm:px-6 sm:py-12 md:py-16">
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-2xl sm:rounded-3xl border border-hairline bg-card p-4 sm:p-8 shadow-float md:p-12">
           {/* Top Switcher: Sign Up vs Sign In */}
-          <div className="mb-8 flex gap-2 rounded-full bg-muted p-1 text-sm font-medium">
+          <div className="mb-6 sm:mb-8 flex gap-1.5 sm:gap-2 rounded-full bg-muted p-1 text-xs sm:text-sm font-medium">
             <button
               onClick={() => nav({ to: "/auth", search: { mode: "signup" } })}
               className={cn(
-                "flex-1 rounded-full py-2.5 transition",
+                "flex-1 rounded-full py-2 sm:py-2.5 transition",
                 mode === "signup" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
               )}
             >
@@ -192,7 +192,7 @@ function Auth() {
             <button
               onClick={() => nav({ to: "/auth", search: { mode: "signin" } })}
               className={cn(
-                "flex-1 rounded-full py-2.5 transition",
+                "flex-1 rounded-full py-2 sm:py-2.5 transition",
                 mode === "signin" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
               )}
             >
@@ -204,8 +204,8 @@ function Auth() {
           {mode === "signin" ? (
             <div className="space-y-5">
               <div>
-                <h1 className="text-3xl font-semibold text-ink">Welcome back to Ek Khawaab</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khawaab</h1>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                   Enter with your registered email, phone number, or unique Shayar ID.
                 </p>
               </div>
@@ -248,7 +248,7 @@ function Auth() {
               <button
                 disabled={loading || !signin.identifier.trim() || signin.password.length < 4}
                 onClick={handleSignIn}
-                className={cn(btnPrimary, "w-full py-3.5 text-base")}
+                className={cn(btnPrimary, "w-full py-3 sm:py-3.5 text-sm sm:text-base")}
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -264,7 +264,7 @@ function Auth() {
                 <div className="absolute inset-x-0 top-1/2 -z-10 border-t border-hairline" />
               </div>
 
-              <button onClick={demo} className={cn(btnOutline, "w-full py-3 text-sm")}>
+              <button onClick={demo} className={cn(btnOutline, "w-full py-2.5 sm:py-3 text-xs sm:text-sm")}>
                 ⚡ One-Click Instant Guest Demo Login
               </button>
             </div>
@@ -275,7 +275,7 @@ function Auth() {
                 <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
                   STEP 1 OF 2 · PRIVATE VAULT
                 </span>
-                <h1 className="mt-3 text-3xl font-semibold text-ink">Create Your Private Account</h1>
+                <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Create Your Private Account</h1>
               </div>
 
               <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-sm text-wash-foreground">

@@ -21,15 +21,15 @@ function Dictionary() {
   const [q, setQ] = useState("");
   const list = LUGHAT.filter((w) => [w.roman, w.hindi, w.urdu, w.meaning].some((f) => f.toLowerCase().includes(q.toLowerCase())));
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 md:px-12">
+    <div className="mx-auto max-w-6xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead kicker="DICTIONARY" title="The words behind the verses" sub="Spellings in three scripts, pronunciation, meaning and how poets use each word." />
-      <div className="relative mb-10 max-w-xl">
+      <div className="relative mb-6 sm:mb-10 max-w-xl">
         <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-subtle" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search — hijr, longing, क़ुर्बत, فراق…" className={cn(input, "rounded-full py-3 pl-11")} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search — hijr, longing, क़ुर्बत, فراق…" className={cn(input, "rounded-full py-2.5 sm:py-3 pl-11 text-sm")} />
       </div>
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
         {list.map((w) => (
-          <div key={w.roman} className={cn(card, "p-7")}>
+          <div key={w.roman} className={cn(card, "p-4 sm:p-6")}>
             <div className="flex items-start justify-between">
               <h3 className="text-2xl font-semibold">{w.roman}</h3>
               <button aria-label={`Pronounce ${w.roman}`} onClick={() => speak(w.hindi)} className="rounded-full p-2 text-royal hover:bg-wash"><Volume2 className="size-4" /></button>

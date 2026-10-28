@@ -1,4 +1,6 @@
-export type Script = "hinglish" | "hindi" | "urdu";
+export type Script = "hinglish" | "hindi" | "urdu" | "english";
+export type TranslationStatus = "pending" | "completed" | "failed";
+
 export type Poem = {
   id: string;
   takhallus: string;
@@ -10,6 +12,8 @@ export type Poem = {
   hindi: string[];
   urdu: string[];
   english: string[];
+  sourceLanguage?: Script;
+  translationStatus?: Partial<Record<Script, TranslationStatus>>;
   daad: number;
   muqarrar: number;
   hashiya: { by: string; text: string }[];
