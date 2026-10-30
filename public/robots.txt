@@ -1,13 +1,20 @@
 User-agent: *
 Allow: /
-Allow: /feed
-Allow: /ai-poet
-Allow: /studio
-Allow: /dictionary
-Allow: /guidelines
-Allow: /privacy
 Disallow: /profile
 Disallow: /auth
 Disallow: /letters?*
+
+User-agent: Googlebot
+Allow: /
+Disallow: /profile
+Disallow: /auth
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /profile
+Disallow: /auth
 
 Sitemap: https://ek-khawaab.vercel.app/sitemap.xml
