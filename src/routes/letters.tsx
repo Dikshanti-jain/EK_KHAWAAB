@@ -6,6 +6,7 @@ import { POEMS, type Script } from "@/data/poems";
 import { useStore, uid, type Letter } from "@/lib/store";
 import { createSecretKhat, attemptUnlockKhat, fetchSecretKhat } from "@/lib/khats.service";
 import { IdBadge, PageHead, ScriptSwitch, Seal, Verse, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/letters")({

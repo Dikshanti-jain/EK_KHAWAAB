@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { POEMS, poetId, type Script } from "@/data/poems";
 import { useStore, uid } from "@/lib/store";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/studio")({

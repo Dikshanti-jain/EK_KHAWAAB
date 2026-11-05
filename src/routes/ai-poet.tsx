@@ -244,7 +244,8 @@ export function AiPoet() {
 
   const copyToClipboard = () => {
     if (!res) return;
-    const lines = res[script].join("\n");
+    const val = res[script];
+    const lines = Array.isArray(val) ? val.join("\n") : String(val ?? "");
     navigator.clipboard.writeText(lines);
     setCopied(true);
     toast.success("Poem copied to clipboard!");
@@ -679,7 +680,7 @@ export function AiPoet() {
                       Polished Verse:
                     </span>
                     <p className="mt-2 whitespace-pre-line font-serif text-base text-ink">
-                      {res[script].join("\n")}
+                      {Array.isArray(res[script]) ? res[script].join("\n") : String(res[script] ?? "")}
                     </p>
                   </div>
                 </div>
@@ -693,7 +694,7 @@ export function AiPoet() {
                   script === "urdu" ? "urdu text-xl sm:text-2xl" : script === "hindi" ? "deva text-xl sm:text-2xl" : "font-serif text-xl sm:text-2xl md:text-3xl leading-relaxed sm:leading-loose"
                 )}
               >
-                {res[script].map((line, i) => (
+                {(Array.isArray(res[script]) ? res[script] : [String(res[script] ?? "")]).map((line: string, i: number) => (
                   <div key={i} className="group relative mx-auto my-2 max-w-2xl">
                     <input
                       type="text"
@@ -727,7 +728,7 @@ export function AiPoet() {
                         className="rounded-2xl border border-hairline bg-card p-3 text-left text-xs transition hover:border-royal hover:shadow-sm"
                       >
                         <p className={cn("font-serif text-sm font-medium text-ink", script === "urdu" && "urdu")}>
-                          {c[script]}
+                          {script === "english" ? c.hinglish : (c[script as "hinglish" | "hindi" | "urdu"] ?? c.hinglish)}
                         </p>
                         <span className="mt-2 flex items-center gap-1 font-sans text-[11px] text-royal">
                           Apply Line <ArrowRight className="size-3" />

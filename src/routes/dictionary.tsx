@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Volume2, ArrowRight } from "lucide-react";
 import { LUGHAT, getWordSlug } from "@/data/lughat";
 import { PageHead, card, input } from "@/components/kit";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dictionary")({
