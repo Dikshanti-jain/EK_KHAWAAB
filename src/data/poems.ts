@@ -5,6 +5,8 @@ export type Poem = {
   id: string;
   slug?: string;
   takhallus: string;
+  shayarUid?: string;
+  isOwner?: boolean;
   format: string;
   mood: string;
   style: string;

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { safeJsonLd } from "@/lib/security";
 import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Linkedin, Mail, Menu, X, Home as HomeIcon, BookOpen, Sparkles, Palette, User as UserIcon } from "lucide-react";
@@ -276,7 +277,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_SCHEMA) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(JSON_LD_SCHEMA) }}
         />
       </head>
       <body>{children}<Scripts /></body>

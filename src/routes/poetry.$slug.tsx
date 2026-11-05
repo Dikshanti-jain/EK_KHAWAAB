@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
+import { safeJsonLd } from "@/lib/security";
 import { useState } from "react";
 import { Heart, Share2, Palette, Sparkles, BookOpen, ArrowLeft, ArrowRight, Check, Copy, Tag } from "lucide-react";
 import { toast } from "sonner";
@@ -134,7 +135,7 @@ function PoemDetailPage() {
     <div className="mx-auto max-w-4xl px-3.5 py-6 sm:px-6 md:px-10 md:py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* Breadcrumb Navigation */}

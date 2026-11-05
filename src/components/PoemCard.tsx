@@ -4,7 +4,7 @@ import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTr
 import { toast } from "sonner";
 import { poetId, getPoemSlug, type Poem, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
-import { togglePoemLike, togglePoemBookmark, addPoemComment, deletePoem } from "@/lib/poems.service";
+import { togglePoemLike, togglePoemBookmark, addPoemComment, deletePoem, reportContent } from "@/lib/poems.service";
 import { triggerAutoTranslation } from "@/lib/translation.service";
 import { IdBadge, Pill, ScriptSwitch, Verse, card, input, btnPrimary, btnOutline } from "./kit";
 import { cn } from "@/lib/utils";
@@ -22,35 +22,55 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("Contains real personal identity info");
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   const script = override ?? globalScript;
   const liked = store.liked.includes(poem.id);
   const saved = store.saved.includes(poem.id);
   const me = store.user;
-  const isAuthor = Boolean(me && me.penName === poem.takhallus);
+  const isAuthor = Boolean(poem.isOwner || (me && me.penName === poem.takhallus));
 
-  const toggle = (k: "liked" | "saved") => {
-    const userUid = me?.poetId || "#EK-7492";
-    if (k === "liked") {
-      togglePoemLike(poem.id, userUid, liked);
-    } else {
-      togglePoemBookmark(poem.id, userUid, saved);
+  const toggle = async (k: "liked" | "saved") => {
+    const userUid = me?.poetId;
+    if (!userUid) {
+      toast.error("Please sign in or choose a pen name first.");
+      return;
     }
+    const currentlyActive = k === "liked" ? liked : saved;
+    const res =
+      k === "liked"
+        ? await togglePoemLike(poem.id, userUid, currentlyActive)
+        : await togglePoemBookmark(poem.id, userUid, currentlyActive);
+
+    if (!res.success) {
+      toast.error(res.error || `Could not update ${k}.`);
+      return;
+    }
+
     store.set((s) => ({ [k]: s[k].includes(poem.id) ? s[k].filter((x) => x !== poem.id) : [...s[k], poem.id] }));
   };
 
-  const addReply = () => {
+  const addReply = async () => {
     if (!reply.trim()) return;
     const replyText = reply.trim();
     const byName = store.user?.penName ?? "Guest_Reader";
-    const userUid = store.user?.poetId || "#EK-7492";
-    addPoemComment(poem.id, userUid, replyText);
+    const userUid = store.user?.poetId;
+    if (!userUid) {
+      toast.error("Please sign in or choose a pen name to comment.");
+      return;
+    }
+    const res = await addPoemComment(poem.id, userUid, replyText);
+    if (!res.success) {
+      toast.error(res.error || "Could not submit comment.");
+      return;
+    }
     store.set((s) => ({
       poems: s.poems.map((p) =>
         p.id === poem.id ? { ...p, hashiya: [...p.hashiya, { by: byName, text: replyText }] } : p
       ),
     }));
     setReply("");
+    toast.success("Comment added to hashiya");
   };
 
   const deleteComment = (commentIdx: number) => {
@@ -63,8 +83,16 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
   };
 
   const handleDeletePoem = async () => {
-    const userUid = me?.poetId || "#EK-7492";
-    await deletePoem(poem.id, userUid);
+    const userUid = me?.poetId;
+    if (!userUid) {
+      toast.error("Authentication required to delete verse.");
+      return;
+    }
+    const res = await deletePoem(poem.id, userUid);
+    if (!res.success) {
+      toast.error(res.error || "Could not delete verse from server.");
+      return;
+    }
     store.set((s) => ({
       poems: s.poems.filter((p) => p.id !== poem.id),
       saved: s.saved.filter((id) => id !== poem.id),
@@ -74,10 +102,25 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     toast.success("Verse removed from the Mehfil");
   };
 
-  const handleReportPoem = (e: React.FormEvent) => {
+  const handleReportPoem = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowReportModal(false);
-    toast.success("Thank you. This verse has been flagged for editorial review.");
+    if (!reportReason.trim() || submittingReport) return;
+    setSubmittingReport(true);
+    try {
+      const res = await reportContent({
+        targetType: "poem",
+        targetId: poem.id,
+        reason: reportReason,
+      });
+      if (res.success) {
+        setShowReportModal(false);
+        toast.success("Thank you. This verse has been flagged for editorial review.");
+      } else {
+        toast.error(res.error || "Failed to submit report.");
+      }
+    } finally {
+      setSubmittingReport(false);
+    }
   };
 
   const toStudio = () => {
@@ -397,8 +440,8 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
                 <button type="button" onClick={() => setShowReportModal(false)} className={btnOutline}>
                   Cancel
                 </button>
-                <button type="submit" className={btnPrimary}>
-                  Submit Report
+                <button type="submit" disabled={submittingReport} className={btnPrimary}>
+                  {submittingReport ? "Submitting..." : "Submit Report"}
                 </button>
               </div>
             </form>

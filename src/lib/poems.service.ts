@@ -18,72 +18,116 @@ export type CreatePoemPayload = {
   isGumnaam?: boolean;
 };
 
+export type FetchPoemsOptions = {
+  cursor?: string;
+  limit?: number;
+};
+
+export type FetchPoemsResult = {
+  poems: Poem[];
+  nextCursor: string | null;
+  error: string | null;
+};
+
+export type ReportContentPayload = {
+  targetType: "poem" | "comment" | "khat";
+  targetId: string;
+  reason: string;
+};
+
 /**
- * Fetch all published poems from the database with author metadata, daad counts, and comments.
- * Seamlessly falls back to rich local seed poems if database is empty or offline.
+ * Fetch poems from the secure safe_poems_feed view with keyset pagination.
+ * Zero leaks of takhallus or shayar_uid for is_gumnaam poems at the database level (Fixes RT-04, RL-02).
  */
-export async function fetchPoems(): Promise<Poem[]> {
+export async function fetchPoems(options: FetchPoemsOptions = {}): Promise<FetchPoemsResult> {
+  const limit = options.limit || 20;
   try {
-    const { data, error } = await supabase
-      .from("poems")
-      .select(`
-        id,
-        shayar_uid,
-        hinglish_text,
-        hindi_text,
-        urdu_text,
-        english_translation,
-        mood_tag,
-        format_type,
-        seed_words,
-        is_gumnaam,
-        daad_count,
-        created_at,
-        public_shayars (
-          takhallus,
-          takhallus_meaning
-        ),
-        comments (
+    let query = supabase
+      .from("safe_poems_feed")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit + 1);
+
+    if (options.cursor) {
+      query = query.lt("created_at", options.cursor);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("[PoemsService] Database fetch error:", error.message);
+      // If error on initial load without cursor, fallback to seeds to maintain experience, but report error
+      if (!options.cursor) {
+        return { poems: POEMS, nextCursor: null, error: error.message };
+      }
+      return { poems: [], nextCursor: null, error: error.message };
+    }
+
+    if (!data || data.length === 0) {
+      if (!options.cursor) {
+        return { poems: POEMS, nextCursor: null, error: null };
+      }
+      return { poems: [], nextCursor: null, error: null };
+    }
+
+    const hasMore = data.length > limit;
+    const pageRows = hasMore ? data.slice(0, limit) : data;
+    const nextCursor = hasMore ? pageRows[pageRows.length - 1]!.created_at : null;
+
+    // Fetch comments for the fetched poems
+    const poemIds = pageRows.map((r) => r.id);
+    let commentsByPoem: Record<string, { by: string; text: string }[]> = {};
+
+    if (poemIds.length > 0) {
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select(`
           id,
+          poem_id,
           shayar_uid,
           comment_text,
           created_at,
           public_shayars (
             takhallus
           )
-        )
-      `)
-      .order("created_at", { ascending: false });
+        `)
+        .in("poem_id", poemIds)
+        .order("created_at", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      if (error) {
-        console.warn("[PoemsService] Database fetch notice (using seed mehfil):", error.message);
+      if (commentsData) {
+        for (const c of commentsData) {
+          if (!commentsByPoem[c.poem_id]) {
+            commentsByPoem[c.poem_id] = [];
+          }
+          const authorTakhallus =
+            (c.public_shayars as { takhallus?: string } | null)?.takhallus ||
+            `Reader_${c.shayar_uid ? c.shayar_uid.replace(/\W/g, "") : "Anon"}`;
+          commentsByPoem[c.poem_id]!.push({
+            by: authorTakhallus,
+            text: c.comment_text,
+          });
+        }
       }
-      return POEMS;
     }
 
-    // Map DB rows to application Poem model
-    const dbPoems: Poem[] = data.map((row) => {
-      const takhallus =
-        row.is_gumnaam
-          ? "Gumnaam_Shayar"
-          : (row.public_shayars as { takhallus?: string } | null)?.takhallus || `Poet_${row.shayar_uid.replace(/\W/g, "")}`;
-
+    // Map DB view rows to Poem domain model
+    const dbPoems: Poem[] = pageRows.map((row) => {
       const hinglishLines = row.hinglish_text ? row.hinglish_text.split("\n") : [];
       const hindiLines = row.hindi_text ? row.hindi_text.split("\n") : hinglishLines;
       const urduLines = row.urdu_text ? row.urdu_text.split("\n") : hinglishLines;
       const englishLines = row.english_translation ? row.english_translation.split("\n") : [];
 
-      const comments = Array.isArray(row.comments)
-        ? row.comments.map((c: any) => ({
-            by: c.public_shayars?.takhallus || `Reader_${c.shayar_uid?.replace(/\W/g, "") || "Anonymous"}`,
-            text: c.comment_text,
-          }))
-        : [];
+      const rawSeedWords = row.seed_words;
+      const seedTags: string[] =
+        rawSeedWords && Array.isArray(rawSeedWords) && rawSeedWords.length > 0
+          ? rawSeedWords.map((w: string) => (w.startsWith("#") ? w : `#${w}`))
+          : [`#${(row.mood_tag || "Shayari").replace(/\s+/g, "")}`];
 
       return {
         id: row.id,
-        takhallus,
+        takhallus: row.takhallus || "Gumnaam_Shayar",
+        shayarUid: row.shayar_uid,
+        isOwner: Boolean(row.is_owner),
         format: row.format_type || "Sher",
         mood: row.mood_tag || "Unspoken Love",
         style: "Modern",
@@ -101,52 +145,62 @@ export async function fetchPoems(): Promise<Poem[]> {
         },
         daad: row.daad_count ?? 0,
         muqarrar: Math.floor((row.daad_count ?? 0) / 4),
-        hashiya: comments,
-        tags:
-          row.seed_words && Array.isArray(row.seed_words) && row.seed_words.length > 0
-            ? row.seed_words.map((w: string) => (w.startsWith("#") ? w : `#${w}`))
-            : [`#${(row.mood_tag || "Shayari").replace(/\s+/g, "")}`],
+        hashiya: commentsByPoem[row.id] || [],
+        tags: seedTags,
       };
     });
 
-    // Merge DB poems with original seed poems to ensure the Mehfil remains rich and full
-    const existingIds = new Set(dbPoems.map((p) => p.id));
-    const extraSeeds = POEMS.filter((p) => !existingIds.has(p.id));
-    return [...dbPoems, ...extraSeeds];
-  } catch (err) {
-    console.warn("[PoemsService] Fetch fallback to seeds:", err);
-    return POEMS;
+    // On initial page without cursor, merge with seed poems to ensure richness
+    if (!options.cursor) {
+      const existingIds = new Set(dbPoems.map((p) => p.id));
+      const extraSeeds = POEMS.filter((p) => !existingIds.has(p.id));
+      return { poems: [...dbPoems, ...extraSeeds], nextCursor, error: null };
+    }
+
+    return { poems: dbPoems, nextCursor, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to load poems feed.";
+    console.error("[PoemsService] fetchPoems exception:", message);
+    if (!options.cursor) {
+      return { poems: POEMS, nextCursor: null, error: message };
+    }
+    return { poems: [], nextCursor: null, error: message };
   }
 }
 
 /**
  * Publish a new poem to the database.
- * Preserves the canonical original and establishes initial translation state.
+ * Returns true server poem or real error (Fixes RT-03). Zero fake fallbacks.
  */
-export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
-  // Determine canonical source lines
-  const rawLines = payload.lines && payload.lines.length
-    ? payload.lines
-    : payload.hinglish && payload.hinglish.length
-      ? payload.hinglish
-      : payload.hindi && payload.hindi.length
-        ? payload.hindi
-        : payload.urdu && payload.urdu.length
-          ? payload.urdu
-          : payload.english ?? [];
+export async function createPoem(
+  payload: CreatePoemPayload
+): Promise<{ poem: Poem | null; error: string | null }> {
+  const rawLines =
+    payload.lines && payload.lines.length
+      ? payload.lines
+      : payload.hinglish && payload.hinglish.length
+        ? payload.hinglish
+        : payload.hindi && payload.hindi.length
+          ? payload.hindi
+          : payload.urdu && payload.urdu.length
+            ? payload.urdu
+            : payload.english ?? [];
 
-  const sourceScript: Script =
-    payload.sourceScript || detectScript(rawLines.join("\n"));
+  if (rawLines.length === 0) {
+    return { poem: null, error: "Verse lines cannot be empty." };
+  }
+
+  const sourceScript: Script = payload.sourceScript || detectScript(rawLines.join("\n"));
 
   const hinglishLines = payload.hinglish ?? (sourceScript === "hinglish" ? rawLines : []);
   const hindiLines = payload.hindi ?? (sourceScript === "hindi" ? rawLines : []);
   const urduLines = payload.urdu ?? (sourceScript === "urdu" ? rawLines : []);
   const englishLines = payload.english ?? (sourceScript === "english" ? rawLines : []);
 
-  const hinglishJoined = (hinglishLines.length ? hinglishLines : rawLines).join("\n");
-  const hindiJoined = (hindiLines.length ? hindiLines : rawLines).join("\n");
-  const urduJoined = (urduLines.length ? urduLines : rawLines).join("\n");
-  const englishJoined = englishLines.join("\n");
+  const hinglishJoined = (hinglishLines.length ? hinglishLines : rawLines).join("\n").trim();
+  const hindiJoined = (hindiLines.length ? hindiLines : rawLines).join("\n").trim();
+  const urduJoined = (urduLines.length ? urduLines : rawLines).join("\n").trim();
+  const englishJoined = englishLines.join("\n").trim();
 
   const initialStatus: Partial<Record<Script, TranslationStatus>> = {
     [sourceScript]: "completed",
@@ -174,30 +228,14 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       .single();
 
     if (error || !data) {
-      console.warn("[PoemsService] Could not insert to remote DB, returning client-safe poem:", error?.message);
-      return {
-        id: Math.random().toString(36).slice(2, 9),
-        takhallus: payload.takhallus,
-        format: payload.formatType || (rawLines.length === 2 ? "Sher" : "Nazm"),
-        mood: payload.moodTag,
-        style: "Modern",
-        paper: "kora",
-        hinglish: hinglishLines.length ? hinglishLines : rawLines,
-        hindi: hindiLines.length ? hindiLines : rawLines,
-        urdu: urduLines.length ? urduLines : rawLines,
-        english: englishLines,
-        sourceLanguage: sourceScript,
-        translationStatus: initialStatus,
-        daad: 0,
-        muqarrar: 0,
-        hashiya: [],
-        tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
-      };
+      return { poem: null, error: error?.message || "Failed to publish poem." };
     }
 
-    return {
+    const createdPoem: Poem = {
       id: data.id,
-      takhallus: payload.takhallus,
+      takhallus: payload.isGumnaam ? "Gumnaam_Shayar" : payload.takhallus,
+      shayarUid: data.shayar_uid,
+      isOwner: true,
       format: data.format_type || "Sher",
       mood: data.mood_tag,
       style: "Modern",
@@ -213,26 +251,11 @@ export async function createPoem(payload: CreatePoemPayload): Promise<Poem> {
       hashiya: [],
       tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
     };
-  } catch (err) {
-    console.warn("[PoemsService] Error creating poem, fallback to client memory:", err);
-    return {
-      id: Math.random().toString(36).slice(2, 9),
-      takhallus: payload.takhallus,
-      format: payload.formatType || (rawLines.length === 2 ? "Sher" : "Nazm"),
-      mood: payload.moodTag,
-      style: "Modern",
-      paper: "kora",
-      hinglish: hinglishLines.length ? hinglishLines : rawLines,
-      hindi: hindiLines.length ? hindiLines : rawLines,
-      urdu: urduLines.length ? urduLines : rawLines,
-      english: englishLines,
-      sourceLanguage: sourceScript,
-      translationStatus: initialStatus,
-      daad: 0,
-      muqarrar: 0,
-      hashiya: [],
-      tags: payload.tags || (payload.seedWords ? payload.seedWords.map((w) => (w.startsWith("#") ? w : `#${w}`)) : []),
-    };
+
+    return { poem: createdPoem, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to publish poem.";
+    return { poem: null, error: message };
   }
 }
 
@@ -247,9 +270,9 @@ export async function updatePoemTranslations(
     urdu: string[];
     english: string[];
   }
-): Promise<void> {
+): Promise<{ success: boolean; error: string | null }> {
   try {
-    await supabase
+    const { error } = await supabase
       .from("poems")
       .update({
         hinglish_text: translations.hinglish.join("\n"),
@@ -259,13 +282,19 @@ export async function updatePoemTranslations(
         updated_at: new Date().toISOString(),
       })
       .eq("id", poemId);
-  } catch (err) {
-    console.warn("[PoemsService] Could not persist translations to Supabase:", err);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update translations." };
   }
 }
 
 /**
  * Toggle like/daad on a poem in the database.
+ * Real error propagation (Fixes RT-03).
  */
 export async function togglePoemLike(
   poemId: string,
@@ -279,20 +308,24 @@ export async function togglePoemLike(
         .delete()
         .eq("poem_id", poemId)
         .eq("shayar_uid", shayarUid);
-      return { success: !error, error: error?.message || null };
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
     } else {
       const { error } = await supabase
         .from("poem_likes")
         .insert({ poem_id: poemId, shayar_uid: shayarUid });
-      return { success: !error, error: error?.message || null };
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
     }
   } catch (err: unknown) {
-    return { success: true, error: null };
+    const message = err instanceof Error ? err.message : "Could not toggle like.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Toggle bookmark/basta saving for a poem in the database.
+ * Real error propagation (Fixes RT-03).
  */
 export async function togglePoemBookmark(
   poemId: string,
@@ -306,48 +339,59 @@ export async function togglePoemBookmark(
         .delete()
         .eq("poem_id", poemId)
         .eq("shayar_uid", shayarUid);
-      return { success: !error, error: error?.message || null };
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
     } else {
       const { error } = await supabase
         .from("bookmarks")
         .insert({ poem_id: poemId, shayar_uid: shayarUid });
-      return { success: !error, error: error?.message || null };
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
     }
   } catch (err: unknown) {
-    return { success: true, error: null };
+    const message = err instanceof Error ? err.message : "Could not toggle bookmark.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Add a comment/hashiya to a poem.
+ * Real error propagation (Fixes RT-03).
  */
 export async function addPoemComment(
   poemId: string,
   shayarUid: string,
   commentText: string
 ): Promise<{ success: boolean; commentId?: string | undefined; error: string | null }> {
+  const cleanComment = commentText.trim();
+  if (!cleanComment || cleanComment.length > 600) {
+    return { success: false, error: "Comment must be between 1 and 600 characters." };
+  }
+
   try {
     const { data, error } = await supabase
       .from("comments")
       .insert({
         poem_id: poemId,
         shayar_uid: shayarUid,
-        comment_text: commentText.trim(),
+        comment_text: cleanComment,
       })
       .select("id")
       .single();
 
-    if (data?.id) {
-      return { success: true, commentId: data.id, error: null };
+    if (error || !data) {
+      return { success: false, error: error?.message || "Failed to post comment." };
     }
-    return { success: !error, error: error?.message || null };
+    return { success: true, commentId: data.id, error: null };
   } catch (err: unknown) {
-    return { success: true, error: null };
+    const message = err instanceof Error ? err.message : "Failed to post comment.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Delete a poem owned by the author.
+ * Real error propagation (Fixes RT-03).
  */
 export async function deletePoem(
   poemId: string,
@@ -359,14 +403,20 @@ export async function deletePoem(
       .delete()
       .eq("id", poemId)
       .eq("shayar_uid", shayarUid);
-    return { success: !error, error: error?.message || null };
-  } catch {
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
     return { success: true, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to delete poem.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Delete a comment.
+ * Real error propagation (Fixes RT-03).
  */
 export async function deletePoemComment(
   commentId: string,
@@ -378,9 +428,44 @@ export async function deletePoemComment(
       .delete()
       .eq("id", commentId)
       .eq("shayar_uid", shayarUid);
-    return { success: !error, error: error?.message || null };
-  } catch {
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
     return { success: true, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to delete comment.";
+    return { success: false, error: message };
   }
 }
 
+/**
+ * Submit a content report to public.content_reports (Fixes RL-03).
+ */
+export async function reportContent(
+  payload: ReportContentPayload
+): Promise<{ success: boolean; error: string | null }> {
+  const reasonClean = payload.reason.trim();
+  if (reasonClean.length < 3 || reasonClean.length > 500) {
+    return { success: false, error: "Report reason must be between 3 and 500 characters." };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("content_reports")
+      .insert({
+        target_type: payload.targetType,
+        target_id: payload.targetId,
+        reason: reasonClean,
+        status: "pending",
+      });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to submit content report.";
+    return { success: false, error: message };
+  }
+}

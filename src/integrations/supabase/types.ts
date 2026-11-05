@@ -73,15 +73,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "public_shayars_auth_user_id_fkey";
-            columns: ["auth_user_id"];
-            isOneToOne: true;
-            referencedRelation: "private_user_vault";
-            referencedColumns: ["auth_user_id"];
-          }
-        ];
+        Relationships: [];
       };
       poems: {
         Row: {
@@ -103,10 +95,10 @@ export type Database = {
           id?: string;
           shayar_uid: string;
           hinglish_text: string;
-          hindi_text: string;
-          urdu_text: string;
+          hindi_text?: string;
+          urdu_text?: string;
           english_translation?: string | null;
-          mood_tag: string;
+          mood_tag?: string;
           format_type?: string;
           seed_words?: string[] | null;
           is_gumnaam?: boolean;
@@ -258,36 +250,51 @@ export type Database = {
           id: string;
           sender_uid: string;
           recipient_identifier: string;
+          recipient_token_hash?: string | null;
           poem_content: string;
           clue_one: string;
           clue_two: string;
           secret_answer: string;
+          secret_answer_hash?: string | null;
           wax_seal_color: string;
           is_unlocked: boolean;
+          failed_attempts: number;
+          locked_until: string | null;
+          expires_at: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           sender_uid: string;
           recipient_identifier: string;
+          recipient_token_hash?: string | null;
           poem_content: string;
           clue_one: string;
           clue_two: string;
           secret_answer: string;
+          secret_answer_hash?: string | null;
           wax_seal_color?: string;
           is_unlocked?: boolean;
+          failed_attempts?: number;
+          locked_until?: string | null;
+          expires_at?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           sender_uid?: string;
           recipient_identifier?: string;
+          recipient_token_hash?: string | null;
           poem_content?: string;
           clue_one?: string;
           clue_two?: string;
           secret_answer?: string;
+          secret_answer_hash?: string | null;
           wax_seal_color?: string;
           is_unlocked?: boolean;
+          failed_attempts?: number;
+          locked_until?: string | null;
+          expires_at?: string;
           created_at?: string;
         };
         Relationships: [
@@ -300,12 +307,113 @@ export type Database = {
           }
         ];
       };
+      content_reports: {
+        Row: {
+          id: string;
+          reporter_uid: string | null;
+          target_type: "poem" | "comment" | "khat";
+          target_id: string;
+          reason: string;
+          status: "pending" | "reviewed" | "removed";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_uid?: string | null;
+          target_type: "poem" | "comment" | "khat";
+          target_id: string;
+          reason: string;
+          status?: "pending" | "reviewed" | "removed";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_uid?: string | null;
+          target_type?: "poem" | "comment" | "khat";
+          target_id?: string;
+          reason?: string;
+          status?: "pending" | "reviewed" | "removed";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
-      [_ in never]: never;
+      safe_poems_feed: {
+        Row: {
+          id: string;
+          shayar_uid: string;
+          takhallus: string;
+          hinglish_text: string;
+          hindi_text: string | null;
+          urdu_text: string | null;
+          english_translation: string | null;
+          mood_tag: string | null;
+          format_type: string | null;
+          seed_words: string[] | null;
+          is_gumnaam: boolean;
+          daad_count: number;
+          created_at: string;
+          is_owner: boolean;
+        };
+        Relationships: [];
+      };
+      public_shayar_directory: {
+        Row: {
+          shayar_uid: string;
+          takhallus: string;
+          takhallus_meaning: string | null;
+          vibe_category: string | null;
+          created_at: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
-      [_ in never]: never;
+      create_secret_khat_rpc: {
+        Args: {
+          p_recipient_identifier: string;
+          p_poem_content: string;
+          p_clue_one: string;
+          p_clue_two: string;
+          p_secret_answer: string;
+          p_wax_seal_color?: string;
+        };
+        Returns: string;
+      };
+      get_secret_khat_by_id: {
+        Args: {
+          p_khat_id: string;
+        };
+        Returns: {
+          id: string;
+          poem_content: string;
+          clue_one: string;
+          clue_two: string;
+          wax_seal_color: string;
+          is_unlocked: boolean;
+          sender_uid: string | null;
+          sender_takhallus: string | null;
+          created_at: string;
+        }[];
+      };
+      unlock_secret_khat_rpc: {
+        Args: {
+          p_khat_id: string;
+          p_guess: string;
+        };
+        Returns: {
+          unlocked: boolean;
+          sender_uid: string | null;
+          sender_takhallus: string | null;
+          remaining_attempts: number;
+          error_message: string | null;
+        }[];
+      };
+      delete_my_account_rpc: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;

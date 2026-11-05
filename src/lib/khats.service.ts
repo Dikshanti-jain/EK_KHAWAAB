@@ -12,150 +12,139 @@ export type CreateKhatPayload = {
   from: string;
 };
 
+export type CreateKhatResponse = {
+  letter: Letter | null;
+  error: string | null;
+};
+
+export type UnlockKhatResponse = {
+  correct: boolean;
+  sender?: string | undefined;
+  remainingAttempts?: number | undefined;
+  error: string | null;
+};
+
 /**
- * Persist a newly sealed secret letter in the database.
+ * Persist a newly sealed secret letter in the database via secure RPC.
+ * Server-side bcrypt hashing for answers and SHA-256 for recipient tokens.
+ * Zero plaintext PII or answers stored (Fixes RT-01, PC-03).
  */
-export async function createSecretKhat(payload: CreateKhatPayload): Promise<Letter> {
-  const poemText = payload.lines.join("\n");
+export async function createSecretKhat(payload: CreateKhatPayload): Promise<CreateKhatResponse> {
+  const poemText = payload.lines.join("\n").trim();
+  const cleanAnswer = payload.answer.trim();
+
+  if (!poemText) {
+    return { letter: null, error: "Letter poem content cannot be empty." };
+  }
+  if (!cleanAnswer || cleanAnswer.length < 1 || cleanAnswer.length > 100) {
+    return { letter: null, error: "Cipher answer must be between 1 and 100 characters." };
+  }
+  if (!payload.clue1.trim() || !payload.clue2.trim()) {
+    return { letter: null, error: "Please provide both clues for your riddle." };
+  }
 
   try {
-    const { data, error } = await supabase
-      .from("secret_khats")
-      .insert({
-        sender_uid: payload.senderUid,
-        recipient_identifier: payload.recipientIdentifier || "Anonymous_Recipient",
-        poem_content: poemText,
-        clue_one: payload.clue1,
-        clue_two: payload.clue2,
-        secret_answer: payload.answer.trim().toLowerCase(),
-        wax_seal_color: payload.seal,
-        is_unlocked: false,
-      })
-      .select()
-      .single();
+    const { data: khatId, error } = await supabase.rpc("create_secret_khat_rpc", {
+      p_recipient_identifier: payload.recipientIdentifier.trim() || "anonymous_recipient",
+      p_poem_content: poemText,
+      p_clue_one: payload.clue1.trim(),
+      p_clue_two: payload.clue2.trim(),
+      p_secret_answer: cleanAnswer,
+      p_wax_seal_color: payload.seal || "crimson",
+    });
 
-    if (error || !data) {
-      console.warn("[KhatsService] Could not persist to DB, returning client letter:", error?.message);
-      return {
-        id: Math.random().toString(36).slice(2, 9),
-        lines: payload.lines,
-        clue1: payload.clue1,
-        clue2: payload.clue2,
-        answer: payload.answer,
-        seal: payload.seal,
-        from: payload.from,
-      };
+    if (error || !khatId) {
+      return { letter: null, error: error?.message || "Failed to seal secret letter in database." };
     }
 
-    return {
-      id: data.id,
-      lines: payload.lines,
-      clue1: data.clue_one,
-      clue2: data.clue_two,
-      answer: data.secret_answer,
-      seal: (data.wax_seal_color as "crimson" | "royal") || "crimson",
-      from: payload.from,
-    };
-  } catch (err) {
-    console.warn("[KhatsService] Exception creating khat, local fallback:", err);
-    return {
-      id: Math.random().toString(36).slice(2, 9),
+    const createdLetter: Letter = {
+      id: khatId,
       lines: payload.lines,
       clue1: payload.clue1,
       clue2: payload.clue2,
-      answer: payload.answer,
       seal: payload.seal,
       from: payload.from,
+      isUnlocked: false,
     };
+
+    return { letter: createdLetter, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to seal secret letter.";
+    return { letter: null, error: message };
   }
 }
 
 /**
- * Retrieve a secret letter by its ID.
+ * Fetch a sealed letter by ID via secure RPC.
+ * Never exposes the riddle answer, recipient PII, or the sender's identity prior to unlock (Fixes RT-01, AS-01).
  */
 export async function fetchSecretKhat(id: string): Promise<Letter | null> {
+  if (!id || id === "demo") return null;
+
   try {
-    const { data, error } = await supabase
-      .from("secret_khats")
-      .select(`
-        id,
-        sender_uid,
-        recipient_identifier,
-        poem_content,
-        clue_one,
-        clue_two,
-        secret_answer,
-        wax_seal_color,
-        is_unlocked,
-        public_shayars (
-          takhallus
-        )
-      `)
-      .eq("id", id)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("get_secret_khat_by_id", {
+      p_khat_id: id,
+    });
 
-    if (error || !data) return null;
+    if (error || !data || !Array.isArray(data) || data.length === 0) {
+      return null;
+    }
 
-    const senderTakhallus =
-      (data.public_shayars as { takhallus?: string } | null)?.takhallus ||
-      `Shayar_${data.sender_uid?.replace(/\W/g, "") || "Secret"}`;
+    const row = data[0];
+    if (!row) return null;
 
     return {
-      id: data.id,
-      lines: data.poem_content.split("\n"),
-      clue1: data.clue_one,
-      clue2: data.clue_two,
-      answer: data.secret_answer,
-      seal: (data.wax_seal_color as "crimson" | "royal") || "crimson",
-      from: senderTakhallus,
+      id: row.id,
+      lines: (row.poem_content || "").split("\n"),
+      clue1: row.clue_one || "",
+      clue2: row.clue_two || "",
+      seal: (row.wax_seal_color as "crimson" | "royal") || "crimson",
+      isUnlocked: Boolean(row.is_unlocked),
+      // Sender identity is ONLY revealed by the RPC if the letter is actually unlocked
+      from: row.is_unlocked && row.sender_takhallus ? row.sender_takhallus : "A secret admirer",
     };
-  } catch {
+  } catch (err) {
+    console.warn("[KhatsService] fetchSecretKhat exception:", err);
     return null;
   }
 }
 
 /**
- * Unlock a secret letter by guessing the sender's cipher answer.
+ * Unlock a secret letter via Server-Side RPC.
+ * Compares against bcrypt hash with strict 5-attempt brute-force protection (Fixes RT-02, AS-01).
  */
 export async function attemptUnlockKhat(
   khatId: string,
   guess: string
-): Promise<{ correct: boolean; sender?: string; error: string | null }> {
+): Promise<UnlockKhatResponse> {
+  const cleanGuess = guess.trim();
+  if (!cleanGuess) {
+    return { correct: false, error: "Please enter your guess." };
+  }
+
   try {
-    const { data, error } = await supabase
-      .from("secret_khats")
-      .select(`
-        secret_answer,
-        sender_uid,
-        public_shayars (
-          takhallus
-        )
-      `)
-      .eq("id", khatId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("unlock_secret_khat_rpc", {
+      p_khat_id: khatId,
+      p_guess: cleanGuess,
+    });
 
-    if (error || !data) {
-      return { correct: false, error: "Letter not found" };
+    if (error || !data || !Array.isArray(data) || data.length === 0) {
+      return { correct: false, error: error?.message || "Failed to verify riddle answer." };
     }
 
-    const isMatch = guess.trim().toLowerCase() === data.secret_answer.trim().toLowerCase();
-
-    if (isMatch) {
-      // Mark as unlocked in database
-      await supabase
-        .from("secret_khats")
-        .update({ is_unlocked: true })
-        .eq("id", khatId);
-
-      const senderTakhallus =
-        (data.public_shayars as { takhallus?: string } | null)?.takhallus ||
-        `Shayar_${data.sender_uid?.replace(/\W/g, "") || "Secret"}`;
-
-      return { correct: true, sender: senderTakhallus, error: null };
+    const result = data[0];
+    if (!result) {
+      return { correct: false, error: "No response from verification RPC." };
     }
 
-    return { correct: false, error: null };
+    return {
+      correct: Boolean(result.unlocked),
+      sender: result.sender_takhallus || undefined,
+      remainingAttempts: typeof result.remaining_attempts === "number" ? result.remaining_attempts : undefined,
+      error: result.error_message || null,
+    };
   } catch (err: unknown) {
-    return { correct: false, error: "Verification failed" };
+    const message = err instanceof Error ? err.message : "Failed to verify answer.";
+    return { correct: false, error: message };
   }
 }

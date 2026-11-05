@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Lock, RefreshCw, Shuffle, Sparkles, KeyRound, Mail, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useStore, randomPoetId } from "@/lib/store";
+import { useStore, randomPoetId, type User } from "@/lib/store";
 import { signUpWithVault, signInWithIdentifier, sendPasswordResetEmail } from "@/lib/auth.service";
 import { IdBadge, btnOutline, btnPrimary, chip, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
@@ -96,7 +96,7 @@ function Auth() {
     priv.phone.replace(/\D/g, "").length >= 10 &&
     priv.password.length >= 6;
 
-  const finish = (u: { penName: string; poetId: string; fullName: string; email: string; phone: string; guest?: boolean }) => {
+  const finish = (u: User) => {
     set({ user: u });
     toast(`Welcome to the Mehfil, @${u.penName}`);
     nav({ to: "/feed" });

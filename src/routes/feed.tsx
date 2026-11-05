@@ -45,6 +45,8 @@ export function Feed() {
   const [text, setText] = useState("");
   const [mood, setMood] = useState(MOODS[0]!);
   const [posting, setPosting] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     try {
@@ -66,15 +68,30 @@ export function Feed() {
 
   useEffect(() => {
     let active = true;
-    fetchPoems().then((loaded) => {
-      if (active && loaded && loaded.length > 0) {
-        set({ poems: loaded });
+    fetchPoems().then((res) => {
+      if (active && res.poems && res.poems.length > 0) {
+        set({ poems: res.poems });
+        setNextCursor(res.nextCursor);
       }
     });
     return () => {
       active = false;
     };
   }, [set]);
+
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetchPoems({ cursor: nextCursor });
+      if (res.poems.length > 0) {
+        set((s) => ({ poems: [...s.poems, ...res.poems] }));
+      }
+      setNextCursor(res.nextCursor);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const query = search.trim().toLowerCase();
 
@@ -116,8 +133,8 @@ export function Feed() {
     setPosting(true);
     try {
       const detected = detectScript(lines.join("\n"));
-      const newPoem = await createPoem({
-        shayarUid: user?.poetId || "#EK-7492",
+      const res = await createPoem({
+        shayarUid: user?.poetId || "",
         takhallus: user?.penName ?? "Guest_Reader",
         lines,
         sourceScript: detected,
@@ -125,6 +142,12 @@ export function Feed() {
         formatType: lines.length === 2 ? "Sher" : "Nazm",
       });
 
+      if (res.error || !res.poem) {
+        toast.error(res.error || "Could not publish poem to server.");
+        return;
+      }
+
+      const newPoem = res.poem;
       // Immediate non-blocking publication to user's feed
       set((s) => ({
         poems: [newPoem, ...s.poems],
@@ -337,6 +360,24 @@ export function Feed() {
               className={cn(btnOutline, "mt-6")}
             >
               Reset Search & Filters
+            </button>
+          </div>
+        )}
+
+        {nextCursor && (
+          <div className="flex justify-center pt-4 sm:pt-6">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className={cn(btnOutline, "px-6 py-2.5 text-xs sm:text-sm")}
+            >
+              {loadingMore ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" /> Loading more verses...
+                </span>
+              ) : (
+                "Load More Verses"
+              )}
             </button>
           </div>
         )}

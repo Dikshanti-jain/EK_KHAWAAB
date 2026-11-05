@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { safeJsonLd } from "@/lib/security";
 import { Volume2, ArrowLeft, BookOpen, Sparkles, ArrowRight, Share2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -100,7 +101,7 @@ function DictionaryWordPage() {
     <div className="mx-auto max-w-4xl px-3.5 py-6 sm:px-6 md:px-10 md:py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* Breadcrumb Navigation */}

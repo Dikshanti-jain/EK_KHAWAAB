@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Lock, Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { POEMS, type Script } from "@/data/poems";
-import { useStore, uid, type Letter } from "@/lib/store";
+import { useStore, type Letter } from "@/lib/store";
 import { createSecretKhat, attemptUnlockKhat, fetchSecretKhat } from "@/lib/khats.service";
 import { IdBadge, PageHead, ScriptSwitch, Seal, Verse, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
@@ -36,6 +36,7 @@ const DEMO: Letter = {
   answer: "Library",
   seal: "crimson",
   from: "Shab_e_Farda",
+  isUnlocked: false,
 };
 
 export function Letters() {
@@ -47,6 +48,7 @@ export function Letters() {
   const { id: queryLetterId } = Route.useSearch();
   const { studio, letters, set, user } = useStore();
   const [tab, setTab] = useState<"send" | "preview">("send");
+  const [isSealing, setIsSealing] = useState(false);
   const [l, setL] = useState<Letter>({
     ...DEMO,
     id: "",
@@ -55,10 +57,23 @@ export function Letters() {
     clue2: "",
     answer: "",
     from: user?.penName ?? "Anonymous",
+    isUnlocked: false,
   });
   const [active, setActive] = useState<Letter>(DEMO);
   const [copied, setCopied] = useState(false);
-  const ready = l.clue1.trim() && l.clue2.trim() && l.answer.trim().length >= 2 && l.lines.join("").trim();
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  const ready =
+    l.clue1.trim().length >= 3 &&
+    l.clue2.trim().length >= 3 &&
+    (l.answer || "").trim().length >= 2 &&
+    l.lines.join("").trim().length > 0;
 
   // If URL has ?id=<letterId>, automatically fetch and display recipient experience
   useEffect(() => {
@@ -67,27 +82,42 @@ export function Letters() {
         if (fetched) {
           setActive(fetched);
           setTab("preview");
-          toast("Secret Letter loaded for you");
+          toast.success("Secret letter retrieved for you");
+        } else {
+          toast.error("Letter not found, expired, or locked.");
         }
       });
     }
   }, [queryLetterId]);
 
   const seal = async () => {
-    const nl = await createSecretKhat({
-      senderUid: user?.poetId || "#EK-7492",
-      recipientIdentifier: "Anonymous_Recipient",
-      lines: l.lines,
-      clue1: l.clue1,
-      clue2: l.clue2,
-      answer: l.answer,
-      seal: l.seal,
-      from: user?.penName ?? "Anonymous",
-    });
-    set((s) => ({ letters: [nl, ...s.letters] }));
-    setActive(nl);
-    setTab("preview");
-    toast("Letter sealed — copy the link to send it");
+    if (!ready || isSealing) return;
+    setIsSealing(true);
+    try {
+      const res = await createSecretKhat({
+        senderUid: user?.poetId || "",
+        recipientIdentifier: "anonymous_recipient",
+        lines: l.lines,
+        clue1: l.clue1,
+        clue2: l.clue2,
+        answer: l.answer || "",
+        seal: l.seal,
+        from: user?.penName ?? "Anonymous",
+      });
+
+      if (res.error || !res.letter) {
+        toast.error(res.error || "Failed to seal secret letter.");
+        return;
+      }
+
+      const nl = res.letter;
+      set((s) => ({ letters: [nl, ...s.letters] }));
+      setActive(nl);
+      setTab("preview");
+      toast.success("Letter sealed — copy the link to send it");
+    } finally {
+      setIsSealing(false);
+    }
   };
 
   const copyLetterLink = (letterId: string) => {
@@ -95,7 +125,8 @@ export function Letters() {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
       toast.success("Secret dedication link copied to clipboard!");
     } else {
       toast(url);
@@ -165,9 +196,11 @@ export function Letters() {
               <p className="text-sm font-semibold text-ink">3-Clue Guessing Cipher</p>
               <div><label className={label}>Clue 1: Where we first met</label><input value={l.clue1} onChange={(e) => setL({ ...l, clue1: e.target.value })} className={input} placeholder="e.g. Same bench at the rain cafe" /></div>
               <div><label className={label}>Clue 2: An inside joke</label><input value={l.clue2} onChange={(e) => setL({ ...l, clue2: e.target.value })} className={input} placeholder="e.g. The cold chai we forgot" /></div>
-              <div><label className={label}>Unlock Answer: Secret keyword or name</label><input value={l.answer} onChange={(e) => setL({ ...l, answer: e.target.value })} className={input} placeholder="Secret word to unlock your name" /></div>
+              <div><label className={label}>Unlock Answer: Secret keyword or name</label><input value={l.answer || ""} onChange={(e) => setL({ ...l, answer: e.target.value })} className={input} placeholder="Secret word to unlock your name" /></div>
             </div>
-            <button disabled={!ready} onClick={seal} className={cn(btnPrimary, "w-full py-2.5 sm:py-3")}>Seal & Send Letter</button>
+            <button disabled={!ready || isSealing} onClick={seal} className={cn(btnPrimary, "w-full py-2.5 sm:py-3")}>
+              {isSealing ? "Sealing Cryptographically..." : "Seal & Send Letter"}
+            </button>
           </div>
           <div className={cn(card, "flex flex-col items-center justify-center p-4 sm:p-6 md:p-10")}>
             <p className="mb-6 text-xs font-medium uppercase tracking-wider text-subtle">Letter preview</p>
@@ -226,35 +259,78 @@ export function Letters() {
 }
 
 function Receiver({ l }: { l: Letter }) {
-  const [step, setStep] = useState<"sealed" | "breaking" | "open">("sealed");
+  const [step, setStep] = useState<"sealed" | "breaking" | "open">(l.isUnlocked ? "open" : "sealed");
   const [script, setScript] = useState<Script>("hinglish");
   const [clues, setClues] = useState(0);
   const [guess, setGuess] = useState("");
-  const [tries, setTries] = useState(3);
-  const [won, setWon] = useState(false);
-  const match = POEMS.find((p) => p.hinglish.join() === l.lines.join());
+  const [tries, setTries] = useState(5);
+  const [won, setWon] = useState(Boolean(l.isUnlocked));
+  const [currentLetter, setCurrentLetter] = useState<Letter>(l);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const match = POEMS.find((p) => p.hinglish.join() === currentLetter.lines.join());
+
   const open = () => {
     setStep("breaking");
-    setTimeout(() => setStep("open"), 700);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setStep("open"), 700);
   };
+
   const tryGuess = async () => {
-    if (l.id && l.id !== "demo") {
-      const res = await attemptUnlockKhat(l.id, guess);
-      if (res.correct) {
-        setWon(true);
-        toast("You guessed it!");
+    if (!guess.trim() || isVerifying) return;
+    setIsVerifying(true);
+
+    try {
+      if (currentLetter.id && currentLetter.id !== "demo") {
+        const res = await attemptUnlockKhat(currentLetter.id, guess);
+        if (res.correct) {
+          setWon(true);
+          const revealedFrom = res.sender || currentLetter.from || "A secret admirer";
+          setCurrentLetter((prev) => ({ ...prev, from: revealedFrom, isUnlocked: true }));
+          toast.success("You guessed it! Identity revealed.");
+          setGuess("");
+          return;
+        }
+
+        if (res.remainingAttempts !== undefined) {
+          setTries(res.remainingAttempts);
+        } else {
+          setTries((t) => Math.max(0, t - 1));
+        }
+
+        if (res.error) {
+          toast.error(res.error);
+        } else {
+          toast.error(`Not quite — ${res.remainingAttempts ?? 0} attempts left`);
+        }
         setGuess("");
         return;
       }
+
+      // Demo letter verification
+      if (currentLetter.id === "demo") {
+        if (guess.trim().toLowerCase() === (currentLetter.answer || "").trim().toLowerCase()) {
+          setWon(true);
+          toast.success("You guessed it!");
+        } else {
+          setTries((t) => {
+            const next = Math.max(0, t - 1);
+            toast.error(next > 0 ? `Not quite — ${next} attempts left` : "The secret stays sealed");
+            return next;
+          });
+        }
+        setGuess("");
+      }
+    } finally {
+      setIsVerifying(false);
     }
-    if (guess.trim().toLowerCase() === l.answer.trim().toLowerCase()) {
-      setWon(true);
-      toast("You guessed it!");
-    } else {
-      setTries((t) => t - 1);
-      toast(tries - 1 > 0 ? `Not quite — ${tries - 1} attempts left` : "The secret stays sealed");
-    }
-    setGuess("");
   };
 
   if (step !== "open")
@@ -267,7 +343,7 @@ function Receiver({ l }: { l: Letter }) {
             onClick={open}
             className={cn("relative z-10", step === "breaking" && "seal-break")}
           >
-            <Seal tone={l.seal} className="size-20 sm:size-24 text-2xl sm:text-3xl" />
+            <Seal tone={currentLetter.seal} className="size-20 sm:size-24 text-2xl sm:text-3xl" />
           </button>
         </div>
         <button onClick={open} className={cn(btnPrimary, "mt-6 sm:mt-8 px-6 py-2.5 sm:px-7 sm:py-3")}>
@@ -281,15 +357,15 @@ function Receiver({ l }: { l: Letter }) {
       <div className={cn(card, "p-4 sm:p-6 md:p-10")}>
         <div className="flex justify-end">{match && <ScriptSwitch value={script} onChange={setScript} />}</div>
         <div className="py-6 sm:py-10">
-          <Verse lines={match ? match[script] : l.lines} script={match ? script : "hinglish"} />
+          <Verse lines={match ? match[script] : currentLetter.lines} script={match ? script : "hinglish"} />
         </div>
         <p className="text-center text-sm text-subtle">
-          — {won ? <span className="font-semibold text-ink">@{l.from}</span> : "A secret admirer"}
+          — {won ? <span className="font-semibold text-ink">@{currentLetter.from}</span> : "A secret admirer"}
         </p>
       </div>
       <div className={cn(card, "space-y-4 p-4 sm:p-6 md:p-8")}>
         <h3 className="text-xl sm:text-2xl font-semibold">Who sent this?</h3>
-        {[l.clue1, l.clue2].map((c, i) =>
+        {[currentLetter.clue1, currentLetter.clue2].map((c, i) =>
           clues > i ? (
             <p key={i} className="rounded-xl bg-wash p-3 text-sm text-wash-foreground">
               <b>Clue {i + 1}:</b> {c}
@@ -302,7 +378,7 @@ function Receiver({ l }: { l: Letter }) {
         )}
         {won ? (
           <div className="rounded-xl bg-blush p-4 text-crimson">
-            <p className="font-semibold">It was @{l.from}</p>
+            <p className="font-semibold">It was @{currentLetter.from}</p>
             <div className="mt-1">
               <IdBadge id="Identity revealed by sender's riddle" />
             </div>
@@ -315,11 +391,12 @@ function Receiver({ l }: { l: Letter }) {
               onKeyDown={(e) => e.key === "Enter" && tryGuess()}
               className={input}
               placeholder="Type your guess…"
+              disabled={isVerifying}
             />
-            <button onClick={tryGuess} className={cn(btnPrimary, "w-full")}>
-              Submit Guess ({tries} left)
+            <button onClick={tryGuess} disabled={isVerifying} className={cn(btnPrimary, "w-full")}>
+              {isVerifying ? "Verifying Cipher..." : `Submit Guess (${tries} left)`}
             </button>
-            {l.id === "demo" && <p className="text-xs text-subtle">Demo hint: where books live.</p>}
+            {currentLetter.id === "demo" && <p className="text-xs text-subtle">Demo hint: where books live.</p>}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No attempts left. The sender's identity stays a secret.</p>

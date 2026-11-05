@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { checkRateLimit } from "./rate-limiter";
 import {
   POETRY_TYPES,
   POETRY_MOODS,
@@ -23,30 +24,30 @@ export const AI_MODES = ["words", "improve", "complete"] as const;
 export type AiMode = (typeof AI_MODES)[number];
 
 export const InputSchema = z.object({
-  // Legacy fields
+  // Legacy fields with strict input boundaries (Fixes AS-05)
   mode: z.enum(AI_MODES).optional().default("words"),
-  seeds: z.array(z.string().min(1).max(60)).max(6).optional().default([]),
-  situation: z.string().max(1200).optional().default(""),
+  seeds: z.array(z.string().trim().min(1).max(50)).max(24).optional().default([]),
+  situation: z.string().trim().max(300).optional().default(""),
   style: z.enum(STYLES).optional().default("Modern Hinglish"),
-  draftText: z.string().max(1500).optional().default(""),
+  draftText: z.string().trim().max(1200).optional().default(""),
 
   // Rich Groq Shayar-e-Khawaab fields
-  phrases: z.array(z.string().min(1).max(60)).max(6).optional().default([]),
+  phrases: z.array(z.string().trim().min(1).max(50)).max(6).optional().default([]),
   isPhraseMandatory: z.boolean().optional().default(false),
-  tags: z.array(z.string().max(30)).max(8).optional().default([]),
+  tags: z.array(z.string().trim().max(30)).max(8).optional().default([]),
   poetryType: z.enum(POETRY_TYPES).optional().default("shayari"),
   primaryLanguage: z.enum(["hinglish", "hindi", "urdu", "english"]).optional().default("hinglish"),
   mood: z.enum(POETRY_MOODS).optional().default("Quiet longing"),
   intensity: z.enum(["Subtle", "Moderate", "Deep"]).optional().default("Moderate"),
   length: z.enum(["couplet", "qata", "short", "full"]).optional().default("couplet"),
-  vocabComplexity: z.enum(["conversational", "classical"]).optional().default("conversational"),
-  rhymePreference: z.enum(["rhymed", "free"]).optional().default("rhymed"),
-  radif: z.string().max(40).optional().default(""),
-  qafiya: z.string().max(40).optional().default(""),
-  metaphorDensity: z.enum(["minimal", "moderate", "rich"]).optional().default("moderate"),
-  perspective: z.enum(["first_person", "observational"]).optional().default("first_person"),
-  avoidWords: z.string().max(200).optional().default(""),
-  poeticStyleLens: z.string().optional().default(""),
+  vocabComplexity: z.enum(["conversational", "classical"]).default("conversational"),
+  rhymePreference: z.enum(["rhymed", "free"]).default("rhymed"),
+  radif: z.string().trim().max(40).optional().default(""),
+  qafiya: z.string().trim().max(40).optional().default(""),
+  metaphorDensity: z.enum(["minimal", "moderate", "rich"]).default("moderate"),
+  perspective: z.enum(["first_person", "observational"]).default("first_person"),
+  avoidWords: z.string().trim().max(100).optional().default(""),
+  poeticStyleLens: z.string().trim().max(150).optional().default(""),
 });
 export type ShayarInputPayload = z.infer<typeof InputSchema>;
 
@@ -167,7 +168,7 @@ export function composeFallbackPoem(data: {
         {
           hinglish: `Ab chiraaghon ki roshni bhi dhuen ke siwa kuch nahi deti.`,
           hindi: `अब चिराग़ों की रौशनी भी धुएँ के सिवा कुछ नहीं देती।`,
-          urdu: `اب چراغوں کی روشنی بھی دھوئیں کے سوا کچھ نہیں دیتی۔`,
+          urdu: `اب چراغوں کی روشنی بھی دھوئیں کے سوا کچھ نہیں دیتی।`,
         },
         {
           hinglish: `Humne dhoondha tha jise khud mein, woh aasmaan nikla.`,
@@ -316,6 +317,15 @@ export function composeFallbackPoem(data: {
 export const composeShayari = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => InputSchema.parse(d))
   .handler(async ({ data }): Promise<{ poem: PoemResult | null; error: string | null }> => {
+    // Sliding-window rate limit (10 requests per 10 minutes) (Fixes RL-04)
+    const rateLimit = checkRateLimit("shayar_generation_quota", 10, 10 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return {
+        poem: null,
+        error: `Rate limit reached. Please wait ${Math.ceil(rateLimit.resetMs / 1000)}s before requesting more AI verses.`,
+      };
+    }
+
     const groqKey = process.env["GROQ_API_KEY"];
 
     // 1. Try Groq AI Shayar (High Speed, High Specificity)

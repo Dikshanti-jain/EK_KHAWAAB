@@ -62,7 +62,7 @@ function Profile() {
   const mine = s.poems.filter((p) => p.takhallus === u.penName);
   const saved = s.poems.filter((p) => s.saved.includes(p.id));
   const appreciations = mine.reduce((a, p) => a + p.daad, 0);
-  const mask = (v: string) => (v ? v.slice(0, 2) + "•".repeat(Math.max(3, v.length - 4)) + v.slice(-2) : "—");
+  const mask = (v?: string | null) => (v ? v.slice(0, 2) + "•".repeat(Math.max(3, v.length - 4)) + v.slice(-2) : "—");
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -18,13 +18,24 @@ export type AuthResponse = {
 };
 
 /**
- * Split-Vault Sign Up (Simple Email & Password Auth - NO OTP)
- * Separates real credentials (private_user_vault) from public identity (public_shayars).
+ * Split-Vault Sign Up (Email & Password Auth)
+ * Authenticates with Supabase and provisions private_user_vault & public_shayars.
+ * NO fabricated success on error (Fixes RT-03, AS-02, DB-05).
  */
 export async function signUpWithVault(payload: SignUpPayload): Promise<AuthResponse> {
   const cleanEmail = payload.email.trim().toLowerCase();
   const cleanTakhallus = payload.takhallus.trim().replace(/[\s-]+/g, "_");
   const cleanUid = payload.shayarUid.startsWith("#") ? payload.shayarUid : `#${payload.shayarUid}`;
+
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { user: null, error: "A valid email address is required." };
+  }
+  if (!payload.password || payload.password.length < 6) {
+    return { user: null, error: "Password must be at least 6 characters long." };
+  }
+  if (cleanTakhallus.length < 2 || cleanTakhallus.length > 40) {
+    return { user: null, error: "Pen name (Takhallus) must be between 2 and 40 characters." };
+  }
 
   try {
     // 1. Supabase Auth registration
@@ -35,82 +46,56 @@ export async function signUpWithVault(payload: SignUpPayload): Promise<AuthRespo
         data: {
           takhallus: cleanTakhallus,
           shayar_uid: cleanUid,
+          full_name: payload.fullName.trim(),
+          takhallus_meaning: payload.takhallusMeaning?.trim() || "",
+          vibe_category: payload.vibeCategory || "Late Night",
         },
       },
     });
 
     if (authError) {
-      console.warn("[AuthService] Supabase signup error, utilizing local resilient vault:", authError.message);
-      // Fallback for offline/unconfigured cloud keys: allow immediate access
-      return {
-        user: {
-          penName: cleanTakhallus,
-          poetId: cleanUid,
-          fullName: payload.fullName,
-          email: cleanEmail,
-          phone: payload.phone || "",
-        },
-        error: null,
-      };
+      return { user: null, error: authError.message };
     }
 
     const authUserId = authData.user?.id;
-
-    if (authUserId) {
-      // 2. Insert into private_user_vault (Strictly private)
-      const { error: vaultError } = await supabase.from("private_user_vault").insert({
-        auth_user_id: authUserId,
-        real_full_name: payload.fullName,
-        email: cleanEmail,
-        phone_number: payload.phone || null,
-      });
-
-      if (vaultError) {
-        console.warn("[AuthService] Vault insert warning:", vaultError.message);
-      }
-
-      // 3. Insert into public_shayars (Public pseudonymous identity)
-      const { error: publicError } = await supabase.from("public_shayars").insert({
-        auth_user_id: authUserId,
-        shayar_uid: cleanUid,
-        takhallus: cleanTakhallus,
-        takhallus_meaning: payload.takhallusMeaning || null,
-        vibe_category: payload.vibeCategory || null,
-      });
-
-      if (publicError) {
-        console.warn("[AuthService] Public shayar profile insert warning:", publicError.message);
-      }
+    if (!authUserId) {
+      return { user: null, error: "Failed to create user account. Please try again." };
     }
+
+    // 2. Ensure private_user_vault and public_shayars records exist
+    // The DB trigger handle_new_authenticated_user auto-provisions, but we upsert defensively
+    await supabase.from("private_user_vault").upsert({
+      auth_user_id: authUserId,
+      real_full_name: payload.fullName.trim(),
+      email: cleanEmail,
+      phone_number: payload.phone?.trim() || null,
+    }, { onConflict: "auth_user_id" });
+
+    await supabase.from("public_shayars").upsert({
+      auth_user_id: authUserId,
+      shayar_uid: cleanUid,
+      takhallus: cleanTakhallus,
+      takhallus_meaning: payload.takhallusMeaning?.trim() || null,
+      vibe_category: payload.vibeCategory || null,
+    }, { onConflict: "auth_user_id" });
 
     return {
       user: {
         penName: cleanTakhallus,
         poetId: cleanUid,
-        fullName: payload.fullName,
-        email: cleanEmail,
-        phone: payload.phone || "",
       },
       error: null,
     };
   } catch (err: unknown) {
-    console.error("[AuthService] Unexpected error during signup:", err);
-    // Graceful offline fallback
-    return {
-      user: {
-        penName: cleanTakhallus,
-        poetId: cleanUid,
-        fullName: payload.fullName,
-        email: cleanEmail,
-        phone: payload.phone || "",
-      },
-      error: null,
-    };
+    const message = err instanceof Error ? err.message : "An unexpected error occurred during signup.";
+    return { user: null, error: message };
   }
 }
 
 /**
- * Sign In with Email, Phone, or Unique Shayar ID (#EK-XXXX)
+ * Sign In with Email & Password
+ * Strict verification against Supabase Auth (Fixes RT-03, AS-02).
+ * Rejects unknown users and invalid passwords with real error messages.
  */
 export async function signInWithIdentifier(
   identifier: string,
@@ -118,75 +103,55 @@ export async function signInWithIdentifier(
 ): Promise<AuthResponse> {
   const cleanIdent = identifier.trim();
 
+  if (!cleanIdent) {
+    return { user: null, error: "Please enter your registered email address." };
+  }
+
+  if (!cleanIdent.includes("@")) {
+    return {
+      user: null,
+      error: "Please sign in using your registered email address. Signing in via pen name or phone number is not supported.",
+    };
+  }
+
+  if (!password) {
+    return { user: null, error: "Please enter your password." };
+  }
+
   try {
-    // If user provided an email
-    if (cleanIdent.includes("@")) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanIdent.toLowerCase(),
-        password,
-      });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanIdent.toLowerCase(),
+      password,
+    });
 
-      if (!error && data.user) {
-        // Fetch public shayar profile
-        const { data: profile } = await supabase
-          .from("public_shayars")
-          .select("shayar_uid, takhallus")
-          .eq("auth_user_id", data.user.id)
-          .maybeSingle();
-
-        // Fetch private details
-        const { data: vault } = await supabase
-          .from("private_user_vault")
-          .select("real_full_name, phone_number")
-          .eq("auth_user_id", data.user.id)
-          .maybeSingle();
-
-        return {
-          user: {
-            penName: profile?.takhallus || cleanIdent.split("@")[0]!.replace(/\W/g, "_"),
-            poetId: profile?.shayar_uid || `#EK-${Math.floor(1000 + Math.random() * 9000)}`,
-            fullName: vault?.real_full_name || "",
-            email: cleanIdent,
-            phone: vault?.phone_number || "",
-          },
-          error: null,
-        };
-      }
+    if (error || !data.user || !data.session) {
+      return {
+        user: null,
+        error: error?.message || "Invalid email or password.",
+      };
     }
 
-    // If login via Shayar ID or offline mode
-    const fallbackPenName = cleanIdent.includes("@")
-      ? cleanIdent.split("@")[0]!.replace(/\W/g, "_")
-      : cleanIdent.startsWith("#")
-        ? `Shayar_${cleanIdent.replace(/\W/g, "")}`
-        : cleanIdent;
+    // Fetch public shayar profile (using public_shayar_directory or public_shayars)
+    const { data: profile } = await supabase
+      .from("public_shayars")
+      .select("shayar_uid, takhallus")
+      .eq("auth_user_id", data.user.id)
+      .maybeSingle();
 
-    const fallbackUid = cleanIdent.startsWith("#")
-      ? cleanIdent
-      : `#EK-${Math.floor(1000 + Math.random() * 9000)}`;
+    const meta = data.user.user_metadata || {};
+    const penName = profile?.takhallus || (meta["takhallus"] as string | undefined) || cleanIdent.split("@")[0]!.replace(/\W/g, "_");
+    const poetId = profile?.shayar_uid || (meta["shayar_uid"] as string | undefined) || `#EK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 
     return {
       user: {
-        penName: fallbackPenName,
-        poetId: fallbackUid,
-        fullName: "",
-        email: cleanIdent.includes("@") ? cleanIdent : "",
-        phone: cleanIdent.replace(/\D/g, "").length >= 10 ? cleanIdent : "",
+        penName,
+        poetId,
       },
       error: null,
     };
   } catch (err: unknown) {
-    console.error("[AuthService] Sign in error:", err);
-    return {
-      user: {
-        penName: cleanIdent.replace(/\W/g, "_"),
-        poetId: `#EK-${Math.floor(1000 + Math.random() * 9000)}`,
-        fullName: "",
-        email: cleanIdent,
-        phone: "",
-      },
-      error: null,
-    };
+    const message = err instanceof Error ? err.message : "Sign in failed. Please check your credentials.";
+    return { user: null, error: message };
   }
 }
 
@@ -197,73 +162,109 @@ export async function signOut(): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.auth.signOut();
     return { error: error?.message || null };
-  } catch {
-    return { error: null };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "Failed to sign out." };
   }
 }
 
 /**
  * Change Vault Password
+ * Returns real Supabase response instead of fabricated success (Fixes AS-02).
  */
 export async function updateVaultPassword(newPassword: string): Promise<{ success: boolean; error: string | null }> {
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "New password must be at least 6 characters." };
+  }
+
   try {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      console.warn("[AuthService] Password update API warning:", error.message);
+      return { success: false, error: error.message };
     }
     return { success: true, error: null };
   } catch (err: unknown) {
-    console.warn("[AuthService] Password updated locally:", err);
-    return { success: true, error: null };
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update password." };
   }
 }
 
 /**
  * Request Password Reset Email
+ * Returns real Supabase response (Fixes AS-02).
  */
 export async function sendPasswordResetEmail(email: string): Promise<{ success: boolean; error: string | null }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { success: false, error: "Please provide a valid email address." };
+  }
+
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
     if (error) {
-      console.warn("[AuthService] Password reset warning:", error.message);
+      return { success: false, error: error.message };
     }
     return { success: true, error: null };
-  } catch {
-    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to send reset email." };
   }
 }
 
 /**
  * Update Public Pen Name (Takhallus)
- * Modifies public_shayars while strictly keeping private_user_vault untouched.
+ * Returns real Supabase response (Fixes AS-02).
  */
 export async function updatePublicTakhallus(
   newTakhallus: string,
   meaning?: string
 ): Promise<{ success: boolean; penName: string; error: string | null }> {
   const cleanTakhallus = newTakhallus.trim().replace(/[\s-]+/g, "_");
-  if (cleanTakhallus.length < 3) {
-    return { success: false, penName: cleanTakhallus, error: "Pen name must be at least 3 characters." };
+  if (cleanTakhallus.length < 2 || cleanTakhallus.length > 40) {
+    return { success: false, penName: cleanTakhallus, error: "Pen name must be between 2 and 40 characters." };
   }
 
   try {
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user?.id) {
-      const { error } = await supabase
-        .from("public_shayars")
-        .update({
-          takhallus: cleanTakhallus,
-          takhallus_meaning: meaning || null,
-        })
-        .eq("auth_user_id", authData.user.id);
-
-      if (error) {
-        console.warn("[AuthService] Public takhallus update warning:", error.message);
-      }
+    const { data: authData, error: userError } = await supabase.auth.getUser();
+    if (userError || !authData.user?.id) {
+      return { success: false, penName: cleanTakhallus, error: "You must be signed in to change your pen name." };
     }
+
+    const { error } = await supabase
+      .from("public_shayars")
+      .update({
+        takhallus: cleanTakhallus,
+        takhallus_meaning: meaning?.trim() || null,
+      })
+      .eq("auth_user_id", authData.user.id);
+
+    if (error) {
+      return { success: false, penName: cleanTakhallus, error: error.message };
+    }
+
     return { success: true, penName: cleanTakhallus, error: null };
-  } catch {
-    return { success: true, penName: cleanTakhallus, error: null };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      penName: cleanTakhallus,
+      error: err instanceof Error ? err.message : "Failed to update pen name.",
+    };
   }
 }
 
+/**
+ * Full Account Erasure (Fixes PC-04)
+ * Executes delete_my_account_rpc to erase private vault and public profiles.
+ */
+export async function deleteMyAccount(): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await supabase.rpc("delete_my_account_rpc");
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    await supabase.auth.signOut();
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to delete account.",
+    };
+  }
+}
