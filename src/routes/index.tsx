@@ -11,20 +11,26 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry" },
+      { title: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
       {
         name: "description",
         content:
-          "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+          "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
       },
       { name: "author", content: "Dikshanti Jain" },
-      { property: "og:title", content: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry" },
+      { property: "og:title", content: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
       {
         property: "og:description",
         content:
-          "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+          "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
       },
       { property: "og:url", content: "https://ek-khawaab.vercel.app/" },
+      { name: "twitter:title", content: "Ek Khawaab — Created by Dikshanti Jain" },
+      {
+        name: "twitter:description",
+        content:
+          "Created by Dikshanti Jain. Anonymous Hindi, Urdu and Hinglish poetry sanctuary.",
+      },
     ],
   }),
   component: Home,
@@ -39,8 +45,8 @@ const FEATURES = [
 
 function Home() {
   useDocumentSEO({
-    title: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry",
-    description: "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+    title: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry",
+    description: "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
     canonicalPath: "/",
   });
   const [s, setS] = useState<Script>("hinglish");
@@ -150,9 +156,22 @@ function Home() {
             </Link>
             <button
               type="button"
-              onClick={() => {
-                navigator.clipboard?.writeText(window.location.origin + "/feed");
-                toast.success("Link copied to clipboard");
+              onClick={async () => {
+                const shareData = {
+                  title: "Ek Khawaab — Created by Dikshanti Jain",
+                  text: "Ek Khawaab — Hindi, Urdu & Hinglish Poetry Sanctuary created by Dikshanti Jain\n",
+                  url: window.location.origin,
+                };
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  try {
+                    await navigator.share(shareData);
+                    return;
+                  } catch {
+                    // user dismissed share sheet
+                  }
+                }
+                navigator.clipboard?.writeText(window.location.origin);
+                toast.success("Link copied! Created by Dikshanti Jain");
               }}
               className={cn(btnOutline, "py-1.5 px-3 text-xs sm:text-sm")}
             >
