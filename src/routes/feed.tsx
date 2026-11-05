@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, X, Search, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FILTERS, MOODS, matchFilter, poetId, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { fetchPoems, createPoem } from "@/lib/poems.service";
 import { detectScript, triggerAutoTranslation } from "@/lib/translation.service";
 import { PoemCard } from "@/components/PoemCard";
@@ -13,16 +14,30 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/feed")({
   head: () => ({
     meta: [
-      { title: "Explore Feed — Ek Khawaab" },
-      { name: "description", content: "Anonymous couplets, ghazals and nazms in Hinglish, Hindi, Urdu, and English." },
-      { property: "og:title", content: "Explore Feed — Ek Khawaab" },
-      { property: "og:description", content: "Read and appreciate anonymous poetry across multiple scripts." },
+      { title: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khawaab" },
+      {
+        name: "description",
+        content:
+          "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+      },
+      { property: "og:title", content: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khawaab" },
+      {
+        property: "og:description",
+        content:
+          "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+      },
+      { property: "og:url", content: "https://ek-khawaab.vercel.app/feed" },
     ],
   }),
   component: Feed,
 });
 
-function Feed() {
+export function Feed() {
+  useDocumentSEO({
+    title: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khawaab",
+    description: "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+    canonicalPath: "/feed",
+  });
   const { poems, script, set, updatePoem, user } = useStore();
   const [f, setF] = useState("All Moods");
   const [search, setSearch] = useState("");
@@ -201,6 +216,39 @@ function Feed() {
             <span className="font-mono text-[11px] font-medium text-muted-foreground sm:text-xs">Script:</span>
             <ScriptSwitch value={script} onChange={(s: Script) => set({ script: s })} />
           </div>
+        </div>
+
+        {/* High-Intent Topic Explorations */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] sm:text-xs">
+          <span className="font-mono text-subtle">Topics:</span>
+          <Link
+            to="/topic/$topic"
+            params={{ topic: "heartbreak-shayari" }}
+            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+          >
+            Heartbreak
+          </Link>
+          <Link
+            to="/topic/$topic"
+            params={{ topic: "two-line-shayari" }}
+            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+          >
+            Two-Line Couplets
+          </Link>
+          <Link
+            to="/topic/$topic"
+            params={{ topic: "loneliness-shayari" }}
+            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+          >
+            Tanhai (Solitude)
+          </Link>
+          <Link
+            to="/topic/$topic"
+            params={{ topic: "love-shayari" }}
+            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+          >
+            Mohabbat (Love)
+          </Link>
         </div>
       </div>
 

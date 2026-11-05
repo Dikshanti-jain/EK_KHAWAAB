@@ -3,6 +3,7 @@ export type TranslationStatus = "pending" | "completed" | "failed";
 
 export type Poem = {
   id: string;
+  slug?: string;
   takhallus: string;
   format: string;
   mood: string;
@@ -36,10 +37,32 @@ export const poetId = (name: string) => {
   return `#EK-${1000 + h}`;
 };
 
+export function getPoemSlug(poem: Poem): string {
+  if (poem.slug) return poem.slug;
+  const firstLine = poem.hinglish?.[0] || "";
+  const cleaned = firstLine
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return cleaned || poem.id;
+}
+
+export function findPoemBySlugOrId(slugOrId: string, list: Poem[] = POEMS): Poem | undefined {
+  if (!slugOrId) return undefined;
+  const norm = slugOrId.toLowerCase().trim();
+  return (
+    list.find((p) => p.slug === norm) ||
+    list.find((p) => p.id.toLowerCase() === norm) ||
+    list.find((p) => getPoemSlug(p) === norm)
+  );
+}
+
 export const POEMS: Poem[] = [
   // --- 1. User Featured: Ab kisi baat pe dil dukhta nahi hai mera ---
   {
     id: "p_pathar",
+    slug: "ab-kisi-baat-pe-dil-dukhta-nahi",
     takhallus: "Dil_e_Beqasoor",
     format: "Sher",
     mood: "Heartbreak & Hijr",
@@ -72,6 +95,7 @@ export const POEMS: Poem[] = [
   // --- 2. User Featured: Tum woh ladki thi jissey sab hasna sikhte the ---
   {
     id: "p_ladki",
+    slug: "tum-woh-ladki-thi",
     takhallus: "Shayar_e_Fitrat",
     format: "Nazm",
     mood: "Unspoken Love",
@@ -112,6 +136,7 @@ export const POEMS: Poem[] = [
   // --- 3. User Featured: Tere sath guzara har lamha (#betiiiiiiiiii) ---
   {
     id: "p_beti",
+    slug: "tere-saath-guzara-har-lamha",
     takhallus: "Dua_e_Qalb",
     format: "Qata",
     mood: "Unspoken Love",
@@ -152,6 +177,7 @@ export const POEMS: Poem[] = [
   // --- 4. User Featured: Uske chehre me is kadr noor tha ---
   {
     id: "p_noor",
+    slug: "ek-tarfa-mohabbat",
     takhallus: "Aashna_e_Dard",
     format: "Qata",
     mood: "Heartbreak & Hijr",
@@ -192,6 +218,7 @@ export const POEMS: Poem[] = [
   // --- 5. User Featured: Mirza Ghalib - Hazaron khwahishein aisi ---
   {
     id: "p_ghalib",
+    slug: "hazaron-khwahishein-aisi",
     takhallus: "Mirza_Ghalib",
     format: "Sher",
     mood: "Life & Philosophy",
@@ -224,6 +251,7 @@ export const POEMS: Poem[] = [
   // --- 6. User Featured: Khamoshi se bhi guftagu ho jaati hai ---
   {
     id: "p_guftagu",
+    slug: "khamoshi-ki-guftagu",
     takhallus: "Nigaah_e_Ulfat",
     format: "Sher",
     mood: "Unspoken Love",
@@ -256,6 +284,7 @@ export const POEMS: Poem[] = [
   // --- Original Seed Poems ---
   {
     id: "p1",
+    slug: "tera-tagaful-bhi-ek-ada-thi",
     takhallus: "Abr_e_Shab",
     format: "Sher",
     mood: "Unspoken Love",
@@ -272,6 +301,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p2",
+    slug: "hijr-ki-raat",
     takhallus: "Banjara_Khawaab",
     format: "Sher",
     mood: "Heartbreak & Hijr",
@@ -288,6 +318,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p3",
+    slug: "raat-ke-do-baje",
     takhallus: "Siyahi_Qaasid",
     format: "Qata",
     mood: "Late Night Tanhai",
@@ -304,6 +335,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p4",
+    slug: "zindagi-ka-falsafa",
     takhallus: "Khamosh_Musafir",
     format: "Sher",
     mood: "Life & Philosophy",
@@ -320,6 +352,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p5",
+    slug: "chai-aur-baarish",
     takhallus: "Shab_e_Farda",
     format: "Sher",
     mood: "Unspoken Love",
@@ -336,6 +369,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p6",
+    slug: "firaaq-ki-raah-mein",
     takhallus: "Rubaab_Nawaz",
     format: "Ghazal",
     mood: "Heartbreak & Hijr",
@@ -352,6 +386,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p7",
+    slug: "hum-woh-chiraagh-nahi",
     takhallus: "Baghi_Qalam",
     format: "Sher",
     mood: "Life & Philosophy",
@@ -368,6 +403,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p8",
+    slug: "adhuri-mulaqat",
     takhallus: "Lantern_Wala",
     format: "Nazm",
     mood: "Late Night Tanhai",
@@ -384,6 +420,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p9",
+    slug: "ranjish-hi-sahi",
     takhallus: "Dil_e_Nadaan",
     format: "Sher",
     mood: "Unspoken Love",
@@ -391,7 +428,7 @@ export const POEMS: Poem[] = [
     paper: "kora",
     hinglish: ["Ranjish hi sahi, ek baar to palat ke dekho", "Malal bhi tumhara ho to dil ko qubool hai"],
     hindi: ["रंजिश ही सही, एक बार तो पलट के देखो", "मलाल भी तुम्हारा हो तो दिल को क़ुबूल है"],
-    urdu: ["رنجش ہی سہی، ایک بار تو پلٹ کے دیکھو", "ملال بھی تمہارا ہو to dil ko qubool hai"],
+    urdu: ["رنجش ہی سہی، ایک بار تو پلٹ کے دیکھو", "ملال بھی تمہارا ہو تو دل کو قبول ہے"],
     english: ["Even in resentment, turn back once and look;", "if the regret is yours, my heart accepts it."],
     daad: 733,
     muqarrar: 155,
@@ -400,6 +437,7 @@ export const POEMS: Poem[] = [
   },
   {
     id: "p10",
+    slug: "shabnam-si-thi-teri-pehli-baat",
     takhallus: "Shabnam_Pari",
     format: "Qata",
     mood: "Unspoken Love",

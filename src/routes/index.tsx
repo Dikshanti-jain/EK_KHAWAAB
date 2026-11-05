@@ -1,21 +1,30 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, Flame, ArrowRight, ChevronLeft, ChevronRight, Bookmark, Linkedin, Mail } from "lucide-react";
+import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, Flame, ArrowRight, ChevronLeft, ChevronRight, Bookmark, Linkedin, Mail, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { POEMS, poetId, type Script } from "@/data/poems";
+import { POEMS, poetId, getPoemSlug, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { IdBadge, Pill, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ek Khawaab — Anonymous Poetry Sanctuary | Founded by Dikshanti Jain" },
-      { name: "description", content: "Write, read and share poetry in Hinglish, Hindi and Urdu anonymously under a pen name. Created by Dikshanti Jain, featuring an AI co-writer and HD card studio." },
+      { title: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry" },
+      {
+        name: "description",
+        content:
+          "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+      },
       { name: "author", content: "Dikshanti Jain" },
-      { property: "og:title", content: "Ek Khawaab — Anonymous Poetry Sanctuary by Dikshanti Jain" },
-      { property: "og:description", content: "Anonymous poetry in three scripts, an AI co-writer, card studio and secret letters. Created by Dikshanti Jain." },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app" },
+      { property: "og:title", content: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry" },
+      {
+        property: "og:description",
+        content:
+          "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+      },
+      { property: "og:url", content: "https://ek-khawaab.vercel.app/" },
     ],
   }),
   component: Home,
@@ -29,6 +38,11 @@ const FEATURES = [
 ];
 
 function Home() {
+  useDocumentSEO({
+    title: "Ek Khawaab – Hindi, Urdu & Hinglish Shayari, Ghazals & Poetry",
+    description: "Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+    canonicalPath: "/",
+  });
   const [s, setS] = useState<Script>("hinglish");
   const { liked, saved, set } = useStore();
   const nav = useNavigate();
@@ -125,6 +139,14 @@ function Home() {
             >
               <Palette className="size-3.5 sm:size-4" />
               <span>Studio</span>
+            </Link>
+            <Link
+              to="/poetry/$slug"
+              params={{ slug: getPoemSlug(demo) }}
+              className={cn(btnOutline, "py-1.5 px-3 text-xs sm:text-sm")}
+            >
+              <BookOpen className="size-3.5 sm:size-4" />
+              <span>Read Full</span>
             </Link>
             <button
               type="button"

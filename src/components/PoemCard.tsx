@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTriangle, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTriangle, CheckCircle2, Loader2, RotateCcw, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { poetId, type Poem, type Script } from "@/data/poems";
+import { poetId, getPoemSlug, type Poem, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
 import { togglePoemLike, togglePoemBookmark, addPoemComment, deletePoem } from "@/lib/poems.service";
 import { triggerAutoTranslation } from "@/lib/translation.service";
@@ -168,10 +168,12 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
           </div>
         )}
 
-        <Verse
-          lines={currentLines || canonicalLines}
-          script={currentLines ? script : canonicalScript}
-        />
+        <Link to="/poetry/$slug" params={{ slug: getPoemSlug(poem) }} className="block transition-opacity hover:opacity-90" title="Read full verse, script translations and tashreeh">
+          <Verse
+            lines={currentLines || canonicalLines}
+            script={currentLines ? script : canonicalScript}
+          />
+        </Link>
 
         {/* English poetic meaning if toggled and not already in English */}
         {meaning && script !== "english" && poem.english && poem.english.length > 0 && (
@@ -261,6 +263,17 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
             <Mail className="size-3.5 sm:size-4" />
             <span className="hidden md:inline">Letter</span>
           </button>
+
+          <Link
+            to="/poetry/$slug"
+            params={{ slug: getPoemSlug(poem) }}
+            className={act}
+            title="Read full verse, translations & tashreeh"
+            aria-label="Read full verse and translations"
+          >
+            <BookOpen className="size-3.5 sm:size-4" />
+            <span className="hidden sm:inline">Read Verse</span>
+          </Link>
         </div>
 
         <button

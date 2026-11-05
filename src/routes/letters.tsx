@@ -14,10 +14,14 @@ export const Route = createFileRoute("/letters")({
   }),
   head: () => ({
     meta: [
-      { title: "Secret Letters — Wax-Sealed Poems | Ek Khawaab" },
-      { name: "description", content: "Dedicate a poem anonymously with a wax seal and a 3-clue guessing cipher." },
-      { property: "og:title", content: "Secret Letters — Ek Khawaab" },
-      { property: "og:description", content: "Send a sealed poem. They have to guess it's you." },
+      { title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
+      { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
+      { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
+      { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
+      { property: "og:url", content: "https://ek-khawaab.vercel.app/letters" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ek-khawaab.vercel.app/letters" },
     ],
   }),
   component: Letters,
@@ -33,7 +37,12 @@ const DEMO: Letter = {
   from: "Shab_e_Farda",
 };
 
-function Letters() {
+export function Letters() {
+  useDocumentSEO({
+    title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab",
+    description: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles.",
+    canonicalPath: "/letters",
+  });
   const { id: queryLetterId } = Route.useSearch();
   const { studio, letters, set, user } = useStore();
   const [tab, setTab] = useState<"send" | "preview">("send");

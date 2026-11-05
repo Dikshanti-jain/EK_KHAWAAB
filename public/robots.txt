@@ -1,20 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /profile
-Disallow: /auth
-Disallow: /letters?*
-
-User-agent: Googlebot
-Allow: /
-Disallow: /profile
-Disallow: /auth
-
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-Disallow: /profile
-Disallow: /auth
+Disallow: /private-vault
+Disallow: /api/
 
 Sitemap: https://ek-khawaab.vercel.app/sitemap.xml

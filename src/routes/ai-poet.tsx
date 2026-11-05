@@ -35,6 +35,7 @@ import {
 } from "@/lib/shayar.functions";
 import { POEMS, type Script } from "@/data/poems";
 import { useStore, uid } from "@/lib/store";
+import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, btnRoyal, card, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 import { highlightSeeds } from "@/lib/seeds";
@@ -766,6 +767,56 @@ export function AiPoet() {
           )}
         </div>
       </div>
+
+      {/* Below-the-Fold People-First Editorial Guide */}
+      <section className="mt-20 pt-16 border-t border-hairline max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <span className="rounded-full bg-wash px-3.5 py-1 text-xs font-semibold tracking-wider text-royal uppercase">
+            Poetic Craft &amp; Guide
+          </span>
+          <h2 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold text-ink">
+            How to Write Meaningful Hindi, Urdu &amp; Hinglish Shayari
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+            A comprehensive guide to understanding couplet structure, emotional authenticity, and how word-seeded AI co-writing helps your feelings take flight.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Card 1: Sher vs. Ghazal vs. Nazm */}
+          <div className={cn(card, "p-6 space-y-3.5")}>
+            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-wash text-royal">
+              <BookOpen className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Sher vs. Ghazal vs. Nazm</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              A <b>Sher (couplet)</b> consists of two balanced lines: the <i>Misra-e-Ula</i> (opening premise) and the <i>Misra-e-Sani</i> (emotional punchline). A <b>Ghazal</b> strings multiple autonomous couplets bound by a shared rhyme (<i>Kaafiya</i>) and refrain (<i>Radif</i>), starting with a <i>Matla</i> and concluding with the poet's signature <i>Maqta</i>. A <b>Nazm</b>, in contrast, follows a single continuous theme from beginning to end.
+            </p>
+          </div>
+
+          {/* Card 2: How Word-Seeded AI Poetry Works */}
+          <div className={cn(card, "p-6 space-y-3.5")}>
+            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-wash text-royal">
+              <Sparkles className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">How Word-Seeded Poetry Works</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Instead of generic prompts, Ek Khawaab extracts the emotional gravity of your personal seed words (e.g., <i>Chai, Baarish, Khidki, December</i>). The AI analyzes their metaphorical resonance, aligns them into classical meter, and renders authentic couplets simultaneously across Roman Hinglish, Devanagari Hindi, and Nastaliq Urdu without diluting their soulful intimacy.
+            </p>
+          </div>
+
+          {/* Card 3: Understanding Poetic Meter (Beher) */}
+          <div className={cn(card, "p-6 space-y-3.5")}>
+            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-wash text-royal">
+              <Feather className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Poetic Meter (Beher) &amp; Styles</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Meter (<i>Beher</i>) dictates the rhythm and syllable weight of each line. Whether composing in the melancholic, conversational disillusionment of <b>Jaun Elia</b>, the delicate everyday imagery of <b>Gulzar</b>, or the profound philosophical grief of <b>Mirza Ghalib</b>, understanding rhythm ensures your verse lingers in the listener's memory long after it is spoken.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Send } from "lucide-react";
+import { Download, Send, Sparkles, BookOpen, Layers, Type, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { POEMS, poetId, type Script } from "@/data/poems";
 import { useStore, uid } from "@/lib/store";
@@ -8,12 +8,24 @@ import { PageHead, ScriptSwitch, btnOutline, btnPrimary, card, chip, input, labe
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/studio")({
-  head: () => ({ meta: [
-    { title: "Card Studio — Download Poetry Cards | Ek Khawaab" },
-    { name: "description", content: "Design and download HD poetry cards for Instagram stories, posts and portraits." },
-    { property: "og:title", content: "Card Studio — Ek Khawaab" },
-    { property: "og:description", content: "Turn any poem into a high-res 9:16, 1:1 or 4:5 card." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab" },
+      {
+        name: "description",
+        content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
+      },
+      { property: "og:title", content: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab" },
+      {
+        property: "og:description",
+        content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
+      },
+      { property: "og:url", content: "https://ek-khawaab.vercel.app/studio" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ek-khawaab.vercel.app/studio" },
+    ],
+  }),
   component: Studio,
 });
 
@@ -67,7 +79,12 @@ function draw(c: HTMLCanvasElement, o: { ratio: Ratio; theme: Theme; lines: stri
   x.fillText("ekkhawaab.in", W / 2, H - 80); x.globalAlpha = 1;
 }
 
-function Studio() {
+export function Studio() {
+  useDocumentSEO({
+    title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab",
+    description: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
+    canonicalPath: "/studio",
+  });
   const { studio, set, user } = useStore();
   const nav = useNavigate();
   const seed = POEMS[1]!;
@@ -142,6 +159,54 @@ function Studio() {
           </div>
         </div>
       </div>
+
+      {/* BELOW-THE-FOLD PEOPLE-FIRST EDITORIAL CONTENT (TASK 4) */}
+      <section className="mt-20 pt-16 border-t border-hairline">
+        <div className="max-w-3xl">
+          <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
+            DESIGN GUIDE · SHAYARI CARD STUDIO
+          </span>
+          <h2 className="text-xl sm:text-2xl font-semibold text-ink">Designing Aesthetic Poetry Cards for Instagram Stories &amp; Posts</h2>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            Turn any couplet, sher, or nazm into a publication-ready visual card. Here is how poets craft cards that look like timeless literary prints.
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Guide Card 1: Aspect Ratios */}
+          <div className={cn(card, "p-6 space-y-3")}>
+            <div className="grid size-10 place-items-center rounded-xl bg-wash text-royal">
+              <Layers className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Choosing the Right Aspect Ratio</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <b>9:16 Story (1080×1920)</b> is calibrated for full-screen Instagram Stories, WhatsApp Status, and vertical mobile reading. <b>1:1 Square (1080×1080)</b> is ideal for Instagram feed carousels, and <b>4:5 Portrait (1080×1350)</b> commands the maximum vertical feed real estate.
+            </p>
+          </div>
+
+          {/* Guide Card 2: Typography & Script Pairing */}
+          <div className={cn(card, "p-6 space-y-3")}>
+            <div className="grid size-10 place-items-center rounded-xl bg-wash text-royal">
+              <Type className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Nastaliq & Serif Typography</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When rendering Urdu Nastaliq (with <code>dir="rtl"</code>), the canvas applies right-to-left layout and generous line-height to let cascading diacritics breathe. Hinglish pairs with <i>Playfair Display</i>, and Hindi renders in authentic <i>Noto Serif Devanagari</i>.
+            </p>
+          </div>
+
+          {/* Guide Card 3: Palette Contrast & Anonymous Attribution */}
+          <div className={cn(card, "p-6 space-y-3")}>
+            <div className="grid size-10 place-items-center rounded-xl bg-wash text-royal">
+              <ShieldCheck className="size-5" />
+            </div>
+            <h3 className="text-base font-semibold text-ink">Contrast & Anonymous Pen Name</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              High-contrast palettes (Royal Ink Blue, Velvet Crimson, Soft Ivory, and Pure White) ensure readability on OLED and Retina displays. The watermark binds your public pen name and unique #EK-ID, keeping your private legal name zero-leak protected.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

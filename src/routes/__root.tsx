@@ -44,7 +44,7 @@ const JSON_LD_SCHEMA = {
     {
       "@type": "WebSite",
       "@id": "https://ek-khawaab.vercel.app/#website",
-      "url": "https://ek-khawaab.vercel.app",
+      "url": "https://ek-khawaab.vercel.app/",
       "name": "Ek Khawaab",
       "alternateName": [
         "एक ख़्वाब",
@@ -59,7 +59,35 @@ const JSON_LD_SCHEMA = {
       },
       "creator": {
         "@id": "https://ek-khawaab.vercel.app/#creator"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://ek-khawaab.vercel.app/feed?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
       }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://ek-khawaab.vercel.app/#webapp",
+      "name": "Ek Khawaab App",
+      "url": "https://ek-khawaab.vercel.app/",
+      "applicationCategory": "EntertainmentApplication",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR"
+      },
+      "featureList": [
+        "Word-to-Verse AI Co-Writer",
+        "1080p High-Resolution Card Studio (9:16 & 1:1)",
+        "Instant Multi-Script Reader (Hindi, Urdu, Hinglish)",
+        "Khawaab Khat Wax-Sealed Secret Letters",
+        "Comprehensive Lughat Urdu Poetry Dictionary"
+      ]
     },
     {
       "@type": "Person",
@@ -84,7 +112,7 @@ const JSON_LD_SCHEMA = {
       "@type": "Organization",
       "@id": "https://ek-khawaab.vercel.app/#organization",
       "name": "Ek Khawaab",
-      "url": "https://ek-khawaab.vercel.app",
+      "url": "https://ek-khawaab.vercel.app/",
       "founder": {
         "@id": "https://ek-khawaab.vercel.app/#creator"
       },
@@ -93,6 +121,106 @@ const JSON_LD_SCHEMA = {
         "email": "jaindikahanti@gmail.com",
         "contactType": "Founder & Customer Support"
       }
+    },
+    {
+      "@type": "ItemList",
+      "@id": "https://ek-khawaab.vercel.app/#featured-shayaris",
+      "name": "Featured Couplets & Shayaris",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": {
+            "@type": "CreativeWork",
+            "name": "Ab kisi baat pe dil dukhta nahi",
+            "text": "Ab kisi baat pe dil dukhta nahi, shayad patthar ho gaya hai. / Roz ek nayi ummeed jagti hai, roz ek khwaab so gaya hai.",
+            "author": { "@type": "Person", "name": "Faiz-e-Khawaab" },
+            "inLanguage": "hi-Latn"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "item": {
+            "@type": "CreativeWork",
+            "name": "Har subah ek nayi subah hoti hai",
+            "text": "Har subah ek nayi subah hoti hai, par teri yaad purani rehti hai. / Aankhon mein aasoon toh sookh gaye, par dil mein kahani rehti hai.",
+            "author": { "@type": "Person", "name": "Saahir-e-Lafz" },
+            "inLanguage": "hi-Latn"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": {
+            "@type": "CreativeWork",
+            "name": "Kuch toh baat thi uski khamoshi mein",
+            "text": "Kuch toh baat thi uski khamoshi mein, jo baatein cheekh cheekh kar bhi na keh saki. / Hum toh khade rahe usi mod par, par zindagi aage beh gayi.",
+            "author": { "@type": "Person", "name": "Mirza-e-Raftaar" },
+            "inLanguage": "hi-Latn"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "item": {
+            "@type": "CreativeWork",
+            "name": "Wo jo kehte the humein kabhi chhodenge nahi",
+            "text": "Wo jo kehte the humein kabhi chhodenge nahi, aaj unki parchaayi bhi nazar nahi aati. / Hum toh chup chap sah gaye har sitam, ab kisi se koi shikayat nazar nahi aati.",
+            "author": { "@type": "Person", "name": "Zehra" },
+            "inLanguage": "hi-Latn"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "item": {
+            "@type": "CreativeWork",
+            "name": "Tanhaiyon mein aksar tera khayal aata hai",
+            "text": "Tanhaiyon mein aksar tera khayal aata hai, jaise registaan mein koi thandi hawa chale. / Humne toh maanga tha sirf tera saath, par kismat ko na jaane kya manzoor tha.",
+            "author": { "@type": "Person", "name": "Danish" },
+            "inLanguage": "hi-Latn"
+          }
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://ek-khawaab.vercel.app/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Ek Khawaab?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ek Khawaab is an anonymous poetry and shayari sanctuary where poets and readers share, explore, and co-write couplets, ghazals, and nazms in Hinglish, Hindi, and Urdu under a pen name with full identity protection."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How to read Shayari in Hinglish, Hindi, and Urdu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ek Khawaab features an Instant Multi-Script Reader that allows you to seamlessly toggle any poem or couplet between Hinglish (Roman script), Devanagari Hindi, and Nastaliq Urdu with a single click."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How to generate custom Shayari using AI with my own words?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Visit our AI Poet co-writer at /ai-poet, provide 3 to 5 of your own emotional seed words, select a situation and mood, and our literary AI crafts metered shayari retaining your exact feelings."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How to download high-resolution 9:16 Shayari cards for Instagram?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Navigate to the Card Studio at /card-studio, select any shayari or write your own, customize typographic themes, backgrounds, and aspect ratios (9:16 vertical or 1:1 square), and download crystal-clear 1080p images ready for Instagram Stories, WhatsApp Status, or feeds."
+          }
+        }
+      ]
     }
   ]
 };
@@ -109,6 +237,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "publisher", content: "Dikshanti Jain" },
       { name: "keywords", content: "Ek Khawaab, Dikshanti Jain, poetry sanctuary, anonymous poetry, hindi shayari, urdu poetry, hinglish poetry, sher o shayari, ghazals, nazm, card studio, ai poet, lughat dictionary, poetry community" },
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+      { name: "googlebot", content: "index, follow" },
       { name: "google-site-verification", content: "google83c1baacd5b87a86" },
       { property: "og:site_name", content: "Ek Khawaab" },
       { property: "og:type", content: "website" },
