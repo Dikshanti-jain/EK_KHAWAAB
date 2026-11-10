@@ -14,8 +14,25 @@ export type SignUpPayload = {
 
 export type AuthResponse = {
   user: User | null;
+  needsEmailConfirmation?: boolean;
+  email?: string;
   error: string | null;
 };
+
+/**
+ * Safely resolves the live redirect URL for auth email operations (confirmation, recovery).
+ * Always pulls from the current browser origin at runtime, falling back to verified environment variables in SSR.
+ */
+export function getAuthRedirectUrl(path: string = "/auth"): string {
+  let origin = "https://ek-khawaab.vercel.app";
+  if (typeof window !== "undefined" && window.location?.origin) {
+    origin = window.location.origin;
+  } else if (typeof process !== "undefined" && process.env) {
+    origin = process.env.VITE_SITE_URL || process.env.SITE_URL || origin;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${origin.replace(/\/+$/, "")}${cleanPath}`;
+}
 
 /**
  * Split-Vault Sign Up (Email & Password Auth)
@@ -38,11 +55,14 @@ export async function signUpWithVault(payload: SignUpPayload): Promise<AuthRespo
   }
 
   try {
-    // 1. Supabase Auth registration
+    const confirmationRedirect = `${getAuthRedirectUrl("/auth")}?mode=signin&confirmed=true`;
+
+    // 1. Supabase Auth registration with explicit live emailRedirectTo
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: cleanEmail,
       password: payload.password,
       options: {
+        emailRedirectTo: confirmationRedirect,
         data: {
           takhallus: cleanTakhallus,
           shayar_uid: cleanUid,
@@ -62,8 +82,17 @@ export async function signUpWithVault(payload: SignUpPayload): Promise<AuthRespo
       return { user: null, error: "Failed to create user account. Please try again." };
     }
 
-    // 2. Ensure private_user_vault and public_shayars records exist
-    // The DB trigger handle_new_authenticated_user auto-provisions, but we upsert defensively
+    // When email confirmation is required by Supabase, session is null until user clicks email link
+    if (!authData.session) {
+      return {
+        user: null,
+        needsEmailConfirmation: true,
+        email: cleanEmail,
+        error: null,
+      };
+    }
+
+    // 2. Ensure private_user_vault and public_shayars records exist if immediately authenticated
     await supabase.from("private_user_vault").upsert({
       auth_user_id: authUserId,
       real_full_name: payload.fullName.trim(),
@@ -96,6 +125,7 @@ export async function signUpWithVault(payload: SignUpPayload): Promise<AuthRespo
  * Sign In with Email & Password
  * Strict verification against Supabase Auth (Fixes RT-03, AS-02).
  * Rejects unknown users and invalid passwords with real error messages.
+ * Includes automatic self-healing profile sync if public_shayars is missing.
  */
 export async function signInWithIdentifier(
   identifier: string,
@@ -125,13 +155,22 @@ export async function signInWithIdentifier(
     });
 
     if (error || !data.user || !data.session) {
+      const errMsg = error?.message || "Invalid email or password.";
+      if (errMsg.toLowerCase().includes("email not confirmed")) {
+        return {
+          user: null,
+          needsEmailConfirmation: true,
+          email: cleanIdent.toLowerCase(),
+          error: "Your email address has not been confirmed yet. Please verify your email via the link sent to your inbox, or click 'Resend' below.",
+        };
+      }
       return {
         user: null,
-        error: error?.message || "Invalid email or password.",
+        error: errMsg,
       };
     }
 
-    // Fetch public shayar profile (using public_shayar_directory or public_shayars)
+    // Fetch public shayar profile
     const { data: profile } = await supabase
       .from("public_shayars")
       .select("shayar_uid, takhallus")
@@ -139,13 +178,34 @@ export async function signInWithIdentifier(
       .maybeSingle();
 
     const meta = data.user.user_metadata || {};
-    const penName = profile?.takhallus || (meta["takhallus"] as string | undefined) || cleanIdent.split("@")[0]!.replace(/\W/g, "_");
-    const poetId = profile?.shayar_uid || (meta["shayar_uid"] as string | undefined) || `#EK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    let penName = profile?.takhallus;
+    let poetId = profile?.shayar_uid;
+
+    // Self-healing: If public_shayars record is missing in database, create it now!
+    // Since the user now has an active authenticated session, RLS allows this upsert.
+    if (!profile || !profile.shayar_uid) {
+      penName = (meta["takhallus"] as string | undefined)?.trim() || cleanIdent.split("@")[0]!.replace(/\W/g, "_");
+      poetId = (meta["shayar_uid"] as string | undefined) || `#EK-${data.user.id.slice(0, 6).toUpperCase()}`;
+
+      await supabase.from("private_user_vault").upsert({
+        auth_user_id: data.user.id,
+        real_full_name: (meta["full_name"] as string | undefined)?.trim() || "Anonymous Poet",
+        email: data.user.email || cleanIdent.toLowerCase(),
+      }, { onConflict: "auth_user_id" });
+
+      await supabase.from("public_shayars").upsert({
+        auth_user_id: data.user.id,
+        shayar_uid: poetId,
+        takhallus: penName,
+        takhallus_meaning: (meta["takhallus_meaning"] as string | undefined) || null,
+        vibe_category: (meta["vibe_category"] as string | undefined) || null,
+      }, { onConflict: "auth_user_id" });
+    }
 
     return {
       user: {
-        penName,
-        poetId,
+        penName: penName || "Musafir",
+        poetId: poetId || `#EK-${data.user.id.slice(0, 6).toUpperCase()}`,
       },
       error: null,
     };
@@ -188,8 +248,7 @@ export async function updateVaultPassword(newPassword: string): Promise<{ succes
 }
 
 /**
- * Request Password Reset Email
- * Returns real Supabase response (Fixes AS-02).
+ * Request Password Reset Email with explicit live site redirectTo
  */
 export async function sendPasswordResetEmail(email: string): Promise<{ success: boolean; error: string | null }> {
   const cleanEmail = email.trim().toLowerCase();
@@ -198,13 +257,43 @@ export async function sendPasswordResetEmail(email: string): Promise<{ success: 
   }
 
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    const redirectUrl = `${getAuthRedirectUrl("/auth")}?mode=reset`;
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: redirectUrl,
+    });
     if (error) {
       return { success: false, error: error.message };
     }
     return { success: true, error: null };
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to send reset email." };
+  }
+}
+
+/**
+ * Resend Email Confirmation Link with explicit live site emailRedirectTo
+ */
+export async function resendConfirmationEmail(email: string): Promise<{ success: boolean; error: string | null }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { success: false, error: "Please provide a valid email address." };
+  }
+
+  try {
+    const redirectUrl = `${getAuthRedirectUrl("/auth")}?mode=signin&confirmed=true`;
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, error: null };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to resend confirmation email." };
   }
 }
 

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from "react";
 import { POEMS, type Poem, type Script } from "@/data/poems";
+import { supabase } from "@/integrations/supabase/client";
 
 export type User = {
   penName: string;
@@ -91,6 +92,69 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.warn("[Store] Failed to load local storage preferences:", err);
     }
     setReady(true);
+  }, []);
+
+  // Synchronize authenticated session state from Supabase Auth
+  useEffect(() => {
+    let mounted = true;
+
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted || !session?.user) return;
+      supabase
+        .from("public_shayars")
+        .select("shayar_uid, takhallus")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle()
+        .then(({ data: profile }) => {
+          if (!mounted) return;
+          const meta = session.user.user_metadata || {};
+          const penName = profile?.takhallus || (meta["takhallus"] as string | undefined) || session.user.email?.split("@")[0] || "Musafir";
+          const poetId = profile?.shayar_uid || (meta["shayar_uid"] as string | undefined) || `#EK-${session.user.id.slice(0, 6).toUpperCase()}`;
+
+          setS((prev) => {
+            if (prev.user?.penName === penName && prev.user?.poetId === poetId) return prev;
+            return {
+              ...prev,
+              user: { penName, poetId },
+            };
+          });
+        });
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        if (!session?.user) return;
+        const { data: profile } = await supabase
+          .from("public_shayars")
+          .select("shayar_uid, takhallus")
+          .eq("auth_user_id", session.user.id)
+          .maybeSingle();
+
+        const meta = session.user.user_metadata || {};
+        const penName = profile?.takhallus || (meta["takhallus"] as string | undefined) || session.user.email?.split("@")[0] || "Musafir";
+        const poetId = profile?.shayar_uid || (meta["shayar_uid"] as string | undefined) || `#EK-${session.user.id.slice(0, 6).toUpperCase()}`;
+
+        if (mounted) {
+          setS((prev) => {
+            if (prev.user?.penName === penName && prev.user?.poetId === poetId) return prev;
+            return {
+              ...prev,
+              user: { penName, poetId },
+            };
+          });
+        }
+      } else if (event === "SIGNED_OUT") {
+        if (mounted) {
+          setS((prev) => (prev.user ? { ...prev, user: null } : prev));
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Save sanitized preferences (NEVER save PII or the raw poems corpus to localStorage)

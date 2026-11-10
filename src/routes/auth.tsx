@@ -3,13 +3,20 @@ import { useEffect, useState } from "react";
 import { Lock, RefreshCw, Shuffle, Sparkles, KeyRound, Mail, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore, randomPoetId, type User } from "@/lib/store";
-import { signUpWithVault, signInWithIdentifier, sendPasswordResetEmail } from "@/lib/auth.service";
+import {
+  signUpWithVault,
+  signInWithIdentifier,
+  sendPasswordResetEmail,
+  resendConfirmationEmail,
+  updateVaultPassword,
+} from "@/lib/auth.service";
 import { IdBadge, btnOutline, btnPrimary, chip, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => ({
-    mode: s["mode"] === "signin" ? ("signin" as const) : ("signup" as const),
+    mode: s["mode"] === "signin" ? ("signin" as const) : s["mode"] === "reset" ? ("reset" as const) : ("signup" as const),
+    confirmed: s["confirmed"] === "true",
   }),
   head: () => ({
     meta: [
@@ -69,7 +76,7 @@ const TAKEN = ["abr_e_shab", "siyahi_qaasid", "khamosh_musafir"];
 const shuffle = <T,>(a: readonly T[]) => [...a].sort(() => Math.random() - 0.5);
 
 function Auth() {
-  const { mode } = Route.useSearch();
+  const { mode, confirmed } = Route.useSearch();
   const { set } = useStore();
   const nav = useNavigate();
   const [step, setStep] = useState(1);
@@ -82,10 +89,37 @@ function Auth() {
   const [signin, setSignin] = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
 
+  // Email Confirmation State
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  // Password Reset / Recovery state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetUpdating, setResetUpdating] = useState(false);
+
   // Forgot password modal state
   const [forgotModal, setForgotModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
+
+  // Handle confirmed flag or recovery token in hash
+  useEffect(() => {
+    if (confirmed) {
+      toast.success("Email confirmed successfully! You can now sign in with your password.");
+    }
+    if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
+      nav({ to: "/auth", search: { mode: "reset" } });
+    }
+  }, [confirmed, nav]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const suggestions = (order ? shuffle(VIBES[vibe] ?? []) : VIBES[vibe] ?? []).slice(0, 6);
   const norm = pen.trim().replace(/[\s-]+/g, "_");
@@ -105,7 +139,7 @@ function Auth() {
   const handleSignIn = async () => {
     const ident = signin.identifier.trim();
     if (!ident) {
-      toast.error("Please enter your email, phone, or Shayar ID.");
+      toast.error("Please enter your registered email address.");
       return;
     }
     setLoading(true);
@@ -114,6 +148,9 @@ function Auth() {
       if (res.user) {
         finish(res.user);
       } else {
+        if (res.needsEmailConfirmation) {
+          setPendingConfirmationEmail(res.email || ident);
+        }
         toast.error(res.error || "Unable to sign in. Please verify your credentials.");
       }
     } catch {
@@ -136,7 +173,11 @@ function Auth() {
         shayarUid: id,
         vibeCategory: vibe,
       });
-      if (res.user) {
+
+      if (res.needsEmailConfirmation) {
+        setPendingConfirmationEmail(res.email || priv.email);
+        toast.success("Confirmation link sent to your email!");
+      } else if (res.user) {
         finish(res.user);
       } else {
         toast.error(res.error || "Sign up could not be completed.");
@@ -145,6 +186,46 @@ function Auth() {
       toast.error("Sign up encountered an issue. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!pendingConfirmationEmail || resendCooldown > 0) return;
+    setResending(true);
+    try {
+      const res = await resendConfirmationEmail(pendingConfirmationEmail);
+      if (res.success) {
+        toast.success("A fresh confirmation link has been sent to your email!");
+        setResendCooldown(60);
+      } else {
+        toast.error(res.error || "Could not resend confirmation email.");
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New password and confirmation do not match.");
+      return;
+    }
+    setResetUpdating(true);
+    try {
+      const res = await updateVaultPassword(newPassword);
+      if (res.success) {
+        toast.success("Your vault password has been updated! Welcome back.");
+        nav({ to: "/feed" });
+      } else {
+        toast.error(res.error || "Could not update password.");
+      }
+    } finally {
+      setResetUpdating(false);
     }
   };
 
@@ -178,295 +259,402 @@ function Auth() {
     <div className="bg-secondary px-3.5 py-6 sm:px-6 sm:py-12 md:py-16">
       <div className="mx-auto max-w-xl">
         <div className="rounded-2xl sm:rounded-3xl border border-hairline bg-card p-4 sm:p-8 shadow-float md:p-12">
-          {/* Top Switcher: Sign Up vs Sign In */}
-          <div className="mb-6 sm:mb-8 flex gap-1.5 sm:gap-2 rounded-full bg-muted p-1 text-xs sm:text-sm font-medium">
-            <button
-              onClick={() => nav({ to: "/auth", search: { mode: "signup" } })}
-              className={cn(
-                "flex-1 rounded-full py-2 sm:py-2.5 transition",
-                mode === "signup" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
-              )}
-            >
-              Get Started (Sign Up)
-            </button>
-            <button
-              onClick={() => nav({ to: "/auth", search: { mode: "signin" } })}
-              className={cn(
-                "flex-1 rounded-full py-2 sm:py-2.5 transition",
-                mode === "signin" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
-              )}
-            >
-              Sign In (Wapsi)
-            </button>
-          </div>
-
-          {/* SIGN IN FLOW */}
-          {mode === "signin" ? (
-            <div className="space-y-5">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khawaab</h1>
-                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                  Enter with your registered email, phone number, or unique Shayar ID.
-                </p>
-              </div>
-
-              <div>
-                <label className={label}>Email, Phone Number, or Shayar ID</label>
-                <input
-                  className={input}
-                  placeholder="name@domain.com, +91..., or #EK-8492"
-                  value={signin.identifier}
-                  onChange={(e) => setSignin({ ...signin, identifier: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className={label}>Vault Password</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotModal(true);
-                      setResetSent(false);
-                      setResetEmail("");
-                    }}
-                    className="text-xs font-semibold text-royal hover:underline"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <input
-                  type="password"
-                  className={input}
-                  placeholder="Enter your password"
-                  value={signin.password}
-                  onChange={(e) => setSignin({ ...signin, password: e.target.value })}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                />
-              </div>
-
-              <button
-                disabled={loading || !signin.identifier.trim() || signin.password.length < 4}
-                onClick={handleSignIn}
-                className={cn(btnPrimary, "w-full py-3 sm:py-3.5 text-sm sm:text-base")}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="size-4 animate-spin" /> Entering Private Vault...
-                  </span>
-                ) : (
-                  "Sign In to Private Vault"
-                )}
-              </button>
-
-              <div className="relative my-4 text-center">
-                <span className="bg-card px-3 text-xs text-subtle">or</span>
-                <div className="absolute inset-x-0 top-1/2 -z-10 border-t border-hairline" />
-              </div>
-
-              <button onClick={demo} className={cn(btnOutline, "w-full py-2.5 sm:py-3 text-xs sm:text-sm")}>
-                ⚡ One-Click Instant Guest Demo Login
-              </button>
-            </div>
-          ) : step === 1 ? (
-            /* SIGN UP - STEP 1 (Private Tijori Vault Details) */
+          {/* PASSWORD RECOVERY MODE */}
+          {mode === "reset" ? (
             <div className="space-y-6">
               <div>
                 <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
-                  STEP 1 OF 2 · PRIVATE VAULT
+                  VAULT KEY RECOVERY
                 </span>
-                <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Create Your Private Account</h1>
-              </div>
-
-              <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-sm text-wash-foreground">
-                <p className="flex items-center gap-2 font-semibold">
-                  <Lock className="size-4" /> 100% Zero-Leak Privacy Guarantee
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Your real name, email, and phone number are strictly encrypted in our private vault and NEVER shown to
-                  other readers, on cards, in comments, or in secret letters.
+                <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Set New Vault Password</h1>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                  Choose a secure new key to protect your private vault and writings.
                 </p>
               </div>
 
-              <div className="space-y-4">
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
                 <div>
-                  <label className={label}>Full Name (Private)</label>
-                  <input
-                    className={input}
-                    placeholder="Your legal or real name"
-                    value={priv.fullName}
-                    onChange={(e) => setPriv({ ...priv, fullName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className={label}>Email Address (Private)</label>
-                  <input
-                    type="email"
-                    className={input}
-                    placeholder="you@domain.com"
-                    value={priv.email}
-                    onChange={(e) => setPriv({ ...priv, email: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className={label}>Phone Number (Private)</label>
-                  <input
-                    type="tel"
-                    className={input}
-                    value={priv.phone}
-                    onChange={(e) => setPriv({ ...priv, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-                <div>
-                  <label className={label}>Create Vault Password</label>
+                  <label className={label}>New Password</label>
                   <input
                     type="password"
+                    required
                     className={input}
-                    value={priv.password}
-                    onChange={(e) => setPriv({ ...priv, password: e.target.value })}
                     placeholder="At least 6 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </div>
-              </div>
+                <div>
+                  <label className={label}>Confirm New Password</label>
+                  <input
+                    type="password"
+                    required
+                    className={input}
+                    placeholder="Re-type new password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  />
+                </div>
 
-              <div className="flex flex-wrap gap-3 pt-2">
                 <button
-                  disabled={!step1ok}
-                  onClick={() => setStep(2)}
-                  className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
+                  disabled={resetUpdating || newPassword.length < 6 || newPassword !== confirmNewPassword}
+                  type="submit"
+                  className={cn(btnPrimary, "w-full py-3.5 text-base")}
                 >
-                  Continue to Pen Name Selection →
+                  {resetUpdating ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="size-4 animate-spin" /> Updating Key...
+                    </span>
+                  ) : (
+                    "Update Password & Enter Feed →"
+                  )}
                 </button>
-                <button onClick={demo} className={cn(btnOutline, "py-3 text-sm")}>
-                  Instant Demo
+              </form>
+            </div>
+          ) : pendingConfirmationEmail ? (
+            /* EMAIL CONFIRMATION PENDING NOTICE */
+            <div className="space-y-6 text-center py-4">
+              <div className="mx-auto grid size-16 place-items-center rounded-full bg-wash text-royal shadow-sm">
+                <Mail className="size-8" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Check Your Email</h1>
+                <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                  We sent a secure activation link to:
+                </p>
+                <p className="mt-1 font-mono text-sm sm:text-base font-semibold text-royal">
+                  {pendingConfirmationEmail}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-xs leading-relaxed text-muted-foreground text-left">
+                <p className="font-semibold text-wash-foreground mb-1">What to do next:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Open your email inbox (check Spam or Updates if not visible).</li>
+                  <li>Click the <b>Confirm your mail</b> link.</li>
+                  <li>You will be automatically verified and logged in!</li>
+                </ol>
+              </div>
+              <div className="space-y-3 pt-2">
+                <button
+                  disabled={resending || resendCooldown > 0}
+                  onClick={handleResendConfirmation}
+                  className={cn(btnOutline, "w-full py-3 text-xs sm:text-sm")}
+                >
+                  {resending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="size-4 animate-spin" /> Sending Link...
+                    </span>
+                  ) : resendCooldown > 0 ? (
+                    `Resend Email (${resendCooldown}s)`
+                  ) : (
+                    "Resend Confirmation Email"
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setPendingConfirmationEmail(null);
+                    nav({ to: "/auth", search: { mode: "signin" } });
+                  }}
+                  className={cn(btnPrimary, "w-full py-3 text-xs sm:text-sm")}
+                >
+                  Back to Sign In
                 </button>
               </div>
             </div>
           ) : (
-            /* SIGN UP - STEP 2 (Public Poet Identity) */
-            <div className="space-y-7">
-              <div>
-                <span className="rounded-full bg-blush px-3 py-1 font-mono text-xs font-semibold text-crimson">
-                  STEP 2 OF 2 · PUBLIC IDENTITY
-                </span>
-                <h1 className="mt-3 text-3xl font-semibold text-ink">Choose Your Public Pen Name</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  This pen name and your unique poet ID are all the world will ever see.
-                </p>
-              </div>
-
-              {/* Unique ID Badge & Regenerate */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Your Unique Shayar ID:
-                  </span>
-                  <span className="rounded-full bg-wash px-3.5 py-1 font-mono text-sm font-bold text-royal">
-                    {id}
-                  </span>
-                </div>
+            <>
+              {/* Top Switcher: Sign Up vs Sign In */}
+              <div className="mb-6 sm:mb-8 flex gap-1.5 sm:gap-2 rounded-full bg-muted p-1 text-xs sm:text-sm font-medium">
                 <button
-                  type="button"
-                  onClick={() => setId(randomPoetId())}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-royal transition hover:text-vivid"
+                  onClick={() => nav({ to: "/auth", search: { mode: "signup" } })}
+                  className={cn(
+                    "flex-1 rounded-full py-2 sm:py-2.5 transition",
+                    mode === "signup" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
+                  )}
                 >
-                  <RefreshCw className="size-3.5" /> Regenerate ID
+                  Get Started (Sign Up)
+                </button>
+                <button
+                  onClick={() => nav({ to: "/auth", search: { mode: "signin" } })}
+                  className={cn(
+                    "flex-1 rounded-full py-2 sm:py-2.5 transition",
+                    mode === "signin" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
+                  )}
+                >
+                  Sign In (Wapsi)
                 </button>
               </div>
 
-              {/* Vibe Selector */}
-              <div>
-                <label className={label}>Select Inspiration Vibe</label>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(VIBES).map((v) => (
-                    <button key={v} onClick={() => setVibe(v)} className={chip(vibe === v)}>
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* SIGN IN FLOW */}
+              {mode === "signin" ? (
+                <div className="space-y-5">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khawaab</h1>
+                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                      Enter with your registered email address.
+                    </p>
+                  </div>
 
-              {/* Curated Suggested Names */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className={label}>Pick a Curated Pen Name</label>
+                  <div>
+                    <label className={label}>Registered Email Address</label>
+                    <input
+                      className={input}
+                      type="email"
+                      placeholder="name@domain.com"
+                      value={signin.identifier}
+                      onChange={(e) => setSignin({ ...signin, identifier: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className={label}>Vault Password</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotModal(true);
+                          setResetSent(false);
+                          setResetEmail("");
+                        }}
+                        className="text-xs font-semibold text-royal hover:underline"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      className={input}
+                      placeholder="Enter your password"
+                      value={signin.password}
+                      onChange={(e) => setSignin({ ...signin, password: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                    />
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setOrder((o) => o + 1)}
-                    className="flex items-center gap-1 text-xs font-semibold text-royal hover:underline"
+                    disabled={loading || !signin.identifier.trim() || signin.password.length < 4}
+                    onClick={handleSignIn}
+                    className={cn(btnPrimary, "w-full py-3 sm:py-3.5 text-sm sm:text-base")}
                   >
-                    <Shuffle className="size-3.5" /> Shuffle
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="size-4 animate-spin" /> Entering Private Vault...
+                      </span>
+                    ) : (
+                      "Sign In to Private Vault"
+                    )}
+                  </button>
+
+                  <div className="relative my-4 text-center">
+                    <span className="bg-card px-3 text-xs text-subtle">or</span>
+                    <div className="absolute inset-x-0 top-1/2 -z-10 border-t border-hairline" />
+                  </div>
+
+                  <button onClick={demo} className={cn(btnOutline, "w-full py-2.5 sm:py-3 text-xs sm:text-sm")}>
+                    ⚡ One-Click Instant Guest Demo Login
                   </button>
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {suggestions.map(([n, m]) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setPen(n)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left transition",
-                        pen === n
-                          ? "border-crimson bg-blush shadow-sm"
-                          : "border-hairline bg-card hover:border-border hover:shadow-card"
-                      )}
-                    >
-                      <p className="font-serif text-lg font-semibold text-ink">@{n}</p>
-                      <p className="text-xs italic text-muted-foreground">{m}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Pen Name Input */}
-              <div>
-                <label className={label}>Or Enter Your Own Custom Pen Name</label>
-                <input
-                  value={pen}
-                  onChange={(e) => setPen(e.target.value)}
-                  placeholder="e.g. Shab_e_Umeed, Tanha_Dil"
-                  className={cn(input, "rounded-xl")}
-                />
-              </div>
-
-              {taken && <p className="text-xs font-semibold text-crimson">That pen name is reserved — please choose another.</p>}
-
-              {/* Comparison Box */}
-              <div className="space-y-2 rounded-2xl border border-hairline bg-secondary p-5 text-sm">
-                <p className="flex items-center gap-2">
-                  <Lock className="size-4 text-subtle" />
-                  <span className="text-xs font-semibold uppercase text-subtle">Private in Vault:</span>
-                  <span className="font-medium text-ink">{priv.fullName || "Your real name"} · {priv.phone || "Your phone"}</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-crimson" />
-                  <span className="text-xs font-semibold uppercase text-subtle">Visible on Mehfil:</span>
-                  <span className="font-semibold text-ink">@{norm || "your_pen_name"}</span>
-                  <IdBadge id={id} />
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  disabled={loading || norm.length < 3 || taken}
-                  onClick={handleSignUp}
-                  className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="size-4 animate-spin" /> Sealing Vault & Entering Feed...
+              ) : step === 1 ? (
+                /* SIGN UP - STEP 1 (Private Tijori Vault Details) */
+                <div className="space-y-6">
+                  <div>
+                    <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
+                      STEP 1 OF 2 · PRIVATE VAULT
                     </span>
-                  ) : (
-                    "Complete Setup & Enter Feed →"
-                  )}
-                </button>
-                <button disabled={loading} onClick={() => setStep(1)} className={cn(btnOutline, "px-6 py-3.5")}>
-                  Back
-                </button>
-              </div>
-            </div>
+                    <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Create Your Private Account</h1>
+                  </div>
+
+                  <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-sm text-wash-foreground">
+                    <p className="flex items-center gap-2 font-semibold">
+                      <Lock className="size-4" /> 100% Zero-Leak Privacy Guarantee
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Your real name, email, and phone number are strictly encrypted in our private vault and NEVER shown to
+                      other readers, on cards, in comments, or in secret letters.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className={label}>Full Name (Private)</label>
+                      <input
+                        className={input}
+                        placeholder="Your legal or real name"
+                        value={priv.fullName}
+                        onChange={(e) => setPriv({ ...priv, fullName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className={label}>Email Address (Private)</label>
+                      <input
+                        type="email"
+                        className={input}
+                        placeholder="you@domain.com"
+                        value={priv.email}
+                        onChange={(e) => setPriv({ ...priv, email: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className={label}>Phone Number (Private)</label>
+                      <input
+                        type="tel"
+                        className={input}
+                        value={priv.phone}
+                        onChange={(e) => setPriv({ ...priv, phone: e.target.value })}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                    <div>
+                      <label className={label}>Create Vault Password</label>
+                      <input
+                        type="password"
+                        className={input}
+                        value={priv.password}
+                        onChange={(e) => setPriv({ ...priv, password: e.target.value })}
+                        placeholder="At least 6 characters"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <button
+                      disabled={!step1ok}
+                      onClick={() => setStep(2)}
+                      className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
+                    >
+                      Continue to Pen Name Selection →
+                    </button>
+                    <button onClick={demo} className={cn(btnOutline, "py-3 text-sm")}>
+                      Instant Demo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* SIGN UP - STEP 2 (Public Poet Identity) */
+                <div className="space-y-7">
+                  <div>
+                    <span className="rounded-full bg-blush px-3 py-1 font-mono text-xs font-semibold text-crimson">
+                      STEP 2 OF 2 · PUBLIC IDENTITY
+                    </span>
+                    <h1 className="mt-3 text-3xl font-semibold text-ink">Choose Your Public Pen Name</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      This pen name and your unique poet ID are all the world will ever see.
+                    </p>
+                  </div>
+
+                  {/* Unique ID Badge & Regenerate */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Your Unique Shayar ID:
+                      </span>
+                      <span className="rounded-full bg-wash px-3.5 py-1 font-mono text-sm font-bold text-royal">
+                        {id}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setId(randomPoetId())}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-royal transition hover:text-vivid"
+                    >
+                      <RefreshCw className="size-3.5" /> Regenerate ID
+                    </button>
+                  </div>
+
+                  {/* Vibe Selector */}
+                  <div>
+                    <label className={label}>Select Inspiration Vibe</label>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(VIBES).map((v) => (
+                        <button key={v} onClick={() => setVibe(v)} className={chip(vibe === v)}>
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Curated Suggested Names */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className={label}>Pick a Curated Pen Name</label>
+                      <button
+                        type="button"
+                        onClick={() => setOrder((o) => o + 1)}
+                        className="flex items-center gap-1 text-xs font-semibold text-royal hover:underline"
+                      >
+                        <Shuffle className="size-3.5" /> Shuffle
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {suggestions.map(([n, m]) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setPen(n)}
+                          className={cn(
+                            "rounded-2xl border p-4 text-left transition",
+                            pen === n
+                              ? "border-crimson bg-blush shadow-sm"
+                              : "border-hairline bg-card hover:border-border hover:shadow-card"
+                          )}
+                        >
+                          <p className="font-serif text-lg font-semibold text-ink">@{n}</p>
+                          <p className="text-xs italic text-muted-foreground">{m}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Pen Name Input */}
+                  <div>
+                    <label className={label}>Or Enter Your Own Custom Pen Name</label>
+                    <input
+                      value={pen}
+                      onChange={(e) => setPen(e.target.value)}
+                      placeholder="e.g. Shab_e_Umeed, Tanha_Dil"
+                      className={cn(input, "rounded-xl")}
+                    />
+                  </div>
+
+                  {taken && <p className="text-xs font-semibold text-crimson">That pen name is reserved — please choose another.</p>}
+
+                  {/* Comparison Box */}
+                  <div className="space-y-2 rounded-2xl border border-hairline bg-secondary p-5 text-sm">
+                    <p className="flex items-center gap-2">
+                      <Lock className="size-4 text-subtle" />
+                      <span className="text-xs font-semibold uppercase text-subtle">Private in Vault:</span>
+                      <span className="font-medium text-ink">{priv.fullName || "Your real name"} · {priv.phone || "Your phone"}</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-crimson" />
+                      <span className="text-xs font-semibold uppercase text-subtle">Visible on Mehfil:</span>
+                      <span className="font-semibold text-ink">@{norm || "your_pen_name"}</span>
+                      <IdBadge id={id} />
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      disabled={loading || norm.length < 3 || taken}
+                      onClick={handleSignUp}
+                      className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="size-4 animate-spin" /> Sealing Vault & Entering Feed...
+                        </span>
+                      ) : (
+                        "Complete Setup & Enter Feed →"
+                      )}
+                    </button>
+                    <button disabled={loading} onClick={() => setStep(1)} className={cn(btnOutline, "px-6 py-3.5")}>
+                      Back
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -506,8 +694,7 @@ function Auth() {
                     <CheckCircle2 className="size-4" /> Reset Link Generated
                   </p>
                   <p className="mt-1 text-xs">
-                    Instructions sent to <b>{resetEmail}</b>. In demo mode, your vault key can also be accessed directly
-                    via Instant Demo Login.
+                    Instructions sent to <b>{resetEmail}</b>. Please check your inbox and click the reset link to choose a new vault password.
                   </p>
                 </div>
                 <button
