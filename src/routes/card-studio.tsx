@@ -5,12 +5,12 @@ import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 export const Route = createFileRoute("/card-studio")({
   head: () => ({
     meta: [
-      { title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab" },
+      { title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab" },
       {
         name: "description",
         content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
       },
-      { property: "og:title", content: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab" },
+      { property: "og:title", content: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab" },
       {
         property: "og:description",
         content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/card-studio")({
 
 function CardStudioPage() {
   useDocumentSEO({
-    title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khawaab",
+    title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab",
     description: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
     canonicalPath: "/card-studio",
   });

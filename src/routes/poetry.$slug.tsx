@@ -19,13 +19,13 @@ export const Route = createFileRoute("/poetry/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData?.poem) {
-      return { meta: [{ title: "Poem Not Found — Ek Khawaab" }] };
+      return { meta: [{ title: "Poem Not Found — Ek Khwaab" }] };
     }
     const { poem } = loaderData;
     const firstLine = poem.hinglish[0] || "Shayari";
     const secondLine = poem.hinglish[1] || "";
-    const title = `${firstLine} — ${poem.mood} Shayari in Hindi, Urdu & Hinglish | Ek Khawaab`;
-    const description = `${firstLine}${secondLine ? ` / ${secondLine}` : ""}. Read this authentic ${poem.mood} ${poem.format} by ${poem.takhallus} in Hinglish, Devanagari Hindi, and Nastaliq Urdu with English translation on Ek Khawaab.`;
+    const title = `${firstLine} — ${poem.mood} Shayari in Hindi, Urdu & Hinglish | Ek Khwaab`;
+    const description = `${firstLine}${secondLine ? ` / ${secondLine}` : ""}. Read this authentic ${poem.mood} ${poem.format} by ${poem.takhallus} in Hinglish, Devanagari Hindi, and Nastaliq Urdu with English translation on Ek Khwaab.`;
     const canonical = `https://ekkhawaab.in/poetry/${loaderData.slug}`;
 
     return {
@@ -126,7 +126,7 @@ function PoemDetailPage() {
     "text": poem.hinglish.join("\n"),
     "publisher": {
       "@type": "Organization",
-      "name": "Ek Khawaab",
+      "name": "Ek Khwaab",
       "url": "https://ekkhawaab.in",
     },
   };

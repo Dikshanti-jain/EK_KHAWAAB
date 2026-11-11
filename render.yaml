@@ -17,3 +17,4 @@ services:
         value: llama-3.3-70b-versatile
       - key: ALLOWED_ORIGINS
         value: https://ekkhawaab.in,https://www.ekkhawaab.in
+

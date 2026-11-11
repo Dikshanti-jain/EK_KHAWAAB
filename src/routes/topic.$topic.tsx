@@ -19,7 +19,7 @@ export const Route = createFileRoute("/topic/$topic")({
   },
   head: ({ loaderData }) => {
     if (!loaderData?.topic) {
-      return { meta: [{ title: "Topic Not Found — Ek Khawaab" }] };
+      return { meta: [{ title: "Topic Not Found — Ek Khwaab" }] };
     }
     const { topic } = loaderData;
     const canonical = `https://ekkhawaab.in/topic/${topic.slug}`;

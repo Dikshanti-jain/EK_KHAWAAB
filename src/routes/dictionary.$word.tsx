@@ -18,10 +18,10 @@ export const Route = createFileRoute("/dictionary/$word")({
   },
   head: ({ loaderData }) => {
     if (!loaderData?.word) {
-      return { meta: [{ title: "Word Not Found — Ek Khawaab Dictionary" }] };
+      return { meta: [{ title: "Word Not Found — Ek Khwaab Dictionary" }] };
     }
     const { word } = loaderData;
-    const title = `${word.roman} Meaning in Hindi, Urdu & English with Shayari Examples | Ek Khawaab Dictionary`;
+    const title = `${word.roman} Meaning in Hindi, Urdu & English with Shayari Examples | Ek Khwaab Dictionary`;
     const description = `Learn the poetic meaning of ${word.roman} (${word.hindi} • ${word.urdu}) in Hindi, Urdu, and English. Pronunciation: /${word.say}/. Understand how classical shayar like Ghalib and Jaun Elia use it with authentic couplet examples.`;
     const canonical = `https://ekkhawaab.in/dictionary/${loaderData.slug}`;
 
@@ -91,7 +91,7 @@ function DictionaryWordPage() {
     "description": word.meaning,
     "inDefinedTermSet": {
       "@type": "DefinedTermSet",
-      "name": "Ek Khawaab Urdu & Hindi Poetry Lughat",
+      "name": "Ek Khwaab Urdu & Hindi Poetry Lughat",
       "url": "https://ekkhawaab.in/dictionary",
     },
     "url": `https://ekkhawaab.in/dictionary/${slug}`,
@@ -217,7 +217,7 @@ function DictionaryWordPage() {
       {matchingPoems.length > 0 && (
         <section className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-ink">Poems on Ek Khawaab Featuring "{word.roman}"</h2>
+            <h2 className="text-lg font-semibold text-ink">Poems on Ek Khwaab Featuring "{word.roman}"</h2>
             <Link to="/feed" className="text-xs font-semibold text-royal hover:underline">
               Explore All →
             </Link>

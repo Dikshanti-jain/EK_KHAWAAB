@@ -19,10 +19,10 @@ const CORE_PILLARS = [
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy & Data Protection Charter — Ek Khawaab | DPDP Act 2023 Compliant" },
-      { name: "description", content: "Learn how Ek Khawaab protects user anonymity, private vault records, and complies with India's DPDP Act 2023." },
+      { title: "Privacy Policy & Data Protection Charter — Ek Khwaab | DPDP Act 2023 Compliant" },
+      { name: "description", content: "Learn how Ek Khwaab protects user anonymity, private vault records, and complies with India's DPDP Act 2023." },
       { name: "author", content: "Dikshanti Jain" },
-      { property: "og:title", content: "Privacy Policy — Ek Khawaab" },
+      { property: "og:title", content: "Privacy Policy — Ek Khwaab" },
       { property: "og:description", content: "Your words are public, but your real identity is sealed in an encrypted vault." },
     ],
   }),
@@ -72,7 +72,7 @@ export function PrivacyPage() {
       <PageHead
         kicker="PRIVACY & DATA CHARTER"
         title="Your feelings are yours. Your identity stays sealed."
-        sub="Ek Khawaab is built from the ground up on zero-knowledge anonymity, explicit user consent, and India's Digital Personal Data Protection Act, 2023 (DPDP Act 2023)."
+        sub="Ek Khwaab is built from the ground up on zero-knowledge anonymity, explicit user consent, and India's Digital Personal Data Protection Act, 2023 (DPDP Act 2023)."
       />
 
       {/* Core Security & Privacy Pillars */}
@@ -135,7 +135,7 @@ export function PrivacyPage() {
         <div>
           <h3 className="text-lg font-semibold text-ink">Data Protection & Grievance Officer</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ek Khawaab is maintained with strict data privacy principles by founder and owner <strong>Dikshanti Jain</strong>.
+            Ek Khwaab is maintained with strict data privacy principles by founder and owner <strong>Dikshanti Jain</strong>.
           </p>
         </div>
         <a

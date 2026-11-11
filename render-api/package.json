@@ -1,7 +1,7 @@
 {
   "name": "ek-khawaab-render-api",
   "version": "1.0.0",
-  "description": "Standalone Production AI Backend for Ek Khawaab (Render Node.js Service)",
+  "description": "Standalone Production AI Backend for Ek Khwaab (Render Node.js Service)",
   "private": true,
   "type": "module",
   "scripts": {

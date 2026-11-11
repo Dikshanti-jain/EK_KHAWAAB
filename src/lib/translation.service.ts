@@ -99,7 +99,7 @@ export type TranslationResult = z.infer<typeof TranslationResultSchema>;
 // 3. GROQ LITERARY PROMPT & PROMPT INJECTION DEFENSE (RT-05)
 // =====================================================================
 
-const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khawaab (a privacy-first sanctuary for Urdu, Hindi, and English poetry).
+const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khwaab (a privacy-first sanctuary for Urdu, Hindi, and English poetry).
 Your mission is to translate and transliterate an authentic user shayari into all 4 supported reading scripts:
 1. hinglish: Natural, poetic, readable Roman Hindi/Urdu written in the Latin alphabet.
 2. hindi: Authentic Hindi in pure Devanagari script (देवनागरी).

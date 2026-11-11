@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dictionary")({
   head: () => ({
     meta: [
-      { title: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khawaab" },
+      { title: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khwaab" },
       {
         name: "description",
         content: "Learn the meanings, pronunciation, and shayari examples of deep Urdu and Hindi poetic words like Hijr, Tagaful, Vehshat, Musalsal, Qurbat, and Arzoo.",
       },
-      { property: "og:title", content: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khawaab" },
+      { property: "og:title", content: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khwaab" },
       {
         property: "og:description",
         content: "Learn the meanings, pronunciation, and shayari examples of deep Urdu and Hindi poetic words.",
@@ -39,7 +39,7 @@ const speak = (t: string) => {
 
 function Dictionary() {
   useDocumentSEO({
-    title: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khawaab",
+    title: "Urdu & Poetic Words Dictionary (Lughat) with Hinglish Meanings | Ek Khwaab",
     description: "Learn the meanings, pronunciation, and shayari examples of deep Urdu and Hindi poetic words like Hijr, Tagaful, Vehshat, Musalsal, Qurbat, and Arzoo.",
     canonicalPath: "/dictionary",
   });

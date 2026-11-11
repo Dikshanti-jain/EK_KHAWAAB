@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+yarn-error.log
+.git
+.github
+.gitignore
+.output
+.vercel
+dist
+coverage
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+render-api/node_modules

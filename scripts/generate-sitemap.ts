@@ -6,7 +6,7 @@ const SITE_URL = "https://ekkhawaab.in";
 const today = new Date().toISOString().split("T")[0];
 
 const coreUrls = [
-  { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0", image: { loc: `${SITE_URL}/logo.png`, title: "Ek Khawaab — Anonymous Poetry Sanctuary", caption: "Literary sanctuary for Hindi, Urdu and Hinglish shayari" } },
+  { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0", image: { loc: `${SITE_URL}/logo.png`, title: "Ek Khwaab — Anonymous Poetry Sanctuary", caption: "Literary sanctuary for Hindi, Urdu and Hinglish shayari" } },
   { loc: `${SITE_URL}/explore`, changefreq: "daily", priority: "0.9" },
   { loc: `${SITE_URL}/ai-poet`, changefreq: "daily", priority: "0.9" },
   { loc: `${SITE_URL}/card-studio`, changefreq: "daily", priority: "0.9" },

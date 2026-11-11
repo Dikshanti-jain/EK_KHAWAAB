@@ -1,5 +1,5 @@
 /**
- * Application Security utilities for Ek Khawaab (Fixes AS-06).
+ * Application Security utilities for Ek Khwaab (Fixes AS-06).
  */
 
 /**

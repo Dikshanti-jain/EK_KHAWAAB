@@ -44,7 +44,7 @@ import { highlightSeeds } from "@/lib/seeds";
 export const Route = createFileRoute("/ai-poet")({
   head: () => ({
     meta: [
-      { title: "Shayar-e-Khawaab — AI Poetry Studio | Ek Khawaab" },
+      { title: "Shayar-e-Khawaab — AI Poetry Studio | Ek Khwaab" },
       {
         name: "description",
         content:
@@ -803,7 +803,7 @@ export function AiPoet() {
             </div>
             <h3 className="text-base font-semibold text-ink">How Word-Seeded Poetry Works</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Instead of generic prompts, Ek Khawaab extracts the emotional gravity of your personal seed words (e.g., <i>Chai, Baarish, Khidki, December</i>). The AI analyzes their metaphorical resonance, aligns them into classical meter, and renders authentic couplets simultaneously across Roman Hinglish, Devanagari Hindi, and Nastaliq Urdu without diluting their soulful intimacy.
+              Instead of generic prompts, Ek Khwaab extracts the emotional gravity of your personal seed words (e.g., <i>Chai, Baarish, Khidki, December</i>). The AI analyzes their metaphorical resonance, aligns them into classical meter, and renders authentic couplets simultaneously across Roman Hinglish, Devanagari Hindi, and Nastaliq Urdu without diluting their soulful intimacy.
             </p>
           </div>
 

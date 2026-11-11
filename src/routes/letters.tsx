@@ -15,9 +15,9 @@ export const Route = createFileRoute("/letters")({
   }),
   head: () => ({
     meta: [
-      { title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
+      { title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab" },
       { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
-      { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
+      { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab" },
       { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
       { property: "og:url", content: "https://ekkhawaab.in/letters" },
     ],
@@ -41,7 +41,7 @@ const DEMO: Letter = {
 
 export function Letters() {
   useDocumentSEO({
-    title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab",
+    title: "Khawaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab",
     description: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles.",
     canonicalPath: "/letters",
   });

@@ -11,21 +11,21 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
+      { title: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
       {
         name: "description",
         content:
           "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
       },
       { name: "author", content: "Dikshanti Jain" },
-      { property: "og:title", content: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
+      { property: "og:title", content: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
       {
         property: "og:description",
         content:
           "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
       },
       { property: "og:url", content: "https://ekkhawaab.in/" },
-      { name: "twitter:title", content: "Ek Khawaab — Created by Dikshanti Jain" },
+      { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
       {
         name: "twitter:description",
         content:
@@ -45,7 +45,7 @@ const FEATURES = [
 
 function Home() {
   useDocumentSEO({
-    title: "Ek Khawaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry",
+    title: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry",
     description: "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
     canonicalPath: "/",
   });
@@ -83,7 +83,7 @@ function Home() {
       <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-8 sm:px-6 sm:py-12 md:gap-14 md:px-12 md:py-18 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="mb-4 flex items-center gap-2.5 sm:mb-6">
-            <img src="/logo-icon.png" alt="Ek Khawaab Insignia" className="size-8 sm:size-10 object-contain drop-shadow-sm" />
+            <img src="/logo-icon.png" alt="Ek Khwaab Insignia" className="size-8 sm:size-10 object-contain drop-shadow-sm" />
             <span className="rounded-full bg-wash px-3 py-1 text-[11px] font-semibold tracking-wide text-royal sm:px-4 sm:py-1.5 sm:text-xs">
               ANONYMOUS LITERARY SANCTUARY
             </span>
@@ -158,8 +158,8 @@ function Home() {
               type="button"
               onClick={async () => {
                 const shareData = {
-                  title: "Ek Khawaab — Created by Dikshanti Jain",
-                  text: "Ek Khawaab — Hindi, Urdu & Hinglish Poetry Sanctuary created by Dikshanti Jain\n",
+                  title: "Ek Khwaab — Created by Dikshanti Jain",
+                  text: "Ek Khwaab — Hindi, Urdu & Hinglish Poetry Sanctuary created by Dikshanti Jain\n",
                   url: window.location.origin,
                 };
                 if (typeof navigator !== "undefined" && navigator.share) {
@@ -337,7 +337,7 @@ function Home() {
         </div>
       </section>
 
-      {/* Why Ek Khawaab Bento Grid */}
+      {/* Why Ek Khwaab Bento Grid */}
       <section className="bg-background py-8 sm:py-12 md:py-18">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-12">
           <Pill>WHY EK KHAWAAB</Pill>
@@ -361,14 +361,14 @@ function Home() {
       <section className="border-t border-hairline bg-secondary/40 py-8 sm:py-12 md:py-18">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 md:px-12">
           <div className="mx-auto mb-4 flex justify-center sm:mb-6">
-            <img src="/logo.png" alt="Ek Khawaab Official Monogram" className="h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105" />
+            <img src="/logo.png" alt="Ek Khwaab Official Monogram" className="h-20 sm:h-28 md:h-32 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105" />
           </div>
           <Pill tone="blue">ABOUT THE CREATOR</Pill>
           <h2 className="mt-3 font-serif text-2xl font-semibold text-ink sm:text-3xl md:text-4xl">
             "Every heart holds a poem that never found a voice."
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm md:text-base">
-            <strong>Ek Khawaab</strong> was conceptualized, designed, and built by <strong>Dikshanti Jain</strong> to give poetry lovers an intimate, noise-free sanctuary. A platform where words matter more than follower counts, and every poet is sheltered behind an anonymous pen name.
+            <strong>Ek Khwaab</strong> was conceptualized, designed, and built by <strong>Dikshanti Jain</strong> to give poetry lovers an intimate, noise-free sanctuary. A platform where words matter more than follower counts, and every poet is sheltered behind an anonymous pen name.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-8 sm:gap-4">
             <a

@@ -1,4 +1,4 @@
-# Ek Khawaab (एक ख़्वाब / اک خواب) — Anonymous Poetry Sanctuary
+# Ek Khwaab (एक ख़्वाब / اک خواب) — Anonymous Poetry Sanctuary
 
 > **Where unspoken feelings find their verse, anonymously.**  
 > A production-grade literary platform built for anonymous poetry sharing, real-time multi-script reading (Hinglish, Devanagari Hindi, Nastaliq Urdu), an AI-assisted co-writer, high-resolution card export studio, and wax-sealed secret letters.

@@ -46,12 +46,12 @@ const JSON_LD_SCHEMA = {
       "@type": "WebSite",
       "@id": "https://ekkhawaab.in/#website",
       "url": "https://ekkhawaab.in/",
-      "name": "Ek Khawaab",
+      "name": "Ek Khwaab",
       "alternateName": [
         "एक ख़्वाब",
         "ایک خواب",
-        "Ek Khawaab — Anonymous Poetry Sanctuary",
-        "Ek Khawaab Poetry"
+        "Ek Khwaab — Anonymous Poetry Sanctuary",
+        "Ek Khwaab Poetry"
       ],
       "description": "An anonymous poetry sanctuary for lovers of Hinglish, Hindi, and Urdu shayari, ghazals, and nazms. Features AI co-writing, 1080p card studio, and secret letters.",
       "inLanguage": ["en-IN", "hi", "ur"],
@@ -73,7 +73,7 @@ const JSON_LD_SCHEMA = {
     {
       "@type": "WebApplication",
       "@id": "https://ekkhawaab.in/#webapp",
-      "name": "Ek Khawaab App",
+      "name": "Ek Khwaab App",
       "url": "https://ekkhawaab.in/",
       "applicationCategory": "EntertainmentApplication",
       "operatingSystem": "All",
@@ -112,7 +112,7 @@ const JSON_LD_SCHEMA = {
     {
       "@type": "Organization",
       "@id": "https://ekkhawaab.in/#organization",
-      "name": "Ek Khawaab",
+      "name": "Ek Khwaab",
       "url": "https://ekkhawaab.in/",
       "founder": {
         "@id": "https://ekkhawaab.in/#creator"
@@ -191,10 +191,10 @@ const JSON_LD_SCHEMA = {
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "What is Ek Khawaab?",
+          "name": "What is Ek Khwaab?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Ek Khawaab is an anonymous poetry and shayari sanctuary where poets and readers share, explore, and co-write couplets, ghazals, and nazms in Hinglish, Hindi, and Urdu under a pen name with full identity protection."
+            "text": "Ek Khwaab is an anonymous poetry and shayari sanctuary where poets and readers share, explore, and co-write couplets, ghazals, and nazms in Hinglish, Hindi, and Urdu under a pen name with full identity protection."
           }
         },
         {
@@ -202,7 +202,7 @@ const JSON_LD_SCHEMA = {
           "name": "How to read Shayari in Hinglish, Hindi, and Urdu?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Ek Khawaab features an Instant Multi-Script Reader that allows you to seamlessly toggle any poem or couplet between Hinglish (Roman script), Devanagari Hindi, and Nastaliq Urdu with a single click."
+            "text": "Ek Khwaab features an Instant Multi-Script Reader that allows you to seamlessly toggle any poem or couplet between Hinglish (Roman script), Devanagari Hindi, and Nastaliq Urdu with a single click."
           }
         },
         {
@@ -231,25 +231,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ek Khawaab — Anonymous Poetry Sanctuary | Created by Dikshanti Jain" },
+      { title: "Ek Khwaab — Anonymous Poetry Sanctuary | Created by Dikshanti Jain" },
       { name: "description", content: "Write, read and share anonymous poetry in Hinglish, Hindi and Urdu under a pen name. Created by Dikshanti Jain, featuring an AI co-writer and HD card studio." },
       { name: "author", content: "Dikshanti Jain" },
       { name: "creator", content: "Dikshanti Jain" },
       { name: "publisher", content: "Dikshanti Jain" },
-      { name: "keywords", content: "Ek Khawaab, Dikshanti Jain, poetry sanctuary, anonymous poetry, hindi shayari, urdu poetry, hinglish poetry, sher o shayari, ghazals, nazm, card studio, ai poet, lughat dictionary, poetry community" },
+      { name: "keywords", content: "Ek Khwaab, Dikshanti Jain, poetry sanctuary, anonymous poetry, hindi shayari, urdu poetry, hinglish poetry, sher o shayari, ghazals, nazm, card studio, ai poet, lughat dictionary, poetry community" },
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       { name: "googlebot", content: "index, follow" },
       { name: "google-site-verification", content: "google83c1baacd5b87a86" },
-      { property: "og:site_name", content: "Ek Khawaab" },
+      { property: "og:site_name", content: "Ek Khwaab" },
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "Ek Khawaab — Created by Dikshanti Jain | Poetry Sanctuary" },
+      { property: "og:title", content: "Ek Khwaab — Created by Dikshanti Jain | Poetry Sanctuary" },
       { property: "og:description", content: "An anonymous sanctuary for poetry lovers in Hinglish, Hindi, and Urdu. Write under a pen name, generate metered shayari, export story cards, and send secret letters. Founded by Dikshanti Jain." },
       { property: "og:url", content: "https://ekkhawaab.in" },
       { property: "og:locale", content: "en_IN" },
       { property: "og:locale:alternate", content: "hi_IN" },
       { property: "og:image", content: "https://ekkhawaab.in/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Ek Khawaab — Created by Dikshanti Jain" },
+      { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
       { name: "twitter:description", content: "Anonymous poetry in Hinglish, Hindi, and Urdu. Founded and crafted by Dikshanti Jain." },
       { name: "twitter:image", content: "https://ekkhawaab.in/logo.png" },
     ],
@@ -295,8 +295,8 @@ function TopBar() {
     <header className="sticky top-0 z-40 border-b border-hairline bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 sm:h-16 md:h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 md:px-12">
         <Link to="/" className="group flex items-center gap-2 sm:gap-3" onClick={() => setOpen(false)}>
-          <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-7 sm:size-8 md:size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
-          <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
+          <img src="/logo-icon.png" alt="Ek Khwaab Logo" className="size-7 sm:size-8 md:size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
+          <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-ink">Ek Khwaab<span className="text-crimson">.</span></span>
         </Link>
 
         {/* Desktop Nav */}
@@ -373,8 +373,8 @@ function Footer() {
           {/* Brand & Vision */}
           <div className="md:col-span-5">
             <Link to="/" className="group flex items-center gap-3">
-              <img src="/logo-icon.png" alt="Ek Khawaab Logo" className="size-11 object-contain transition-transform duration-300 group-hover:scale-105" />
-              <span className="font-serif text-2xl font-bold text-ink">Ek Khawaab<span className="text-crimson">.</span></span>
+              <img src="/logo-icon.png" alt="Ek Khwaab Logo" className="size-11 object-contain transition-transform duration-300 group-hover:scale-105" />
+              <span className="font-serif text-2xl font-bold text-ink">Ek Khwaab<span className="text-crimson">.</span></span>
             </Link>
             <p className="mt-2 font-serif text-sm italic text-muted-foreground">
               "Jis baat ko lafz na milein, usse shayari keh dete hain."
@@ -402,7 +402,7 @@ function Footer() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">Founder & Creator</h3>
             <p className="mt-3 text-sm font-semibold text-ink">Dikshanti Jain</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Creator and owner of Ek Khawaab.
+              Creator and owner of Ek Khwaab.
             </p>
             <div className="mt-4 flex flex-col gap-2.5 text-xs text-muted-foreground">
               <a
@@ -427,7 +427,7 @@ function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-hairline pt-6 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Ek Khawaab · Created by Dikshanti Jain. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Ek Khwaab · Created by Dikshanti Jain. All rights reserved.</p>
           <div className="flex items-center gap-5">
             <Link to="/privacy" className="hover:text-ink">Privacy</Link>
             <span>·</span>

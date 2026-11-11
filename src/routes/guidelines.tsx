@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/guidelines")({
   head: () => ({ meta: [
-    { title: "Community Guidelines — Ek Khawaab | Creator Dikshanti Jain" },
-    { name: "description", content: "How we keep Ek Khawaab kind, original and properly credited. Founded by Dikshanti Jain." },
+    { title: "Community Guidelines — Ek Khwaab | Creator Dikshanti Jain" },
+    { name: "description", content: "How we keep Ek Khwaab kind, original and properly credited. Founded by Dikshanti Jain." },
     { name: "author", content: "Dikshanti Jain" },
-    { property: "og:title", content: "Community Guidelines — Ek Khawaab" },
+    { property: "og:title", content: "Community Guidelines — Ek Khwaab" },
     { property: "og:description", content: "Our etiquette and anti-plagiarism policy." },
   ] }),
   component: () => (

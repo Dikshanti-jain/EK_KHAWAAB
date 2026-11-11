@@ -191,7 +191,7 @@ RESPONSE FORMAT (STRICT JSON ONLY):
   }
 }`;
 
-const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khawaab (https://ekkhawaab.in).
+const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khwaab (https://ekkhawaab.in).
 Your mission is to translate and transliterate authentic shayari into all 4 supported reading scripts:
 1. hinglish: Natural, poetic, readable Roman Hindi/Urdu written in the Latin alphabet.
 2. hindi: Authentic Hindi in pure Devanagari script (देवनागरी).
@@ -423,6 +423,7 @@ app.post("/api/ai/translate", aiRateLimiter, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[Ek Khawaab API] Production service running on port ${PORT}`);
-  console.log(`[Ek Khawaab API] Allowed Origins: ${Array.from(ALLOWED_ORIGINS).join(", ")}`);
+  console.log(`[Ek Khwaab API] Production service running on port ${PORT}`);
+  console.log(`[Ek Khwaab API] Allowed Origins: ${Array.from(ALLOWED_ORIGINS).join(", ")}`);
 });
+

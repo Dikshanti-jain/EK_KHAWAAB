@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "My Profile — Ek Khawaab" },
+      { title: "My Profile — Ek Khwaab" },
       { name: "description", content: "Your public poet profile, saved poems and private vault." },
-      { property: "og:title", content: "My Profile — Ek Khawaab" },
+      { property: "og:title", content: "My Profile — Ek Khwaab" },
       { property: "og:description", content: "Your pen name, poems and private vault." },
     ],
   }),

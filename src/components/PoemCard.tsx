@@ -420,7 +420,7 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
               </button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Help us maintain the safe, anonymous literary atmosphere of Ek Khawaab.
+              Help us maintain the safe, anonymous literary atmosphere of Ek Khwaab.
             </p>
             <form onSubmit={handleReportPoem} className="mt-5 space-y-4">
               <div>

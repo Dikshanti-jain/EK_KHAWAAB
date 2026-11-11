@@ -20,9 +20,9 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Get Started — Ek Khawaab" },
+      { title: "Get Started — Ek Khwaab" },
       { name: "description", content: "Create a private account and choose your public pen name and poet ID." },
-      { property: "og:title", content: "Get Started — Ek Khawaab" },
+      { property: "og:title", content: "Get Started — Ek Khwaab" },
       { property: "og:description", content: "Your real identity stays in a private vault. Only your pen name appears." },
     ],
   }),
@@ -389,7 +389,7 @@ function Auth() {
               {mode === "signin" ? (
                 <div className="space-y-5">
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khawaab</h1>
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khwaab</h1>
                     <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                       Enter with your registered email address.
                     </p>
