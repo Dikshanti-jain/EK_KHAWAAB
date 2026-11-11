@@ -6,7 +6,7 @@ const SITE_URL = "https://ekkhwaab.in";
 const today = new Date().toISOString().split("T")[0];
 
 const coreUrls = [
-  { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0", image: { loc: `${SITE_URL}/logo.png`, title: "Ek Khwaab — Anonymous Poetry Sanctuary", caption: "Literary sanctuary for Hindi, Urdu and Hinglish shayari" } },
+  { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0", image: { loc: `${SITE_URL}/logo.png`, title: "Ek Khwaab - Anonymous Poetry Sanctuary", caption: "Literary sanctuary for Hindi, Urdu and Hinglish shayari" } },
   { loc: `${SITE_URL}/explore`, changefreq: "daily", priority: "0.9" },
   { loc: `${SITE_URL}/ai-poet`, changefreq: "daily", priority: "0.9" },
   { loc: `${SITE_URL}/card-studio`, changefreq: "daily", priority: "0.9" },
@@ -78,4 +78,7 @@ for (const word of LUGHAT) {
 xml += `</urlset>\n`;
 
 fs.writeFileSync("public/sitemap.xml", xml, "utf8");
+if (fs.existsSync("dist")) {
+  fs.writeFileSync("dist/sitemap.xml", xml, "utf8");
+}
 console.log(`Successfully generated public/sitemap.xml with ${coreUrls.length + topicSlugs.length + POEMS.length + LUGHAT.length} URLs!`);

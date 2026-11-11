@@ -9,9 +9,10 @@ const SITE_URL = "https://ekkhwaab.in";
 const DIST_DIR = path.resolve("dist");
 
 // Ensure clean dist directory
-if (!fs.existsSync(DIST_DIR)) {
-  fs.mkdirSync(DIST_DIR, { recursive: true });
+if (fs.existsSync(DIST_DIR)) {
+  fs.rmSync(DIST_DIR, { recursive: true, force: true });
 }
+fs.mkdirSync(DIST_DIR, { recursive: true });
 
 // 1. Copy all static assets from .output/public into dist/
 const outputPublicDir = path.resolve(".output/public");
