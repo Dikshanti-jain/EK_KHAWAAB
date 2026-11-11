@@ -1,0 +1,18 @@
+{
+  "name": "ek-khawaab-render-api",
+  "version": "1.0.0",
+  "description": "Standalone Production AI Backend for Ek Khawaab (Render Node.js Service)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "zod": "^3.25.76"
+  }
+}

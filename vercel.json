@@ -4,6 +4,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".vercel/output",
   "cleanUrls": false,
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://ekkhawaab.in/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

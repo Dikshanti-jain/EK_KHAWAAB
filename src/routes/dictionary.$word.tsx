@@ -23,7 +23,7 @@ export const Route = createFileRoute("/dictionary/$word")({
     const { word } = loaderData;
     const title = `${word.roman} Meaning in Hindi, Urdu & English with Shayari Examples | Ek Khawaab Dictionary`;
     const description = `Learn the poetic meaning of ${word.roman} (${word.hindi} • ${word.urdu}) in Hindi, Urdu, and English. Pronunciation: /${word.say}/. Understand how classical shayar like Ghalib and Jaun Elia use it with authentic couplet examples.`;
-    const canonical = `https://ek-khawaab.vercel.app/dictionary/${loaderData.slug}`;
+    const canonical = `https://ekkhawaab.in/dictionary/${loaderData.slug}`;
 
     return {
       meta: [
@@ -92,9 +92,9 @@ function DictionaryWordPage() {
     "inDefinedTermSet": {
       "@type": "DefinedTermSet",
       "name": "Ek Khawaab Urdu & Hindi Poetry Lughat",
-      "url": "https://ek-khawaab.vercel.app/dictionary",
+      "url": "https://ekkhawaab.in/dictionary",
     },
-    "url": `https://ek-khawaab.vercel.app/dictionary/${slug}`,
+    "url": `https://ekkhawaab.in/dictionary/${slug}`,
   };
 
   return (

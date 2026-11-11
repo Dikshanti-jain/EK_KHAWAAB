@@ -21,10 +21,10 @@ export const Route = createFileRoute("/studio")({
         property: "og:description",
         content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
       },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/studio" },
+      { property: "og:url", content: "https://ekkhawaab.in/studio" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app/studio" },
+      { rel: "canonical", href: "https://ekkhawaab.in/studio" },
     ],
   }),
   component: Studio,

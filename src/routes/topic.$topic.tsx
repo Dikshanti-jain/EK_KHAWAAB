@@ -14,14 +14,15 @@ export const Route = createFileRoute("/topic/$topic")({
       throw notFound();
     }
     const matching = POEMS.filter(topic.filter);
-    return { topic, poems: matching };
+    const { filter: _ignored, ...serializableTopic } = topic;
+    return { topic: serializableTopic, poems: matching };
   },
   head: ({ loaderData }) => {
     if (!loaderData?.topic) {
       return { meta: [{ title: "Topic Not Found — Ek Khawaab" }] };
     }
     const { topic } = loaderData;
-    const canonical = `https://ek-khawaab.vercel.app/topic/${topic.slug}`;
+    const canonical = `https://ekkhawaab.in/topic/${topic.slug}`;
 
     return {
       meta: [

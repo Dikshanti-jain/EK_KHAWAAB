@@ -380,3 +380,57 @@ export const composeShayari = createServerFn({ method: "POST" })
     });
     return { poem, error: null };
   });
+
+/**
+ * Universal Frontend / Hybrid caller for Shayar verse generation.
+ * When VITE_API_BASE_URL is set (Hostinger + Render deployment), calls Render backend directly.
+ * Otherwise, routes through TanStack Start serverFn or verified offline poetic engine.
+ */
+export async function requestShayariGeneration(
+  data: ShayarInputPayload
+): Promise<{ poem: PoemResult | null; error: string | null }> {
+  const apiBase =
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
+    (typeof process !== "undefined" && process.env?.VITE_API_BASE_URL);
+
+  if (apiBase) {
+    try {
+      const cleanBase = apiBase.replace(/\/+$/, "");
+      const res = await fetch(`${cleanBase}/api/ai/shayar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error || `Render API error (${res.status})`);
+      }
+
+      const json = await res.json();
+      return {
+        poem: json.poem,
+        error: json.error || null,
+      };
+    } catch (err: any) {
+      console.warn("[Shayar] Render API call failed, attempting fallback:", err.message);
+    }
+  }
+
+  // Fallback to serverFn (if running with SSR / dev server)
+  try {
+    return await composeShayari({ data });
+  } catch (fnErr: any) {
+    console.warn("[Shayar] Server function failed, activating verified poetic engine:", fnErr.message);
+    const poem = composeFallbackPoem({
+      mode: data.mode,
+      seeds: data.seeds && data.seeds.length > 0 ? data.seeds : data.phrases,
+      situation: data.situation,
+      style: data.style,
+      draftText: data.draftText,
+      poetryType: data.poetryType,
+    });
+    return { poem, error: null };
+  }
+}
+

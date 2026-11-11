@@ -7,7 +7,7 @@ export interface SEOProps {
   ogType?: "website" | "article";
 }
 
-const BASE_URL = "https://ek-khawaab.vercel.app";
+const BASE_URL = import.meta.env.VITE_SITE_URL || "https://ekkhawaab.in";
 
 /**
  * Custom hook to dynamically update document title, description, canonical link,

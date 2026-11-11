@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import {
   composeShayari,
+  requestShayariGeneration,
   STYLES,
   POETRY_TYPES,
   POETRY_MOODS,
@@ -203,7 +204,7 @@ export function AiPoet() {
         poeticStyleLens: STYLE_CARDS[style][1],
       };
 
-      const r = await compose({ data: payload });
+      const r = await requestShayariGeneration(payload);
 
       if (r.error) {
         toast.error(r.error);

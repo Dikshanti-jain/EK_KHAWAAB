@@ -26,7 +26,7 @@ export const Route = createFileRoute("/feed")({
         content:
           "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
       },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/feed" },
+      { property: "og:url", content: "https://ekkhawaab.in/feed" },
     ],
   }),
   component: Feed,

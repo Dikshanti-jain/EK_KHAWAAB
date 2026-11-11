@@ -44,8 +44,8 @@ const JSON_LD_SCHEMA = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://ek-khawaab.vercel.app/#website",
-      "url": "https://ek-khawaab.vercel.app/",
+      "@id": "https://ekkhawaab.in/#website",
+      "url": "https://ekkhawaab.in/",
       "name": "Ek Khawaab",
       "alternateName": [
         "एक ख़्वाब",
@@ -56,25 +56,25 @@ const JSON_LD_SCHEMA = {
       "description": "An anonymous poetry sanctuary for lovers of Hinglish, Hindi, and Urdu shayari, ghazals, and nazms. Features AI co-writing, 1080p card studio, and secret letters.",
       "inLanguage": ["en-IN", "hi", "ur"],
       "publisher": {
-        "@id": "https://ek-khawaab.vercel.app/#creator"
+        "@id": "https://ekkhawaab.in/#creator"
       },
       "creator": {
-        "@id": "https://ek-khawaab.vercel.app/#creator"
+        "@id": "https://ekkhawaab.in/#creator"
       },
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
           "@type": "EntryPoint",
-          "urlTemplate": "https://ek-khawaab.vercel.app/feed?q={search_term_string}"
+          "urlTemplate": "https://ekkhawaab.in/feed?q={search_term_string}"
         },
         "query-input": "required name=search_term_string"
       }
     },
     {
       "@type": "WebApplication",
-      "@id": "https://ek-khawaab.vercel.app/#webapp",
+      "@id": "https://ekkhawaab.in/#webapp",
       "name": "Ek Khawaab App",
-      "url": "https://ek-khawaab.vercel.app/",
+      "url": "https://ekkhawaab.in/",
       "applicationCategory": "EntertainmentApplication",
       "operatingSystem": "All",
       "offers": {
@@ -92,7 +92,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "Person",
-      "@id": "https://ek-khawaab.vercel.app/#creator",
+      "@id": "https://ekkhawaab.in/#creator",
       "name": "Dikshanti Jain",
       "jobTitle": "Owner & Creator",
       "email": "mailto:jaindikahanti@gmail.com",
@@ -111,11 +111,11 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "Organization",
-      "@id": "https://ek-khawaab.vercel.app/#organization",
+      "@id": "https://ekkhawaab.in/#organization",
       "name": "Ek Khawaab",
-      "url": "https://ek-khawaab.vercel.app/",
+      "url": "https://ekkhawaab.in/",
       "founder": {
-        "@id": "https://ek-khawaab.vercel.app/#creator"
+        "@id": "https://ekkhawaab.in/#creator"
       },
       "contactPoint": {
         "@type": "ContactPoint",
@@ -125,7 +125,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "ItemList",
-      "@id": "https://ek-khawaab.vercel.app/#featured-shayaris",
+      "@id": "https://ekkhawaab.in/#featured-shayaris",
       "name": "Featured Couplets & Shayaris",
       "itemListElement": [
         {
@@ -187,7 +187,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "FAQPage",
-      "@id": "https://ek-khawaab.vercel.app/#faq",
+      "@id": "https://ekkhawaab.in/#faq",
       "mainEntity": [
         {
           "@type": "Question",
@@ -244,17 +244,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Ek Khawaab — Created by Dikshanti Jain | Poetry Sanctuary" },
       { property: "og:description", content: "An anonymous sanctuary for poetry lovers in Hinglish, Hindi, and Urdu. Write under a pen name, generate metered shayari, export story cards, and send secret letters. Founded by Dikshanti Jain." },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app" },
+      { property: "og:url", content: "https://ekkhawaab.in" },
       { property: "og:locale", content: "en_IN" },
       { property: "og:locale:alternate", content: "hi_IN" },
-      { property: "og:image", content: "https://ek-khawaab.vercel.app/logo.png" },
+      { property: "og:image", content: "https://ekkhawaab.in/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Ek Khawaab — Created by Dikshanti Jain" },
       { name: "twitter:description", content: "Anonymous poetry in Hinglish, Hindi, and Urdu. Founded and crafted by Dikshanti Jain." },
-      { name: "twitter:image", content: "https://ek-khawaab.vercel.app/logo.png" },
+      { name: "twitter:image", content: "https://ekkhawaab.in/logo.png" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app" },
+      { rel: "canonical", href: "https://ekkhawaab.in" },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "192x192" },

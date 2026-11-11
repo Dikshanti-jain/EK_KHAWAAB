@@ -12,10 +12,10 @@ export const Route = createFileRoute("/secret-letters")({
       { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
       { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
       { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/secret-letters" },
+      { property: "og:url", content: "https://ekkhawaab.in/secret-letters" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app/secret-letters" },
+      { rel: "canonical", href: "https://ekkhawaab.in/secret-letters" },
     ],
   }),
   component: SecretLettersPage,

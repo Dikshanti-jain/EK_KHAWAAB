@@ -17,10 +17,10 @@ export const Route = createFileRoute("/explore")({
         content:
           "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
       },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/explore" },
+      { property: "og:url", content: "https://ekkhawaab.in/explore" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app/feed" },
+      { rel: "canonical", href: "https://ekkhawaab.in/feed" },
     ],
   }),
   component: ExplorePage,

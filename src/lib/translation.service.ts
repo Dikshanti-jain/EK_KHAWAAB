@@ -301,13 +301,41 @@ export async function triggerAutoTranslation(
   inFlightJobs.add(jobKey);
 
   try {
-    const res = await translateShayariServerFn({
-      data: {
-        poemId,
-        sourceLines,
-        sourceScript,
-      },
-    });
+    let res: { success?: boolean; data?: TranslationResult; error?: string } | null = null;
+
+    const apiBase =
+      (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
+      (typeof process !== "undefined" && process.env?.VITE_API_BASE_URL);
+
+    if (apiBase) {
+      try {
+        const cleanBase = apiBase.replace(/\/+$/, "");
+        const apiRes = await fetch(`${cleanBase}/api/ai/translate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poemId,
+            sourceLines,
+            sourceScript,
+          }),
+        });
+        if (apiRes.ok) {
+          res = await apiRes.json();
+        }
+      } catch (apiErr: any) {
+        console.warn("[TranslationService] Render API translation failed, attempting serverFn:", apiErr.message);
+      }
+    }
+
+    if (!res) {
+      res = await translateShayariServerFn({
+        data: {
+          poemId,
+          sourceLines,
+          sourceScript,
+        },
+      });
+    }
 
     if (res && res.data) {
       const { hinglish, hindi, urdu, english } = res.data;

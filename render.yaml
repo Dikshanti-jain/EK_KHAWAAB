@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ek-khawaab-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: render-api
+    buildCommand: npm install
+    startCommand: node server.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: ALLOWED_ORIGINS
+        value: https://ekkhawaab.in,https://www.ekkhawaab.in

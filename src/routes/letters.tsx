@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Lock, Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -19,10 +19,10 @@ export const Route = createFileRoute("/letters")({
       { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
       { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khawaab" },
       { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/letters" },
+      { property: "og:url", content: "https://ekkhawaab.in/letters" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app/letters" },
+      { rel: "canonical", href: "https://ekkhawaab.in/letters" },
     ],
   }),
   component: Letters,
@@ -45,7 +45,8 @@ export function Letters() {
     description: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles.",
     canonicalPath: "/letters",
   });
-  const { id: queryLetterId } = Route.useSearch();
+  const search = useSearch({ strict: false });
+  const queryLetterId = (search as any)?.id;
   const { studio, letters, set, user } = useStore();
   const [tab, setTab] = useState<"send" | "preview">("send");
   const [isSealing, setIsSealing] = useState(false);

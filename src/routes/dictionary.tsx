@@ -19,10 +19,10 @@ export const Route = createFileRoute("/dictionary")({
         property: "og:description",
         content: "Learn the meanings, pronunciation, and shayari examples of deep Urdu and Hindi poetic words.",
       },
-      { property: "og:url", content: "https://ek-khawaab.vercel.app/dictionary" },
+      { property: "og:url", content: "https://ekkhawaab.in/dictionary" },
     ],
     links: [
-      { rel: "canonical", href: "https://ek-khawaab.vercel.app/dictionary" },
+      { rel: "canonical", href: "https://ekkhawaab.in/dictionary" },
     ],
   }),
   component: Dictionary,
