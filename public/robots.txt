@@ -3,4 +3,4 @@ Allow: /
 Disallow: /private-vault
 Disallow: /api/
 
-Sitemap: https://ekkhawaab.in/sitemap.xml
+Sitemap: https://ekkhwaab.in/sitemap.xml

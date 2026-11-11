@@ -24,7 +24,7 @@ export const Route = createFileRoute("/")({
         content:
           "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
       },
-      { property: "og:url", content: "https://ekkhawaab.in/" },
+      { property: "og:url", content: "https://ekkhwaab.in/" },
       { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
       {
         name: "twitter:description",

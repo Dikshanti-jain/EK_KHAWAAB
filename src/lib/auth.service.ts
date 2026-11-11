@@ -24,7 +24,7 @@ export type AuthResponse = {
  * Always pulls from the current browser origin at runtime, falling back to verified environment variables in SSR.
  */
 export function getAuthRedirectUrl(path: string = "/auth"): string {
-  let origin = "https://ekkhawaab.in";
+  let origin = "https://ekkhwaab.in";
   if (typeof window !== "undefined" && window.location?.origin) {
     origin = window.location.origin;
   } else if (typeof process !== "undefined" && process.env) {

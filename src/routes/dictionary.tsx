@@ -19,10 +19,10 @@ export const Route = createFileRoute("/dictionary")({
         property: "og:description",
         content: "Learn the meanings, pronunciation, and shayari examples of deep Urdu and Hindi poetic words.",
       },
-      { property: "og:url", content: "https://ekkhawaab.in/dictionary" },
+      { property: "og:url", content: "https://ekkhwaab.in/dictionary" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhawaab.in/dictionary" },
+      { rel: "canonical", href: "https://ekkhwaab.in/dictionary" },
     ],
   }),
   component: Dictionary,

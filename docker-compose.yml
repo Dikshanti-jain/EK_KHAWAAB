@@ -9,11 +9,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_SITE_URL: https://ekkhawaab.in
+        VITE_SITE_URL: https://ekkhwaab.in
         VITE_API_BASE_URL: http://localhost:3001
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-https://pbotpkpdqvtagkwbpaxz.supabase.co}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBib3Rwa3BkcXZ0YWdrd2JwYXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MzExODksImV4cCI6MjEwODUwNzE4OX0.rsM03OF7pdMJRY4oYgMlZr7fFgBfjs07Jh81FLo8760}
-    container_name: ekkhawaab-web
+    container_name: ekkhwaab-web
     restart: unless-stopped
     ports:
       - "80:80"
@@ -26,7 +26,7 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - ekkhawaab-net
+      - ekkhwaab-net
 
   # -------------------------------------------------------------------
   # 2. AI BACKEND SERVICE (Node.js + Groq API + Rate Limiter)
@@ -35,7 +35,7 @@ services:
     build:
       context: ./render-api
       dockerfile: Dockerfile
-    container_name: ekkhawaab-api
+    container_name: ekkhwaab-api
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -43,16 +43,16 @@ services:
       PORT: 3001
       GROQ_API_KEY: ${GROQ_API_KEY}
       GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
-      ALLOWED_ORIGINS: "https://ekkhawaab.in,https://www.ekkhawaab.in,http://localhost,http://localhost:80,http://localhost:5173"
+      ALLOWED_ORIGINS: "https://ekkhwaab.in,https://www.ekkhwaab.in,http://localhost,http://localhost:80,http://localhost:5173"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s
       timeout: 5s
       retries: 3
     networks:
-      - ekkhawaab-net
+      - ekkhwaab-net
 
 networks:
-  ekkhawaab-net:
+  ekkhwaab-net:
     driver: bridge
 

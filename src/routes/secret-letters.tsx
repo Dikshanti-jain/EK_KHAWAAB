@@ -12,10 +12,10 @@ export const Route = createFileRoute("/secret-letters")({
       { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
       { property: "og:title", content: "Khawaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab" },
       { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
-      { property: "og:url", content: "https://ekkhawaab.in/secret-letters" },
+      { property: "og:url", content: "https://ekkhwaab.in/secret-letters" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhawaab.in/secret-letters" },
+      { rel: "canonical", href: "https://ekkhwaab.in/secret-letters" },
     ],
   }),
   component: SecretLettersPage,

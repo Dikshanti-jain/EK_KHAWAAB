@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # Environment variables for build
-ARG VITE_SITE_URL=https://ekkhawaab.in
+ARG VITE_SITE_URL=https://ekkhwaab.in
 ARG VITE_API_BASE_URL=https://ek-khawaab-api.onrender.com
 ARG VITE_SUPABASE_URL=https://pbotpkpdqvtagkwbpaxz.supabase.co
 ARG VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBib3Rwa3BkcXZ0YWdrd2JwYXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MzExODksImV4cCI6MjEwODUwNzE4OX0.rsM03OF7pdMJRY4oYgMlZr7fFgBfjs07Jh81FLo8760

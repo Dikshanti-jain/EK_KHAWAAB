@@ -16,8 +16,8 @@ app.set("trust proxy", 1);
 // 1. CORS CONFIGURATION
 // ------------------------------------------------------------------
 const ALLOWED_ORIGINS = new Set([
-  "https://ekkhawaab.in",
-  "https://www.ekkhawaab.in",
+  "https://ekkhwaab.in",
+  "https://www.ekkhwaab.in",
   "http://localhost:5173",
   "http://localhost:3000",
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()) : []),
@@ -138,7 +138,7 @@ const TranslationInputSchema = z.object({
 // ------------------------------------------------------------------
 // 5. PROMPT TEMPLATES
 // ------------------------------------------------------------------
-const SHAYAR_SYSTEM_PROMPT = `You are Shayar-e-Khawaab, the multilingual AI writing companion for EK Khawaab (https://ekkhawaab.in).
+const SHAYAR_SYSTEM_PROMPT = `You are Shayar-e-Khawaab, the multilingual AI writing companion for Ek Khwaab (https://ekkhwaab.in).
 Your purpose is to help people transform their own experiences, unfinished thoughts, carefully chosen words and emotions into meaningful, original poetry.
 You are not a generic quote generator. Your writing must be strictly specific to the user's supplied context.
 
@@ -191,7 +191,7 @@ RESPONSE FORMAT (STRICT JSON ONLY):
   }
 }`;
 
-const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khwaab (https://ekkhawaab.in).
+const TRANSLATION_SYSTEM_PROMPT = `You are a master literary translator and bilingual shayar for Ek Khwaab (https://ekkhwaab.in).
 Your mission is to translate and transliterate authentic shayari into all 4 supported reading scripts:
 1. hinglish: Natural, poetic, readable Roman Hindi/Urdu written in the Latin alphabet.
 2. hindi: Authentic Hindi in pure Devanagari script (देवनागरी).
@@ -222,8 +222,8 @@ STRICT LITERARY GUIDELINES:
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    domain: "ekkhawaab.in",
-    service: "ek-khawaab-render-api",
+    domain: "ekkhwaab.in",
+    service: "ek-khwaab-render-api",
     timestamp: new Date().toISOString(),
   });
 });

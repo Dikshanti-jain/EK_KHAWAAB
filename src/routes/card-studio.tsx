@@ -15,10 +15,10 @@ export const Route = createFileRoute("/card-studio")({
         property: "og:description",
         content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
       },
-      { property: "og:url", content: "https://ekkhawaab.in/card-studio" },
+      { property: "og:url", content: "https://ekkhwaab.in/card-studio" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhawaab.in/card-studio" },
+      { rel: "canonical", href: "https://ekkhwaab.in/card-studio" },
     ],
   }),
   component: CardStudioPage,

@@ -2,7 +2,7 @@ import fs from "fs";
 import { POEMS, getPoemSlug } from "../src/data/poems.ts";
 import { LUGHAT, getWordSlug } from "../src/data/lughat.ts";
 
-const SITE_URL = "https://ekkhawaab.in";
+const SITE_URL = "https://ekkhwaab.in";
 const today = new Date().toISOString().split("T")[0];
 
 const coreUrls = [

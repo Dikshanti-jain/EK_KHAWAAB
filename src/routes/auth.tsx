@@ -250,7 +250,7 @@ function Auth() {
       penName: "Abr_e_Shab_Guest",
       poetId: randomPoetId(),
       fullName: "Demo Reader",
-      email: "demo@ekkhawaab.in",
+      email: "demo@ekkhwaab.in",
       phone: "+91 98765 43210",
       guest: true,
     });

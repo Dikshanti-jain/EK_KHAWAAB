@@ -44,8 +44,8 @@ const JSON_LD_SCHEMA = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://ekkhawaab.in/#website",
-      "url": "https://ekkhawaab.in/",
+      "@id": "https://ekkhwaab.in/#website",
+      "url": "https://ekkhwaab.in/",
       "name": "Ek Khwaab",
       "alternateName": [
         "एक ख़्वाब",
@@ -56,25 +56,25 @@ const JSON_LD_SCHEMA = {
       "description": "An anonymous poetry sanctuary for lovers of Hinglish, Hindi, and Urdu shayari, ghazals, and nazms. Features AI co-writing, 1080p card studio, and secret letters.",
       "inLanguage": ["en-IN", "hi", "ur"],
       "publisher": {
-        "@id": "https://ekkhawaab.in/#creator"
+        "@id": "https://ekkhwaab.in/#creator"
       },
       "creator": {
-        "@id": "https://ekkhawaab.in/#creator"
+        "@id": "https://ekkhwaab.in/#creator"
       },
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
           "@type": "EntryPoint",
-          "urlTemplate": "https://ekkhawaab.in/feed?q={search_term_string}"
+          "urlTemplate": "https://ekkhwaab.in/feed?q={search_term_string}"
         },
         "query-input": "required name=search_term_string"
       }
     },
     {
       "@type": "WebApplication",
-      "@id": "https://ekkhawaab.in/#webapp",
+      "@id": "https://ekkhwaab.in/#webapp",
       "name": "Ek Khwaab App",
-      "url": "https://ekkhawaab.in/",
+      "url": "https://ekkhwaab.in/",
       "applicationCategory": "EntertainmentApplication",
       "operatingSystem": "All",
       "offers": {
@@ -92,7 +92,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "Person",
-      "@id": "https://ekkhawaab.in/#creator",
+      "@id": "https://ekkhwaab.in/#creator",
       "name": "Dikshanti Jain",
       "jobTitle": "Owner & Creator",
       "email": "mailto:jaindikahanti@gmail.com",
@@ -111,11 +111,11 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "Organization",
-      "@id": "https://ekkhawaab.in/#organization",
+      "@id": "https://ekkhwaab.in/#organization",
       "name": "Ek Khwaab",
-      "url": "https://ekkhawaab.in/",
+      "url": "https://ekkhwaab.in/",
       "founder": {
-        "@id": "https://ekkhawaab.in/#creator"
+        "@id": "https://ekkhwaab.in/#creator"
       },
       "contactPoint": {
         "@type": "ContactPoint",
@@ -125,7 +125,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "ItemList",
-      "@id": "https://ekkhawaab.in/#featured-shayaris",
+      "@id": "https://ekkhwaab.in/#featured-shayaris",
       "name": "Featured Couplets & Shayaris",
       "itemListElement": [
         {
@@ -187,7 +187,7 @@ const JSON_LD_SCHEMA = {
     },
     {
       "@type": "FAQPage",
-      "@id": "https://ekkhawaab.in/#faq",
+      "@id": "https://ekkhwaab.in/#faq",
       "mainEntity": [
         {
           "@type": "Question",
@@ -240,21 +240,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       { name: "googlebot", content: "index, follow" },
       { name: "google-site-verification", content: "google83c1baacd5b87a86" },
+      { name: "google-site-verification", content: "83c1baacd5b87a86" },
       { property: "og:site_name", content: "Ek Khwaab" },
       { property: "og:type", content: "website" },
       { property: "og:title", content: "Ek Khwaab — Created by Dikshanti Jain | Poetry Sanctuary" },
       { property: "og:description", content: "An anonymous sanctuary for poetry lovers in Hinglish, Hindi, and Urdu. Write under a pen name, generate metered shayari, export story cards, and send secret letters. Founded by Dikshanti Jain." },
-      { property: "og:url", content: "https://ekkhawaab.in" },
+      { property: "og:url", content: "https://ekkhwaab.in" },
       { property: "og:locale", content: "en_IN" },
       { property: "og:locale:alternate", content: "hi_IN" },
-      { property: "og:image", content: "https://ekkhawaab.in/logo.png" },
+      { property: "og:image", content: "https://ekkhwaab.in/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
       { name: "twitter:description", content: "Anonymous poetry in Hinglish, Hindi, and Urdu. Founded and crafted by Dikshanti Jain." },
-      { name: "twitter:image", content: "https://ekkhawaab.in/logo.png" },
+      { name: "twitter:image", content: "https://ekkhwaab.in/logo.png" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhawaab.in" },
+      { rel: "canonical", href: "https://ekkhwaab.in" },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "192x192" },

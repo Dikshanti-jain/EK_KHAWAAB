@@ -26,7 +26,7 @@ export const Route = createFileRoute("/poetry/$slug")({
     const secondLine = poem.hinglish[1] || "";
     const title = `${firstLine} — ${poem.mood} Shayari in Hindi, Urdu & Hinglish | Ek Khwaab`;
     const description = `${firstLine}${secondLine ? ` / ${secondLine}` : ""}. Read this authentic ${poem.mood} ${poem.format} by ${poem.takhallus} in Hinglish, Devanagari Hindi, and Nastaliq Urdu with English translation on Ek Khwaab.`;
-    const canonical = `https://ekkhawaab.in/poetry/${loaderData.slug}`;
+    const canonical = `https://ekkhwaab.in/poetry/${loaderData.slug}`;
 
     return {
       meta: [
@@ -127,7 +127,7 @@ function PoemDetailPage() {
     "publisher": {
       "@type": "Organization",
       "name": "Ek Khwaab",
-      "url": "https://ekkhawaab.in",
+      "url": "https://ekkhwaab.in",
     },
   };
 

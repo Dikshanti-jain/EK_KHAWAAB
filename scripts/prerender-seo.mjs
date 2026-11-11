@@ -5,7 +5,7 @@ import { POEMS, getPoemSlug } from "../src/data/poems.ts";
 import { LUGHAT, getWordSlug } from "../src/data/lughat.ts";
 import { TOPICS } from "../src/data/topics.ts";
 
-const SITE_URL = "https://ekkhawaab.in";
+const SITE_URL = "https://ekkhwaab.in";
 const DIST_DIR = path.resolve("dist");
 
 // Ensure clean dist directory
@@ -41,7 +41,7 @@ if (fs.existsSync(sitemapPath)) {
 }
 
 // 4. Load Nitro server app for SSR static pre-rendering
-console.log("\n--- Starting Static Pre-Rendering for Hostinger (https://ekkhawaab.in) ---");
+console.log("\n--- Starting Static Pre-Rendering for Hostinger (https://ekkhwaab.in) ---");
 const serverEntry = path.resolve(".output/server/index.mjs");
 
 if (!fs.existsSync(serverEntry)) {
@@ -56,7 +56,7 @@ async function prerenderRoute(routePath) {
   try {
     const req = new Request(`http://localhost${routePath}`, {
       headers: {
-        host: "ekkhawaab.in",
+        host: "ekkhwaab.in",
         "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
       },
     });
@@ -74,8 +74,9 @@ async function prerenderRoute(routePath) {
 
     let html = await res.text();
 
-    // Ensure canonical domain is https://ekkhawaab.in
+    // Ensure canonical domain is https://ekkhwaab.in
     html = html.replace(/https:\/\/ek-khawaab\.vercel\.app/g, SITE_URL);
+    html = html.replace(/https:\/\/ekkhawaab\.in/g, SITE_URL);
 
     const cleanPath = routePath.replace(/^\/+|\/+$/g, "");
     const targetFolder = cleanPath ? path.join(DIST_DIR, cleanPath) : DIST_DIR;

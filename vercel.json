@@ -7,7 +7,7 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "destination": "https://ekkhawaab.in/$1",
+      "destination": "https://ekkhwaab.in/$1",
       "permanent": true
     }
   ],

@@ -6,9 +6,9 @@
   RewriteCond %{HTTPS} !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-  # 2. Redirect www to non-www (Canonical https://ekkhawaab.in)
-  RewriteCond %{HTTP_HOST} ^www\.ekkhawaab\.in$ [NC]
-  RewriteRule ^ https://ekkhawaab.in%{REQUEST_URI} [L,R=301]
+  # 2. Redirect www to non-www (Canonical https://ekkhwaab.in)
+  RewriteCond %{HTTP_HOST} ^www\.ekkhwaab\.in$ [NC]
+  RewriteRule ^ https://ekkhwaab.in%{REQUEST_URI} [L,R=301]
 
   # 3. Serve pre-rendered directory index.html if it exists (e.g., /dictionary/tagaful -> /dictionary/tagaful/index.html)
   RewriteCond %{REQUEST_FILENAME} -d
@@ -37,7 +37,7 @@
   Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header always set Cross-Origin-Opener-Policy "same-origin"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com https://api.ekkhawaab.in;"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com https://api.ekkhwaab.in;"
 </IfModule>
 
 # Browser Caching for Performance
