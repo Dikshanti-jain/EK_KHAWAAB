@@ -6,7 +6,7 @@ import {
   type ShayarRequest,
 } from "@/lib/groq.service";
 
-describe("Groq Shayar-e-Khawaab Service Tests", () => {
+describe("Groq Shayar-e-Khwaab Service Tests", () => {
   it("builds a thorough creative brief with all semantic constraints", () => {
     const req: ShayarRequest = {
       situation: "College library silence, eye contact but no conversation",

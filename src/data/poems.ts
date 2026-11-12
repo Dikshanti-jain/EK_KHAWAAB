@@ -304,7 +304,7 @@ export const POEMS: Poem[] = [
   {
     id: "p2",
     slug: "hijr-ki-raat",
-    takhallus: "Banjara_Khawaab",
+    takhallus: "Banjara_Khwaab",
     format: "Sher",
     mood: "Heartbreak & Hijr",
     style: "Classical",

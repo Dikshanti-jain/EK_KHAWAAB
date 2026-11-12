@@ -53,7 +53,8 @@ type Ctx = State & {
 };
 
 const C = createContext<Ctx | null>(null);
-const STORAGE_KEY = "ek-khawaab-v2";
+const STORAGE_KEY = "ek-khwaab-v2";
+const LEGACY_STORAGE_KEY = "ek-khawaab-v2";
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -63,7 +64,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Load sanitized state on mount (with 7-day TTL check)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         // Enforce 7-day TTL

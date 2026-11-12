@@ -31,7 +31,7 @@ export const InputSchema = z.object({
   style: z.enum(STYLES).optional().default("Modern Hinglish"),
   draftText: z.string().trim().max(1200).optional().default(""),
 
-  // Rich Groq Shayar-e-Khawaab fields
+  // Rich Groq Shayar-e-Khwaab fields
   phrases: z.array(z.string().trim().min(1).max(50)).max(6).optional().default([]),
   isPhraseMandatory: z.boolean().optional().default(false),
   tags: z.array(z.string().trim().max(30)).max(8).optional().default([]),
@@ -306,7 +306,7 @@ export function composeFallbackPoem(data: {
     english: `A cup of ${s1} in the gentle quiet of the night; searching for ${s2} on glowing screens while the heart lingers where you left it.`,
     seedsUsed: seeds,
     usedPhrases: seeds,
-    tags: ["#ModernHinglish", "#Khawaab"],
+    tags: ["#ModernHinglish", "#Khwaab"],
     validation: {
       requiredPhrasesPresent: true,
       structureValid: true,

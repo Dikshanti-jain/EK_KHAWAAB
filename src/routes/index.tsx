@@ -340,7 +340,7 @@ function Home() {
       {/* Why Ek Khwaab Bento Grid */}
       <section className="bg-background py-8 sm:py-12 md:py-18">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-12">
-          <Pill>WHY EK KHAWAAB</Pill>
+          <Pill>WHY EK KHWAAB</Pill>
           <h2 className="mt-3 text-2xl font-semibold text-ink sm:text-3xl md:text-4xl">A quieter, cleaner place for poetry</h2>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm md:text-base">Built to strip away vanity metrics, social anxiety, and digital noise.</p>
           <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 md:grid-cols-2 lg:grid-cols-4">

@@ -44,13 +44,13 @@ import { highlightSeeds } from "@/lib/seeds";
 export const Route = createFileRoute("/ai-poet")({
   head: () => ({
     meta: [
-      { title: "Shayar-e-Khawaab — AI Poetry Studio | Ek Khwaab" },
+      { title: "Shayar-e-Khwaab — AI Poetry Studio | Ek Khwaab" },
       {
         name: "description",
         content:
           "Transform your raw feelings, memories, and personal situations into original Shayari, Ghazals, and Nazms powered by Groq AI.",
       },
-      { property: "og:title", content: "Shayar-e-Khawaab — AI Poetry Studio" },
+      { property: "og:title", content: "Shayar-e-Khwaab — AI Poetry Studio" },
       {
         property: "og:description",
         content: "Context-aware, personalized poetry co-writer across Hinglish, Hindi, and Urdu.",
@@ -130,7 +130,7 @@ export function AiPoet() {
   // Sync draft couplet from feed if available
   useEffect(() => {
     try {
-      const savedDraft = localStorage.getItem("ek_khawaab_draft_couplet");
+      const savedDraft = localStorage.getItem("ek_khwaab_draft_couplet") || localStorage.getItem("ek_khawaab_draft_couplet");
       if (savedDraft && !draftText) {
         setDraftText(savedDraft);
       }
@@ -213,7 +213,7 @@ export function AiPoet() {
         setScript("hinglish");
         setIsEditing(false);
         if (poetryType === "improve") setShowComparison(true);
-        toast.success("Shayar-e-Khawaab has crafted your verse!");
+        toast.success("Shayar-e-Khwaab has crafted your verse!");
       }
     } catch (err: any) {
       toast.error(err.message || "The AI poet could not write right now. Please try again.");
@@ -309,7 +309,7 @@ export function AiPoet() {
   return (
     <div className="mx-auto max-w-7xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead
-        kicker="SHAYAR-E-KHAWAAB · POWERED BY GROQ"
+        kicker="SHAYAR-E-KHWAAB · POWERED BY GROQ"
         title="Personalized Poetry Writing Studio"
         sub="Describe what happened or what you feel. The AI Shayar crafts authentic, metered verse in Hinglish, Hindi, and Urdu specifically for your moment."
       />
@@ -360,7 +360,7 @@ export function AiPoet() {
                 onChange={(e) => setDraftText(e.target.value)}
                 placeholder={
                   poetryType === "improve"
-                    ? "Tere bina ye raatein kitni veeran hain,\nAankhon mein bas tera hi khawaab rehta hai."
+                    ? "Tere bina ye raatein kitni veeran hain,\nAankhon mein bas tera hi khwaab rehta hai."
                     : "Main chup raha to usne samjha ke gila nahi hai..."
                 }
                 className={cn(input, "font-serif text-sm leading-relaxed")}
@@ -633,7 +633,7 @@ export function AiPoet() {
                 <Feather className="size-8" />
               </div>
               <p className="mt-5 font-serif text-2xl italic text-ink">
-                {busy ? "Shayar-e-Khawaab is choosing words…" : "Your poem will be born here."}
+                {busy ? "Shayar-e-Khwaab is choosing words…" : "Your poem will be born here."}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 Enter your situation, pick your poetic form, and receive original verse that respects your true emotions.

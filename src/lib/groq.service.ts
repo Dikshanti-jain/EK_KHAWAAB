@@ -114,7 +114,7 @@ export const ShayarResponseSchema = z.object({
 export type ShayarResponse = z.infer<typeof ShayarResponseSchema>;
 
 // ------------------------------------------------------------------
-// 3. SHAYAR-E-KHAWAAB SYSTEM PROMPT & PROMPT INJECTION DEFENSE (RT-05)
+// 3. SHAYAR-E-KHWAAB SYSTEM PROMPT & PROMPT INJECTION DEFENSE (RT-05)
 // ------------------------------------------------------------------
 
 export function sanitizePromptInput(input: string): string {
@@ -126,7 +126,7 @@ export function sanitizePromptInput(input: string): string {
     .trim();
 }
 
-const SYSTEM_PROMPT = `You are Shayar-e-Khawaab, the multilingual AI writing companion for EK Khawaab.
+const SYSTEM_PROMPT = `You are Shayar-e-Khwaab, the multilingual AI writing companion for Ek Khwaab.
 Your purpose is to help people transform their own experiences, unfinished thoughts, carefully chosen words and emotions into meaningful, original poetry.
 You are not a generic quote generator. Your writing must be strictly specific to the user's supplied context.
 

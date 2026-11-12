@@ -86,7 +86,7 @@ const JSON_LD_SCHEMA = {
         "Word-to-Verse AI Co-Writer",
         "1080p High-Resolution Card Studio (9:16 & 1:1)",
         "Instant Multi-Script Reader (Hindi, Urdu, Hinglish)",
-        "Khawaab Khat Wax-Sealed Secret Letters",
+        "Khwaab Khat Wax-Sealed Secret Letters",
         "Comprehensive Lughat Urdu Poetry Dictionary"
       ]
     },
@@ -135,7 +135,7 @@ const JSON_LD_SCHEMA = {
             "@type": "CreativeWork",
             "name": "Ab kisi baat pe dil dukhta nahi",
             "text": "Ab kisi baat pe dil dukhta nahi, shayad patthar ho gaya hai. / Roz ek nayi ummeed jagti hai, roz ek khwaab so gaya hai.",
-            "author": { "@type": "Person", "name": "Faiz-e-Khawaab" },
+            "author": { "@type": "Person", "name": "Faiz-e-Khwaab" },
             "inLanguage": "hi-Latn"
           }
         },

@@ -51,7 +51,7 @@ export const LUGHAT: Word[] = [
       hinglish: "Hijr ki shab bhi guzar jaati hai aahista aahista, bas ek chiraagh hai jo subah tak nahi bujhta.",
       hindi: "हिज्र की शब भी गुज़र जाती है आहिस्ता आहिस्ता, बस एक चिराग़ है जो सुबह तक नहीं बुझता।",
       urdu: "ہجر کی شب بھی گزر جاتی ہے آہستہ آہستہ، بس ایک چراغ ہے جو صبح تک نہیں بجھتا",
-      poet: "Banjara Khawaab"
+      poet: "Banjara Khwaab"
     }
   },
   {

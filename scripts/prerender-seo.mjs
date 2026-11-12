@@ -75,9 +75,12 @@ async function prerenderRoute(routePath) {
 
     let html = await res.text();
 
-    // Ensure canonical domain is https://ekkhwaab.in
+    // Ensure canonical domain is https://ekkhwaab.in and brand spelling is strictly Ek Khwaab
     html = html.replace(/https:\/\/ek-khawaab\.vercel\.app/g, SITE_URL);
     html = html.replace(/https:\/\/ekkhawaab\.in/g, SITE_URL);
+    html = html.replace(/Ek Khawaab/g, "Ek Khwaab");
+    html = html.replace(/Khawaab Khat/g, "Khwaab Khat");
+    html = html.replace(/Shayar-e-Khawaab/g, "Shayar-e-Khwaab");
 
     const cleanPath = routePath.replace(/^\/+|\/+$/g, "");
     const targetFolder = cleanPath ? path.join(DIST_DIR, cleanPath) : DIST_DIR;

@@ -138,7 +138,7 @@ const TranslationInputSchema = z.object({
 // ------------------------------------------------------------------
 // 5. PROMPT TEMPLATES
 // ------------------------------------------------------------------
-const SHAYAR_SYSTEM_PROMPT = `You are Shayar-e-Khawaab, the multilingual AI writing companion for Ek Khwaab (https://ekkhwaab.in).
+const SHAYAR_SYSTEM_PROMPT = `You are Shayar-e-Khwaab, the multilingual AI writing companion for Ek Khwaab (https://ekkhwaab.in).
 Your purpose is to help people transform their own experiences, unfinished thoughts, carefully chosen words and emotions into meaningful, original poetry.
 You are not a generic quote generator. Your writing must be strictly specific to the user's supplied context.
 

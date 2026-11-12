@@ -41,7 +41,7 @@ const VIBES: Record<string, (readonly [string, string])[]> = {
     ["Zakhm_e_Harf", "Wound of a Letter"],
   ],
   "Romance & Love": [
-    ["Qaasid-e-Khawaab", "Messenger of Dreams"],
+    ["Qaasid-e-Khwaab", "Messenger of Dreams"],
     ["Gulab_Nama", "Letter of Roses"],
     ["Ishq_Bayaan", "Voice of Love"],
     ["Mahtab_Dil", "Moonlit Heart"],

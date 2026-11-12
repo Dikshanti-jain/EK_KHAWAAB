@@ -1,5 +1,5 @@
 # =====================================================================
-# EK KHAWAAB AI BACKEND — DOCKERFILE
+# EK KHWAAB AI BACKEND — DOCKERFILE
 # Production Node.js Microservice for Groq AI Shayar & Translation
 # =====================================================================
 FROM node:22-alpine AS runner

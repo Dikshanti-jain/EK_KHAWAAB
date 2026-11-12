@@ -37,7 +37,10 @@ export function PrivacyPage() {
 
   const handleClearLocalData = () => {
     try {
+      localStorage.removeItem("ek_khwaab_store_v1");
       localStorage.removeItem("ek_khawaab_store_v1");
+      localStorage.removeItem("ek-khwaab-v2");
+      localStorage.removeItem("ek-khawaab-v2");
       localStorage.removeItem("ek_compose_draft");
       set({ liked: [], saved: [], letters: [] });
       toast.success("Local device cache and temporary drafts cleared successfully.");
@@ -53,7 +56,10 @@ export function PrivacyPage() {
       if (res.success) {
         set({ user: null, liked: [], saved: [], letters: [] });
         try {
-          localStorage.removeItem("ek_khawaab_store_v1");
+          localStorage.removeItem("ek_khwaab_store_v1");
+      localStorage.removeItem("ek_khawaab_store_v1");
+      localStorage.removeItem("ek-khwaab-v2");
+      localStorage.removeItem("ek-khawaab-v2");
           localStorage.removeItem("ek_compose_draft");
         } catch {}
         setShowDeleteModal(false);

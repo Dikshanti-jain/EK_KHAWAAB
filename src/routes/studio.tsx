@@ -113,7 +113,7 @@ export function Studio() {
 
   const download = () => ref.current?.toBlob((b) => {
     if (!b) return;
-    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `ek-khawaab-${ratio.split(" ")[0]!.replace(":", "x")}.png`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `ek-khwaab-${ratio.split(" ")[0]!.replace(":", "x")}.png`; a.click();
     toast("HD card downloaded");
   }, "image/png");
   const post = () => {
