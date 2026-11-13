@@ -52,7 +52,7 @@ function TopicPage() {
       <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
         <Link to="/" className="hover:text-ink">Home</Link>
         <span>/</span>
-        <Link to="/feed" className="hover:text-ink">Mehfil Feed</Link>
+        <Link to="/feed" className="hover:text-ink">Explore Feed</Link>
         <span>/</span>
         <span className="font-semibold text-ink">{topic.title}</span>
       </nav>
@@ -95,7 +95,7 @@ function TopicPage() {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-hairline flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{poem.daad} Daad</span>
+                  <span className="text-xs text-muted-foreground">{poem.daad > 0 ? poem.daad : "Appreciate"}</span>
                   <Link
                     to="/poetry/$slug"
                     params={{ slug }}
@@ -132,7 +132,7 @@ function TopicPage() {
       {/* Back to Feed */}
       <div className="mt-10 text-center">
         <Link to="/feed" className={cn(btnOutline, "px-6 py-2.5")}>
-          <ArrowLeft className="size-4" /> Back to Full Mehfil Feed
+          <ArrowLeft className="size-4" /> Back to Full Feed
         </Link>
       </div>
     </div>

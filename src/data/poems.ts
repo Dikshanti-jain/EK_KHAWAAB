@@ -19,7 +19,7 @@ export type Poem = {
   translationStatus?: Partial<Record<Script, TranslationStatus>>;
   daad: number;
   muqarrar: number;
-  hashiya: { by: string; text: string }[];
+  hashiya: { by: string; text: string; id?: string }[];
   tags?: string[] | undefined;
 };
 export type Paper = "kora" | "warq" | "neeli" | "surkh";
@@ -41,6 +41,9 @@ export const poetId = (name: string) => {
 
 export function getPoemSlug(poem: Poem): string {
   if (poem.slug) return poem.slug;
+  // Live poems have no slug column. Their UUID is stable even if the first
+  // line is edited, and the detail loader can fetch them by id.
+  if (isLivePoemId(poem.id)) return poem.id;
   const firstLine = poem.hinglish?.[0] || "";
   const cleaned = firstLine
     .toLowerCase()
@@ -48,6 +51,17 @@ export function getPoemSlug(poem: Poem): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
   return cleaned || poem.id;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * True for poems stored in Supabase. Curated seeds use short ids such as
+ * `p_pathar`, so their likes and saves stay local instead of hitting a table
+ * that has no matching row.
+ */
+export function isLivePoemId(id: string): boolean {
+  return UUID_RE.test(id);
 }
 
 export function findPoemBySlugOrId(slugOrId: string, list: Poem[] = POEMS): Poem | undefined {
@@ -86,12 +100,10 @@ export const POEMS: Poem[] = [
       "Nothing hurts my heart anymore —",
       "you tormented me so deeply that you turned me to stone."
     ],
-    daad: 2840,
-    muqarrar: 710,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#PatharDil", "#Heartbreak", "#Dard", "#Hijr"],
-    hashiya: [
-      { by: "Khamosh_Musafir", text: "Jab dard hadd se badh jaye to patthar ban jana hi aakhiri panah ban jata hai. Bahut khoob!" }
-    ]
+    hashiya: []
   },
 
   // --- 2. User Featured: Tum woh ladki thi jissey sab hasna sikhte the ---
@@ -127,12 +139,10 @@ export const POEMS: Poem[] = [
       "on whose lips laughter was once a permanent home...",
       "poems and ghazals always danced upon your tongue..."
     ],
-    daad: 3120,
-    muqarrar: 780,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#WoLadki", "#Nazm", "#Yaadein", "#Masoomiyat"],
-    hashiya: [
-      { by: "Siyahi_Qaasid", text: "Kitni gehraai aur noor hai is nazm mein... har lafz se ek chehra yaad aa gaya." }
-    ]
+    hashiya: []
   },
 
   // --- 3. User Featured: Tere sath guzara har lamha (#betiiiiiiiiii) ---
@@ -168,12 +178,10 @@ export const POEMS: Poem[] = [
       "No matter how far forward time may rush,",
       "I have adorned my soul with every memory of yours..."
     ],
-    daad: 4210,
-    muqarrar: 1052,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#betiiiiiiiiii", "#Lamhe", "#Pyaar", "#Mamta"],
-    hashiya: [
-      { by: "Abr_e_Shab", text: "Yeh ahsaas anmol hai. Ek bachhi aur baap-maa ke rishte ki sabse khoobsurat daastaan." }
-    ]
+    hashiya: []
   },
 
   // --- 4. User Featured: Uske chehre me is kadr noor tha ---
@@ -209,12 +217,10 @@ export const POEMS: Poem[] = [
       "I cannot even bring myself to call them unfaithful —",
       "love was chosen by my heart, they were completely innocent."
     ],
-    daad: 2490,
-    muqarrar: 622,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Bekasoor", "#Ishq", "#Dard", "#Noor"],
-    hashiya: [
-      { by: "Baghi_Qalam", text: "Mohabbat to humne ki thi, woh to bekasoor tha... ishq ka sabse sachha aur azeem aitraaf." }
-    ]
+    hashiya: []
   },
 
   // --- 5. User Featured: Mirza Ghalib - Hazaron khwahishein aisi ---
@@ -242,12 +248,10 @@ export const POEMS: Poem[] = [
       "Thousands of desires, each so profound that one could die for it —",
       "many of my yearnings were fulfilled, yet so very few."
     ],
-    daad: 5120,
-    muqarrar: 1280,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Ghalib", "#Khwahishein", "#Philosophy", "#Zindagi"],
-    hashiya: [
-      { by: "Rubaab_Nawaz", text: "Ghalib ka qalam hamesha zinda rahega. Falsafa-e-zindagi ka aaina." }
-    ]
+    hashiya: []
   },
 
   // --- 6. User Featured: Khamoshi se bhi guftagu ho jaati hai ---
@@ -275,12 +279,10 @@ export const POEMS: Poem[] = [
       "Even silence breaks into conversation when gazes meet;",
       "who has need for words where souls dissolve into one."
     ],
-    daad: 2310,
-    muqarrar: 577,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Khamoshi", "#Guftagu", "#Roohein", "#Nazrein"],
-    hashiya: [
-      { by: "Shab_e_Farda", text: "Lafz to sirf parda hain, asal baatcheet to nazron aur rooh ke darmiyan hoti hai." }
-    ]
+    hashiya: []
   },
 
   // --- Original Seed Poems ---
@@ -296,10 +298,10 @@ export const POEMS: Poem[] = [
     hindi: ["तेरा तग़ाफ़ुल भी एक अदा थी, ये मान लिया हमने", "अब हर ख़ामोशी को तेरी बात समझ लेते हैं"],
     urdu: ["تیرا تغافل بھی ایک ادا تھی، یہ مان لیا ہم نے", "اب ہر خاموشی کو تیری بات سمجھ لیتے ہیں"],
     english: ["I accepted your neglect as just another grace of yours;", "now I take every silence for something you said."],
-    daad: 412,
-    muqarrar: 88,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#UnspokenLove", "#Khamoshi", "#Ada"],
-    hashiya: [{ by: "Khamosh_Musafir", text: "Khamoshi ko baat samajhna — yahi to ishq hai. Wah!" }]
+    hashiya: []
   },
   {
     id: "p2",
@@ -313,8 +315,8 @@ export const POEMS: Poem[] = [
     hindi: ["हिज्र की शब भी गुज़र जाती है आहिस्ता आहिस्ता", "बस एक चिराग़ है जो सुबह तक नहीं बुझता"],
     urdu: ["ہجر کی شب بھی گزر جاتی ہے آہستہ آہستہ", "بس ایک چراغ ہے جو صبح تک نہیں بجھتا"],
     english: ["Even the night of separation passes, slowly, slowly —", "only one lamp refuses to go out before dawn."],
-    daad: 690,
-    muqarrar: 140,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Heartbreak", "#Hijr", "#Tanhai"],
     hashiya: []
   },
@@ -330,10 +332,10 @@ export const POEMS: Poem[] = [
     hindi: ["रात दो बजे फ़ोन की रौशनी में", "तेरी पुरानी तस्वीर मुसलसल देखी", "कुछ नहीं बदला, बस इतना हुआ", "अब आँखें भी काग़ज़ की तरह भीगती हैं"],
     urdu: ["رات دو بجے فون کی روشنی میں", "تیری پرانی تصویر مسلسل دیکھی", "کچھ نہیں بدلا، بس اتنا ہوا", "اب آنکھیں بھی کاغذ کی طرح بھیگتی ہیں"],
     english: ["At two at night, in the glow of a phone,", "I looked at your old photograph, without pause.", "Nothing changed, except this —", "now my eyes soak through like paper."],
-    daad: 1203,
-    muqarrar: 301,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#LateNight", "#2AMThoughts", "#Yaad"],
-    hashiya: [{ by: "Shab_e_Farda", text: "Jawaabi: Kaagaz bhi sookh jaata hai subah tak, aankhein nahi." }]
+    hashiya: []
   },
   {
     id: "p4",
@@ -347,8 +349,8 @@ export const POEMS: Poem[] = [
     hindi: ["क़फ़स खुला था, परिंदा फिर भी न गया", "आदत भी एक ज़ंजीर है, ये अब समझे"],
     urdu: ["قفس کھلا تھا، پرندہ پھر بھی نہ گیا", "عادت بھی ایک زنجیر ہے، یہ اب سمجھے"],
     english: ["The cage stood open; still the bird did not leave.", "Habit too is a chain — only now I understand."],
-    daad: 845,
-    muqarrar: 190,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Philosophy", "#Zindagi", "#Azaadi"],
     hashiya: []
   },
@@ -364,8 +366,8 @@ export const POEMS: Poem[] = [
     hindi: ["तुमने चाय में चीनी कम डाली थी", "क़ुर्बत का स्वाद फिर भी मीठा था"],
     urdu: ["تم نے چائے میں چینی کم ڈالی تھی", "قربت کا سواد پھر بھی میٹھا تھا"],
     english: ["You put too little sugar in the tea;", "closeness tasted sweet regardless."],
-    daad: 530,
-    muqarrar: 77,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Chai", "#Qurbat", "#MeethiYaad"],
     hashiya: []
   },
@@ -381,8 +383,8 @@ export const POEMS: Poem[] = [
     hindi: ["फ़िराक़ की राह में महताब भी तन्हा निकला", "जिसे चिराग़ समझा, वो धुआँ निकला", "तेरी जुस्तजू में शहर शहर फिरे", "हर एक दर पे तेरा ही निशाँ निकला"],
     urdu: ["فراق کی راہ میں مہتاب بھی تنہا نکلا", "جسے چراغ سمجھا، وہ دھواں نکلا", "تیری جستجو میں شہر شہر پھرے", "ہر ایک در پہ تیرا ہی نشاں نکلا"],
     english: ["On the road of parting, even the moon walked alone;", "what I took for a lamp turned out to be smoke.", "Searching for you I wandered city to city —", "on every door I found only your mark."],
-    daad: 977,
-    muqarrar: 260,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Firaaq", "#Ghazal", "#Mahtab"],
     hashiya: []
   },
@@ -398,8 +400,8 @@ export const POEMS: Poem[] = [
     hindi: ["हम वो चिराग़ नहीं जो हवा से डर जाएँ", "बुझा भी दो तो धुआँ आसमान लिखेगा"],
     urdu: ["ہم وہ چراغ نہیں جو ہوا سے ڈر جائیں", "بجھا بھی دو تو دھواں آسمان لکھے گا"],
     english: ["I am not the lamp that fears the wind —", "put me out, and my smoke will write across the sky."],
-    daad: 1530,
-    muqarrar: 412,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Baghi", "#Aasmaan", "#Umeed"],
     hashiya: []
   },
@@ -415,8 +417,8 @@ export const POEMS: Poem[] = [
     hindi: ["स्टेशन की बेंच पे बैठा हूँ", "गाड़ियाँ आती हैं, जाती हैं", "इंतज़ार का कोई टाइम-टेबल नहीं होता", "शब यहीं पे रुकी रहती है"],
     urdu: ["اسٹیشن کی بینچ پہ بیٹھا ہوں", "گاڑیاں آتی ہیں، جاتی ہیں", "انتظار کا کوئی ٹائم ٹیبل نہیں ہوتا", "شب یہیں پہ رکی رہتی ہے"],
     english: ["I sit on a station bench;", "trains arrive, trains leave.", "Waiting keeps no timetable —", "the night simply stays here."],
-    daad: 620,
-    muqarrar: 98,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Station", "#Intezaar", "#LateNight"],
     hashiya: []
   },
@@ -432,8 +434,8 @@ export const POEMS: Poem[] = [
     hindi: ["रंजिश ही सही, एक बार तो पलट के देखो", "मलाल भी तुम्हारा हो तो दिल को क़ुबूल है"],
     urdu: ["رنجش ہی سہی، ایک بار تو پلٹ کے دیکھو", "ملال بھی تمہارا ہو تو دل کو قبول ہے"],
     english: ["Even in resentment, turn back once and look;", "if the regret is yours, my heart accepts it."],
-    daad: 733,
-    muqarrar: 155,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Ranjish", "#Malal", "#Ishq"],
     hashiya: []
   },
@@ -449,8 +451,8 @@ export const POEMS: Poem[] = [
     hindi: ["शबनम सी थी तेरी पहली बात", "सुबह तक भी न रही मगर", "एक आरज़ू रह गई काग़ज़ पे", "जैसे रूह का कोई सफ़र"],
     urdu: ["شبنم سی تھی تیری پہلی بات", "صبح تک بھی نہ رہی مگر", "ایک آرزو رہ گئی کاغذ پہ", "جیسے روح کا کوئی سفر"],
     english: ["Your first words were like dew —", "though they did not last till morning.", "One wish remained upon the paper,", "like a journey of the soul."],
-    daad: 488,
-    muqarrar: 64,
+    daad: 0,
+    muqarrar: 0,
     tags: ["#Shabnam", "#Rooh", "#PehliBaat"],
     hashiya: []
   },

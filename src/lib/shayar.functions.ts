@@ -390,15 +390,22 @@ export async function requestShayariGeneration(
   data: ShayarInputPayload
 ): Promise<{ poem: PoemResult | null; error: string | null }> {
   const apiBase =
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
-    (typeof process !== "undefined" && process.env?.VITE_API_BASE_URL);
+    (typeof import.meta !== "undefined" && import.meta.env?.["VITE_API_BASE_URL"]) ||
+    (typeof process !== "undefined" && process.env?.["VITE_API_BASE_URL"]);
 
   if (apiBase) {
     try {
       const cleanBase = apiBase.replace(/\/+$/, "");
+      // Loaded on demand: a build without VITE_TURNSTILE_SITE_KEY never
+      // downloads this module and never contacts Cloudflare.
+      const { getTurnstileToken } = await import("./turnstile");
+      const turnstileToken = await getTurnstileToken("shayar");
       const res = await fetch(`${cleanBase}/api/ai/shayar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(turnstileToken ? { "CF-Turnstile-Response": turnstileToken } : {}),
+        },
         body: JSON.stringify(data),
       });
 

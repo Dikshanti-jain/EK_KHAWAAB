@@ -302,9 +302,17 @@ export async function callGroqShayar(req: ShayarRequest): Promise<ShayarResponse
         if (parsed.error?.message) errMsg = parsed.error.message;
       } catch {}
 
-      // If rate limited, attempt at most 1 immediate fallback retry using remaining timeout budget
+      // If rate limited, wait for the window Groq names (Retry-After header or
+      // "try again in 2.6s") instead of hammering it after a fixed 500 ms.
       if (res.status === 429 || errMsg.toLowerCase().includes("rate limit")) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const headerSeconds = Number(res.headers.get("retry-after"));
+        const messageSeconds = Number(/try again in ([\d.]+)\s*s/i.exec(errMsg)?.[1]);
+        const waitMs = Number.isFinite(headerSeconds) && headerSeconds > 0
+          ? headerSeconds * 1000
+          : Number.isFinite(messageSeconds) && messageSeconds > 0
+            ? messageSeconds * 1000
+            : 500;
+        await new Promise((resolve) => setTimeout(resolve, Math.min(Math.max(waitMs, 500), 6_000)));
         const retryRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -322,7 +330,13 @@ export async function callGroqShayar(req: ShayarRequest): Promise<ShayarResponse
         if (retryRes.ok) {
           responseData = await retryRes.json();
         } else {
-          throw new Error(errMsg);
+          const retryText = await retryRes.text();
+          let retryMsg = errMsg;
+          try {
+            const parsed = JSON.parse(retryText);
+            if (parsed.error?.message) retryMsg = parsed.error.message;
+          } catch {}
+          throw new Error(retryMsg);
         }
       } else {
         throw new Error(errMsg);

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { POEMS, type Poem, type Script, type TranslationStatus } from "@/data/poems";
+import { POEMS, isLivePoemId, type Poem, type Script, type TranslationStatus } from "@/data/poems";
 import { detectScript } from "./translation.service";
+import { toPoem, type FeedRow } from "./feed-cache";
 
 export type CreatePoemPayload = {
   shayarUid: string;
@@ -144,7 +145,7 @@ export async function fetchPoems(options: FetchPoemsOptions = {}): Promise<Fetch
           english: englishLines.length ? "completed" : "pending",
         },
         daad: row.daad_count ?? 0,
-        muqarrar: Math.floor((row.daad_count ?? 0) / 4),
+        muqarrar: 0,
         hashiya: commentsByPoem[row.id] || [],
         tags: seedTags,
       };
@@ -289,6 +290,66 @@ export async function updatePoemTranslations(
     return { success: true, error: null };
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to update translations." };
+  }
+}
+
+/**
+ * Fetch a single published poem by its UUID for the detail page.
+ */
+export async function fetchPoemById(id: string): Promise<Poem | null> {
+  if (!isLivePoemId(id)) return null;
+  try {
+    const { data, error } = await supabase
+      .from("safe_poems_feed")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return toPoem({ ...(data as FeedRow), recent_comments: null });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch the signed-in reader's bookmarked poems. Bookmarks are stored as
+ * ids, so this joins them back to the public feed view in one extra round trip.
+ */
+export async function fetchMySavedPoems(
+  shayarUid: string
+): Promise<{ poems: Poem[]; error: string | null }> {
+  try {
+    const { data: marks, error: markError } = await supabase
+      .from("bookmarks")
+      .select("poem_id")
+      .eq("shayar_uid", shayarUid);
+
+    if (markError) return { poems: [], error: markError.message };
+
+    const ids = (marks ?? [])
+      .map((m) => m.poem_id as string)
+      .filter((id): id is string => Boolean(id));
+    if (!ids.length) return { poems: [], error: null };
+
+    const { data: rows, error: rowError } = await supabase
+      .from("safe_poems_feed")
+      .select("*")
+      .in("id", ids);
+
+    if (rowError) return { poems: [], error: rowError.message };
+
+    return {
+      poems: (rows ?? []).map((row) =>
+        toPoem({ ...(row as FeedRow), recent_comments: null })
+      ),
+      error: null,
+    };
+  } catch (err: unknown) {
+    return {
+      poems: [],
+      error: err instanceof Error ? err.message : "Could not load saved poems.",
+    };
   }
 }
 

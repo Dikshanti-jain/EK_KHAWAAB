@@ -1,17 +1,25 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Plus, X, Search, Sparkles, Loader2 } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Plus, X, Search, Sparkles, Loader2, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
-import { FILTERS, MOODS, matchFilter, poetId, type Script } from "@/data/poems";
+import { FILTERS, MOODS, POEMS, matchFilter, poetId, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
-import { fetchPoems, createPoem } from "@/lib/poems.service";
+import { useFeed, patchFeedPoem, prependFeedPoem } from "@/lib/feed-cache";
+import { createPoem } from "@/lib/poems.service";
 import { detectScript, triggerAutoTranslation } from "@/lib/translation.service";
 import { PoemCard } from "@/components/PoemCard";
+import { PoemSkeletonList } from "@/components/PoemSkeleton";
+import { Modal } from "@/components/Modal";
+import { useSignInPrompt } from "@/components/SignInPrompt";
 import { ScriptSwitch, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/feed")({
+  validateSearch: (s: Record<string, unknown>): { q?: string | undefined } => ({
+    q: typeof s["q"] === "string" && s["q"].trim() ? s["q"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khwaab" },
@@ -38,15 +46,63 @@ export function Feed() {
     description: "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
     canonicalPath: "/feed",
   });
-  const { poems, script, set, updatePoem, user } = useStore();
+  const { poems: storePoems, script, set, updatePoem, user } = useStore();
+  const qc = useQueryClient();
+  const nav = useNavigate();
+  const { promptSignIn } = useSignInPrompt();
+  // `/explore` reuses this component outside the `/feed` route, so read the
+  // nearest search params instead of the route-bound hook (which would throw).
+  const routeSearch = useSearch({ strict: false }) as { q?: string | undefined };
+  const q = typeof routeSearch.q === "string" ? routeSearch.q : undefined;
   const [f, setF] = useState("All Moods");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(q ?? "");
   const [compose, setCompose] = useState(false);
   const [text, setText] = useState("");
   const [mood, setMood] = useState(MOODS[0]!);
   const [posting, setPosting] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+
+  // One RPC call per page, deduped and cached for 45 s. Re-entering /feed
+  // inside that window costs zero network requests.
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useFeed(
+    user?.poetId ?? "anon"
+  );
+
+  const poems = data?.poems ?? storePoems ?? POEMS;
+
+  // A #tag click lands here as ?q=…; keep the visible search in sync.
+  useEffect(() => {
+    setSearch(q ?? "");
+  }, [q]);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 600);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const canWrite = Boolean(user && !user.guest);
+
+  const openCompose = () => {
+    if (!canWrite) {
+      promptSignIn("write");
+      return;
+    }
+    setCompose(true);
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setF("All Moods");
+    nav({ to: "/feed", search: {}, replace: true });
+  };
+
+  // Stage-1 bridge: PoemCard still mutates the store array. Feed it the cached
+  // page so both representations agree. Removed in stage 2.
+  useEffect(() => {
+    if (data?.poems) set({ poems: data.poems });
+  }, [data?.poems, set]);
 
   useEffect(() => {
     try {
@@ -66,65 +122,61 @@ export function Feed() {
     }
   };
 
+  const deferredQuery = useDeferredValue(search.trim().toLowerCase());
+
+  const list = useMemo(
+    () =>
+      poems.filter((p) => {
+        // 1. Mood & Format Filter
+        if (!matchFilter(p, f)) return false;
+
+        // 2. Global Search Query Filter
+        if (!deferredQuery) return true;
+
+        const id = poetId(p.takhallus).toLowerCase();
+        const takhallus = p.takhallus.toLowerCase();
+        const moodName = p.mood.toLowerCase();
+        const formatName = p.format.toLowerCase();
+        const textAll = [
+          ...p.hinglish,
+          ...p.hindi,
+          ...p.urdu,
+          ...p.english,
+          ...(p.tags || []),
+        ].join(" ").toLowerCase();
+
+        return (
+          id.includes(deferredQuery) ||
+          takhallus.includes(deferredQuery) ||
+          moodName.includes(deferredQuery) ||
+          formatName.includes(deferredQuery) ||
+          textAll.includes(deferredQuery)
+        );
+      }),
+    [poems, f, deferredQuery]
+  );
+
+  // Infinite scroll. The visible button below stays as the accessible fallback.
+  const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    let active = true;
-    fetchPoems().then((res) => {
-      if (active && res.poems && res.poems.length > 0) {
-        set({ poems: res.poems });
-        setNextCursor(res.nextCursor);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [set]);
-
-  const loadMore = async () => {
-    if (!nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const res = await fetchPoems({ cursor: nextCursor });
-      if (res.poems.length > 0) {
-        set((s) => ({ poems: [...s.poems, ...res.poems] }));
-      }
-      setNextCursor(res.nextCursor);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const query = search.trim().toLowerCase();
-
-  const list = poems.filter((p) => {
-    // 1. Mood & Format Filter
-    const matchesFilter = matchFilter(p, f);
-    if (!matchesFilter) return false;
-
-    // 2. Global Search Query Filter
-    if (!query) return true;
-
-    const id = poetId(p.takhallus).toLowerCase();
-    const takhallus = p.takhallus.toLowerCase();
-    const moodName = p.mood.toLowerCase();
-    const formatName = p.format.toLowerCase();
-    const textAll = [
-      ...p.hinglish,
-      ...p.hindi,
-      ...p.urdu,
-      ...p.english,
-      ...(p.tags || []),
-    ].join(" ").toLowerCase();
-
-    return (
-      id.includes(query) ||
-      takhallus.includes(query) ||
-      moodName.includes(query) ||
-      formatName.includes(query) ||
-      textAll.includes(query)
+    const el = sentinel.current;
+    if (!el || !hasNextPage) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && !isFetchingNextPage) fetchNextPage();
+      },
+      { rootMargin: "600px 0px" }
     );
-  });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const post = async () => {
+    if (!canWrite) {
+      promptSignIn("write");
+      return;
+    }
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
     if (lines.length < 2) {
       toast.error("Please write at least two lines for your verse.");
@@ -148,10 +200,13 @@ export function Feed() {
       }
 
       const newPoem = res.poem;
-      // Immediate non-blocking publication to user's feed
+      // Immediate non-blocking publication to user's feed.
+      // Both representations are updated: the store bridge that PoemCard reads,
+      // and the query cache that /feed will re-render from on the next visit.
       set((s) => ({
         poems: [newPoem, ...s.poems],
       }));
+      prependFeedPoem(qc, newPoem);
 
       try {
         localStorage.removeItem("ek_compose_draft");
@@ -160,11 +215,12 @@ export function Feed() {
       }
       setText("");
       setCompose(false);
-      toast.success("Your poem is now live on the Mehfil feed");
+      toast.success("Your poem is now live on the feed");
 
       // Trigger automatic background translation into other 3 supported scripts
       triggerAutoTranslation(newPoem.id, lines, detected, (updates) => {
         updatePoem(newPoem.id, updates);
+        patchFeedPoem(qc, newPoem.id, updates);
       });
     } catch (err: any) {
       toast.error("Could not post poem: " + (err?.message || "Please try again"));
@@ -185,7 +241,7 @@ export function Feed() {
         </div>
         <button
           type="button"
-          onClick={() => setCompose(true)}
+          onClick={openCompose}
           className={cn(btnPrimary, "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm")}
         >
           <Plus className="size-3.5 sm:size-4" /> Write a Poem
@@ -224,7 +280,7 @@ export function Feed() {
                 type="button"
                 onClick={() => setF(x)}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition sm:px-3.5 sm:py-1.5 sm:text-xs",
+                  "rounded-full px-2.5 py-1.5 text-[11px] font-medium transition sm:px-3.5 sm:py-1.5 sm:text-xs",
                   f === x
                     ? "bg-ink text-primary-foreground shadow-sm"
                     : "border border-hairline bg-card text-muted-foreground hover:border-border hover:text-ink"
@@ -275,112 +331,124 @@ export function Feed() {
         </div>
       </div>
 
-      {/* Compose Poem Drawer / Box */}
-      {compose && (
-        <div className={cn(card, "mt-6 p-4 sm:p-6 md:p-8 shadow-float")}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-crimson sm:size-5" />
-              <h2 className="text-xl font-semibold text-ink sm:text-2xl">Compose a Poem</h2>
-            </div>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => setCompose(false)}
-              className="rounded-full p-1.5 text-subtle transition hover:bg-muted hover:text-ink"
-            >
-              <X className="size-4 sm:size-5" />
+      {/* Compose — a real modal: Escape, backdrop, scroll lock and a 40 px close. */}
+      <Modal
+        open={compose}
+        onClose={() => setCompose(false)}
+        title="Compose a poem"
+        description={`Publishing anonymously as @${user?.penName ?? "you"}. Your verse is translated into Hindi, Urdu, Hinglish and English.`}
+        maxWidth="max-w-2xl"
+        footer={
+          <div className="flex justify-end gap-2">
+            <button type="button" disabled={posting} onClick={() => setCompose(false)} className={btnOutline}>
+              Cancel
+            </button>
+            <button type="button" disabled={posting} onClick={post} className={btnPrimary}>
+              {posting ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="size-3.5 animate-spin" /> Publishing...
+                </span>
+              ) : (
+                "Publish Poem"
+              )}
             </button>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Publishing anonymously as <b className="text-ink">@{user?.penName ?? "Guest_Reader"}</b>.
-            Your verse will automatically be translated into Hindi, Urdu, Hinglish, and English!
-          </p>
+        }
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-4 text-crimson sm:size-5" />
+          <span className="text-xs text-muted-foreground">One line per row. Two lines make a sher.</span>
+        </div>
 
-          <textarea
-            value={text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            rows={4}
-            placeholder={"Write one line per row…\nTeri yaad ki baarish mein bheegta raha dil,\nKhamoshi ne sab keh diya jo kehna tha."}
-            className={cn(input, "mt-3 font-serif text-base leading-relaxed sm:text-lg")}
-          />
+        <textarea
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          rows={4}
+          placeholder={"Teri yaad ki baarish mein bheegta raha dil,\nKhamoshi ne sab keh diya jo kehna tha."}
+          className={cn(input, "mt-3 font-serif text-base leading-relaxed sm:text-lg")}
+        />
 
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <label className={label}>Select Mood Tag</label>
-              <div className="flex flex-wrap gap-1.5">
-                {MOODS.map((m) => (
-                  <button key={m} type="button" onClick={() => setMood(m)} className={chip(mood === m)}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" disabled={posting} onClick={() => setCompose(false)} className={btnOutline}>
-                Cancel
+        <div className="mt-4">
+          <label className={label}>Select Mood Tag</label>
+          <div className="flex flex-wrap gap-1.5">
+            {MOODS.map((m) => (
+              <button key={m} type="button" onClick={() => setMood(m)} className={chip(mood === m)}>
+                {m}
               </button>
-              <button type="button" disabled={posting} onClick={post} className={btnPrimary}>
-                {posting ? (
-                  <span className="flex items-center gap-1.5">
-                    <Loader2 className="size-3.5 animate-spin" /> Publishing...
-                  </span>
-                ) : (
-                  "Publish to Mehfil"
-                )}
-              </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Results Meta Info */}
       <div className="mt-4 flex items-center justify-between text-xs text-subtle sm:mt-6">
         <span>Showing {list.length} {list.length === 1 ? "verse" : "verses"}</span>
-        {search && <span>Filtered by "{search}"</span>}
+        {search && <span>Filtered by “{search}”</span>}
       </div>
 
       {/* Poetry Feed Cards */}
       <div className="mx-auto mt-4 max-w-3xl space-y-4 sm:mt-6 sm:space-y-6">
-        {list.map((p) => (
-          <PoemCard key={p.id} poem={p} globalScript={script} />
-        ))}
+        {isLoading && !data ? (
+          <PoemSkeletonList count={2} />
+        ) : (
+          list.map((p) => <PoemCard key={p.id} poem={p} globalScript={script} />)
+        )}
 
-        {!list.length && (
-          <div className={cn(card, "py-20 text-center")}>
-            <p className="font-serif text-xl italic text-ink">"Khamosh hai mehfil, koi harf nahi..."</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              No poems found matching your filter or search query.
+        {!isLoading && !list.length && (
+          <div className={cn(card, "px-6 py-16 text-center sm:py-20")}>
+            <p className="font-serif text-xl italic text-ink">
+              {search ? `No poems found for “${search}”` : "No poems match this mood yet."}
             </p>
-            <button
-              onClick={() => {
-                setSearch("");
-                setF("All Moods");
-              }}
-              className={cn(btnOutline, "mt-6")}
-            >
-              Reset Search & Filters
+            <p className="mt-2 text-sm text-muted-foreground">
+              Try a different word, or clear the filters and wander the whole feed.
+            </p>
+            <button onClick={clearFilters} className={cn(btnOutline, "mt-6")}>
+              Clear Filters
             </button>
           </div>
         )}
 
-        {nextCursor && (
-          <div className="flex justify-center pt-4 sm:pt-6">
-            <button
-              onClick={loadMore}
-              disabled={loadingMore}
-              className={cn(btnOutline, "px-6 py-2.5 text-xs sm:text-sm")}
-            >
-              {loadingMore ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" /> Loading more verses...
-                </span>
-              ) : (
-                "Load More Verses"
-              )}
-            </button>
-          </div>
+        {hasNextPage && (
+          <>
+            <div ref={sentinel} className="h-10" aria-hidden />
+            <div className="flex justify-center pt-4 sm:pt-6">
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className={cn(btnOutline, "px-6 py-2.5 text-xs sm:text-sm")}
+              >
+                {isFetchingNextPage ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" /> Loading more verses...
+                  </span>
+                ) : (
+                  "Load More Verses"
+                )}
+              </button>
+            </div>
+          </>
         )}
+      </div>
+
+      {/* Mobile: jump to top or start writing without hunting for the header. */}
+      <div className="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2 lg:hidden">
+        {showTop && (
+          <button
+            type="button"
+            aria-label="Back to top"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="grid size-10 place-items-center rounded-full border border-hairline bg-background/95 text-ink shadow-float backdrop-blur"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={openCompose}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-float transition hover:bg-primary-hover"
+        >
+          <Plus className="size-4" /> Write Poem
+        </button>
       </div>
     </div>
   );

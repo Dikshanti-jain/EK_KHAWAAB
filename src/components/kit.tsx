@@ -72,14 +72,14 @@ export function ScriptSwitch({
     ["english", "English"],
   ];
   return (
-    <div className="inline-flex max-w-full items-center gap-0.5 rounded-full bg-muted/90 p-0.5 text-[11px] font-medium sm:text-xs">
+    <div className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-full bg-muted/90 p-0.5 text-[11px] font-medium sm:text-xs">
       {opts.map(([k, l]) => (
         <button
           key={k}
           type="button"
           onClick={() => onChange(k)}
           className={cn(
-            "rounded-full px-2 py-0.5 transition sm:px-2.5 sm:py-1",
+            "rounded-full px-3 py-1.5 transition",
             value === k
               ? "bg-background text-ink shadow-sm font-semibold"
               : "text-muted-foreground hover:text-ink"
@@ -93,7 +93,7 @@ export function ScriptSwitch({
           type="button"
           onClick={onMeaning}
           className={cn(
-            "rounded-full px-2 py-0.5 transition sm:px-2.5 sm:py-1",
+            "rounded-full px-3 py-1.5 transition",
             meaning ? "bg-royal text-primary-foreground font-semibold" : "text-muted-foreground hover:text-ink"
           )}
         >

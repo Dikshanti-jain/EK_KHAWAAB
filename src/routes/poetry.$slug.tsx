@@ -1,21 +1,29 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { safeJsonLd } from "@/lib/security";
 import { useState } from "react";
-import { Heart, Share2, Palette, Sparkles, BookOpen, ArrowLeft, ArrowRight, Check, Copy, Tag } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Heart, Share2, Palette, Sparkles, BookOpen, ArrowLeft, ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { POEMS, poetId, findPoemBySlugOrId, getPoemSlug, type Script } from "@/data/poems";
+import { POEMS, poetId, findPoemBySlugOrId, getPoemSlug, isLivePoemId, type Script } from "@/data/poems";
 import { LUGHAT, getWordSlug } from "@/data/lughat";
 import { useStore } from "@/lib/store";
+import { togglePoemLike, fetchPoemById } from "@/lib/poems.service";
+import { patchFeedPoem } from "@/lib/feed-cache";
+import { copyPoem, sharePoem } from "@/lib/share";
+import { useSignInPrompt } from "@/components/SignInPrompt";
 import { IdBadge, Pill, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/poetry/$slug")({
-  loader: ({ params }) => {
-    const poem = findPoemBySlugOrId(params.slug, POEMS);
-    if (!poem) {
-      throw notFound();
-    }
-    return { poem, slug: params.slug };
+  loader: async ({ params }) => {
+    const seed = findPoemBySlugOrId(params.slug, POEMS);
+    if (seed) return { poem: seed, slug: params.slug };
+
+    // Published poems are linked by UUID; resolve them from the public view.
+    const live = await fetchPoemById(params.slug);
+    if (live) return { poem: live, slug: params.slug };
+
+    throw notFound();
   },
   head: ({ loaderData }) => {
     if (!loaderData?.poem) {
@@ -49,36 +57,59 @@ export const Route = createFileRoute("/poetry/$slug")({
 });
 
 function PoemDetailPage() {
-  const { poem, slug } = Route.useLoaderData();
-  const { liked, saved, set } = useStore();
+  const { poem } = Route.useLoaderData();
+  const { liked, set, user } = useStore();
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const { promptSignIn } = useSignInPrompt();
   const [script, setScript] = useState<Script>("hinglish");
-  const [copied, setCopied] = useState(false);
   const [showAllScripts, setShowAllScripts] = useState(true);
+  const isCurated = !isLivePoemId(poem.id);
+  const [daadCount, setDaadCount] = useState(
+    poem.daad + (isCurated && liked.includes(poem.id) ? 1 : 0)
+  );
 
   const isLiked = liked.includes(poem.id);
-  const isSaved = saved.includes(poem.id);
+  const canWrite = Boolean(user && !user.guest);
 
-  const toggleDaad = () => {
-    set((s) => {
-      const exists = s.liked.includes(poem.id);
-      return {
-        liked: exists ? s.liked.filter((x) => x !== poem.id) : [...s.liked, poem.id],
-      };
-    });
-    toast(isLiked ? "Daad wapas li gayi" : "Mukarrar! Aapki daad shayar tak pahunchi.");
+  const toggleDaad = async () => {
+    if (!canWrite || !user) {
+      promptSignIn("appreciate");
+      return;
+    }
+
+    // Archive verses have no poem_likes row; keep the appreciation local.
+    if (isCurated) {
+      setDaadCount(isLiked ? poem.daad : poem.daad + 1);
+      set((s) => ({
+        liked: isLiked ? s.liked.filter((x) => x !== poem.id) : [...s.liked, poem.id],
+      }));
+      return;
+    }
+
+    const previous = liked;
+    const next = Math.max(0, daadCount + (isLiked ? -1 : 1));
+    setDaadCount(next);
+    set((s) => ({
+      liked: s.liked.includes(poem.id) ? s.liked.filter((x) => x !== poem.id) : [...s.liked, poem.id],
+    }));
+    patchFeedPoem(qc, poem.id, { daad: next });
+
+    const res = await togglePoemLike(poem.id, user.poetId, isLiked);
+    if (!res.success) {
+      setDaadCount(daadCount);
+      set({ liked: previous });
+      patchFeedPoem(qc, poem.id, { daad: daadCount });
+      toast.error(res.error || "Could not update your appreciation.");
+    }
   };
 
-  const copyPermalink = () => {
-    const url = `${window.location.origin}/poetry/${slug}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast.success("Poem link copied to clipboard!");
-    } else {
-      toast(url);
-    }
+  const copyShayari = () => {
+    void copyPoem(poem, script);
+  };
+
+  const shareThis = () => {
+    void sharePoem(poem, script);
   };
 
   const openInStudio = () => {
@@ -142,7 +173,7 @@ function PoemDetailPage() {
       <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Link to="/" className="hover:text-ink">Home</Link>
         <span>/</span>
-        <Link to="/feed" className="hover:text-ink">Mehfil Feed</Link>
+        <Link to="/feed" className="hover:text-ink">Explore Feed</Link>
         <span>/</span>
         <span className="font-serif italic text-ink truncate max-w-xs">{poem.hinglish[0]}</span>
       </nav>
@@ -183,33 +214,26 @@ function PoemDetailPage() {
 
         {/* Action Toolbar */}
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={toggleDaad}
+              onClick={() => void toggleDaad()}
+              aria-label={daadCount > 0 ? `Appreciate, ${daadCount} appreciations` : "Appreciate this verse"}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-medium transition",
-                isLiked ? "border-crimson bg-blush text-crimson" : "border-hairline hover:bg-muted text-ink"
+                isLiked ? "border-crimson bg-blush text-crimson" : "border-hairline text-ink hover:bg-muted"
               )}
             >
               <Heart className={cn("size-3.5", isLiked && "fill-crimson")} />
-              <span>{poem.daad + (isLiked ? 1 : 0)} Daad</span>
+              <span>{daadCount > 0 ? daadCount : "Appreciate"}</span>
             </button>
-            <button
-              onClick={openInStudio}
-              className={cn(btnRoyal, "px-4 py-2 text-xs")}
-            >
-              <Palette className="size-3.5" /> Customize in Card Studio
+            <button onClick={copyShayari} className={cn(btnOutline, "px-3.5 py-2 text-xs")}>
+              <Copy className="size-3.5" /> Copy Shayari
             </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={copyPermalink}
-              className={cn(btnOutline, "px-3.5 py-2 text-xs")}
-              title="Copy shareable permalink"
-            >
-              {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
-              <span>{copied ? "Link Copied!" : "Share Link"}</span>
+            <button onClick={shareThis} className={cn(btnOutline, "px-3.5 py-2 text-xs")}>
+              <Share2 className="size-3.5" /> Share
+            </button>
+            <button onClick={openInStudio} className={cn(btnRoyal, "px-4 py-2 text-xs")}>
+              <Palette className="size-3.5" /> Create Card
             </button>
           </div>
         </footer>
@@ -346,7 +370,7 @@ function PoemDetailPage() {
       {/* Back to feed footer button */}
       <div className="mt-10 text-center">
         <Link to="/feed" className={cn(btnOutline, "px-6 py-2.5")}>
-          <ArrowLeft className="size-4" /> Back to Mehfil Feed
+          <ArrowLeft className="size-4" /> Back to Explore Feed
         </Link>
       </div>
     </div>

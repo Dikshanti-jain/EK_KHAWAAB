@@ -337,6 +337,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      room_sessions: {
+        Row: {
+          room_code: string;
+          user_uid: string;
+          role: "host" | "guest";
+          joined_at: string;
+          last_seen: string;
+        };
+        Insert: {
+          room_code: string;
+          user_uid: string;
+          role: "host" | "guest";
+          joined_at?: string;
+          last_seen?: string;
+        };
+        Update: {
+          room_code?: string;
+          user_uid?: string;
+          role?: "host" | "guest";
+          joined_at?: string;
+          last_seen?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       safe_poems_feed: {
@@ -413,6 +437,67 @@ export type Database = {
       delete_my_account_rpc: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      get_feed_page: {
+        Args: {
+          p_cursor_created_at?: string | null;
+          p_cursor_id?: string | null;
+          p_mood?: string | null;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          shayar_uid: string;
+          takhallus: string;
+          hinglish_text: string;
+          hindi_text: string | null;
+          urdu_text: string | null;
+          english_translation: string | null;
+          mood_tag: string | null;
+          format_type: string | null;
+          seed_words: string[] | null;
+          is_gumnaam: boolean;
+          daad_count: number;
+          created_at: string;
+          is_owner: boolean;
+          recent_comments: {
+            id: string;
+            comment_text: string;
+            created_at: string;
+            takhallus: string | null;
+          }[] | null;
+        }[];
+      };
+      get_my_shayar_profile: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          shayar_uid: string;
+          takhallus: string;
+        }[];
+      };
+      update_my_takhallus: {
+        Args: {
+          p_takhallus: string;
+          p_meaning?: string | null;
+        };
+        Returns: boolean;
+      };
+      room_heartbeat: {
+        Args: {
+          p_code: string;
+          p_role: string;
+        };
+        Returns: {
+          active: number;
+          capacity: number;
+          ok: boolean;
+        }[];
+      };
+      room_leave: {
+        Args: {
+          p_code: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {

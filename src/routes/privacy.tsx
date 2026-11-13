@@ -1,29 +1,30 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { EyeOff, FileLock2, ImageOff, Lock, Server, Cpu, Database, Trash2, RefreshCw, AlertTriangle, ShieldCheck } from "lucide-react";
+import { EyeOff, FileLock2, ImageOff, Lock, Server, Cpu, Database, Trash2, RefreshCw, AlertTriangle, ShieldCheck, Cookie } from "lucide-react";
 import { toast } from "sonner";
 import { PageHead, card, btnPrimary, btnOutline } from "@/components/kit";
+import { Modal } from "@/components/Modal";
 import { useStore } from "@/lib/store";
 import { deleteMyAccount } from "@/lib/auth.service";
 import { cn } from "@/lib/utils";
 
 const CORE_PILLARS = [
-  [Lock, "Private Vault Isolation", "Your real legal name, email, and phone number are stored strictly in an encrypted private vault guarded by PostgreSQL Row Level Security (RLS). They are NEVER exposed in public API feeds, comments, or directory views."],
-  [EyeOff, "Public Pen Name Representation", "Readers, commenters, and letter recipients only ever see your chosen pen name (Takhallus) and cryptographic #EK-ID. If you choose 'Gumnaam', your identity is masked at the database level."],
-  [Cpu, "Subprocessors & AI Processing", "When using the AI Poet or translation features, prompts are processed via Groq Inc. using server-side models. No personal user credentials or vault records are ever forwarded to LLM providers."],
-  [Database, "Data Infrastructure & Supabase", "Primary database storage and session tokens are hosted securely on Supabase (PostgreSQL with RLS). Sessions are governed by 7-day TTL expiration to minimize credential exposure."],
-  [ImageOff, "Zero-Exif Card Studio Exports", "Quote cards are generated in-memory through HTML5 Canvas. Downloaded PNG and JPEG images contain zero GPS metadata, device identifiers, or tracking tags."],
-  [FileLock2, "Zero-Knowledge Secret Letters", "Letters are locked cryptographically with bcrypt riddle answers. Senders remain hidden as 'A secret admirer' until the riddle is successfully unlocked by the recipient."],
+  [Lock, "Your private details stay private", "Your real name (if you add one), email and phone live in a private table that only you can read. They are never shown in feeds, comments, cards or letters."],
+  [EyeOff, "Only your pen name is public", "Readers, commenters and letter recipients see your pen name (takhallus) and your #EK-ID. Nothing else. If you post anonymously, even your pen name is hidden."],
+  [Cpu, "AI processing", "When you use the AI Poet or translation, your prompt is processed by Groq Inc. on the server. Your account credentials and private details are never sent to the model."],
+  [Database, "Where data lives", "Poems, comments and sessions are stored on Supabase (PostgreSQL). Sessions expire after 7 days so a lost device does not stay signed in forever."],
+  [ImageOff, "Card exports carry no hidden data", "Quote cards are drawn in your browser with HTML5 Canvas. Downloaded images contain no GPS location, device ID or tracking tag."],
+  [FileLock2, "Sealed secret letters", "Letter answers are hashed with bcrypt. The sender stays hidden as “A secret admirer” until the recipient solves the riddle."],
 ] as const;
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
       { title: "Privacy Policy & Data Protection Charter — Ek Khwaab | DPDP Act 2023 Compliant" },
-      { name: "description", content: "Learn how Ek Khwaab protects user anonymity, private vault records, and complies with India's DPDP Act 2023." },
+      { name: "description", content: "Learn how Ek Khwaab protects user anonymity, private account details, and complies with India's DPDP Act 2023." },
       { name: "author", content: "Dikshanti Jain" },
       { property: "og:title", content: "Privacy Policy — Ek Khwaab" },
-      { property: "og:description", content: "Your words are public, but your real identity is sealed in an encrypted vault." },
+      { property: "og:description", content: "Your words are public, but your real identity stays private." },
     ],
   }),
   component: PrivacyPage,
@@ -63,7 +64,7 @@ export function PrivacyPage() {
           localStorage.removeItem("ek_compose_draft");
         } catch {}
         setShowDeleteModal(false);
-        toast.success("Your account and private vault have been permanently erased.");
+        toast.success("Your account and private details have been permanently erased.");
         nav({ to: "/" });
       } else {
         toast.error(res.error || "Failed to delete account. Please try again.");
@@ -77,9 +78,20 @@ export function PrivacyPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-14 md:px-12">
       <PageHead
         kicker="PRIVACY & DATA CHARTER"
-        title="Your feelings are yours. Your identity stays sealed."
-        sub="Ek Khwaab is built from the ground up on zero-knowledge anonymity, explicit user consent, and India's Digital Personal Data Protection Act, 2023 (DPDP Act 2023)."
+        title="Your feelings are yours. Your identity stays private."
+        sub="The short version: your email is never shown publicly, your pen name is the only public identity, and we use no advertising trackers. The detail below explains exactly what we store and how to remove it."
       />
+
+      {/* Plain-language summary */}
+      <div className={cn(card, "mb-8 border-royal/15 bg-wash/40 p-6 sm:p-8")}>
+        <h2 className="text-lg font-semibold text-ink sm:text-xl">The short version</h2>
+        <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+          <li><b className="text-ink">Public:</b> your pen name, #EK-ID, poems and comments.</li>
+          <li><b className="text-ink">Private:</b> your email, optional full name and phone, and your password.</li>
+          <li><b className="text-ink">Never sold:</b> we do not sell data or run cross-site ad trackers.</li>
+          <li><b className="text-ink">Always yours:</b> you can clear local data or delete your account below.</li>
+        </ul>
+      </div>
 
       {/* Core Security & Privacy Pillars */}
       <div className="grid gap-5 md:grid-cols-2">
@@ -94,6 +106,37 @@ export function PrivacyPage() {
         ))}
       </div>
 
+      {/* Cookies & local storage */}
+      <div className={cn(card, "mt-8 p-6 sm:p-8")}>
+        <div className="flex items-center gap-2.5">
+          <Cookie className="size-5 text-royal" />
+          <h2 className="text-xl font-semibold text-ink">Cookies & local storage</h2>
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          We use a small amount of browser storage, not advertising trackers:
+        </p>
+        <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-muted-foreground">
+          <li><b className="text-ink">Session:</b> keeps you signed in securely.</li>
+          <li><b className="text-ink">Script preference:</b> remembers Hinglish, Hindi or Urdu.</li>
+          <li><b className="text-ink">Reading cache:</b> a 7-day local cache so the feed opens quickly.</li>
+          <li><b className="text-ink">Your cookie choice:</b> so this banner does not ask again.</li>
+        </ul>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              localStorage.removeItem("ek_cookie_consent_v1");
+              toast.success("Cookie choice cleared. The banner will appear again.");
+            } catch {
+              toast.error("Could not clear the cookie choice on this device.");
+            }
+          }}
+          className={cn(btnOutline, "mt-5 text-xs sm:text-sm")}
+        >
+          Change cookie choice
+        </button>
+      </div>
+
       {/* DPDP Act 2023 Compliance & Data Protection Section */}
       <div className={cn(card, "mt-8 p-6 sm:p-8 space-y-4")}>
         <div className="flex items-center gap-2.5">
@@ -104,7 +147,7 @@ export function PrivacyPage() {
           Under the Digital Personal Data Protection Act, 2023 of India, you hold irrevocable rights regarding your digital data:
         </p>
         <ul className="list-inside list-disc space-y-1.5 text-sm text-muted-foreground">
-          <li><strong>Right to Access:</strong> You can review all vault credentials and public poems from your account profile at any time.</li>
+          <li><strong>Right to Access:</strong> You can review your account details and public poems from your profile at any time.</li>
           <li><strong>Right to Correction & Erasure:</strong> You can modify your pen name or trigger immediate irreversible account deletion.</li>
           <li><strong>Right to Grievance Redressal:</strong> Inquiries or grievances can be addressed directly to our Data Protection & Grievance Officer.</li>
         </ul>
@@ -130,7 +173,7 @@ export function PrivacyPage() {
               onClick={() => setShowDeleteModal(true)}
               className={cn(btnPrimary, "bg-crimson hover:bg-crimson/90 text-xs sm:text-sm flex items-center gap-2")}
             >
-              <Trash2 className="size-4" /> Delete My Account & Vault
+              <Trash2 className="size-4" /> Delete My Account
             </button>
           )}
         </div>
@@ -153,43 +196,32 @@ export function PrivacyPage() {
       </div>
 
       {/* Account Deletion Confirmation Dialog */}
-      {showDeleteModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
-          onClick={() => setShowDeleteModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-3xl border border-hairline bg-background p-6 sm:p-8 shadow-float"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-full bg-blush text-crimson">
-                <AlertTriangle className="size-5" />
-              </div>
-              <h3 className="text-xl font-semibold text-ink">Erase Your Account?</h3>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              This will permanently delete your private vault data, your public pen name profile, your secret letters, and your bookmarks. This action cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-                className={btnOutline}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deleting}
-                className={cn(btnPrimary, "bg-crimson hover:bg-crimson/90")}
-              >
-                {deleting ? "Erasing..." : "Yes, Erase Everything"}
-              </button>
-            </div>
+      <Modal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete your account?"
+        tone="danger"
+        description="This permanently deletes your private details, pen-name profile, secret letters and bookmarks. It cannot be undone."
+        footer={
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className={btnOutline}>
+              Cancel
+            </button>
+            <button
+              onClick={() => void handleDeleteAccount()}
+              disabled={deleting}
+              className={cn(btnPrimary, "bg-crimson hover:bg-crimson/90")}
+            >
+              {deleting ? "Erasing..." : "Yes, Delete Everything"}
+            </button>
           </div>
+        }
+      >
+        <div className="flex items-center gap-3 rounded-2xl bg-blush/60 p-4 text-xs text-crimson">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>Your poems will be removed from the public feed.</span>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

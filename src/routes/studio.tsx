@@ -1,9 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Download, Send, Sparkles, BookOpen, Layers, Type, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { POEMS, poetId, type Script } from "@/data/poems";
-import { useStore, uid } from "@/lib/store";
+import { useStore } from "@/lib/store";
+import { createPoem } from "@/lib/poems.service";
+import { prependFeedPoem } from "@/lib/feed-cache";
+import { useSignInPrompt } from "@/components/SignInPrompt";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { cn } from "@/lib/utils";
@@ -88,6 +92,8 @@ export function Studio() {
   });
   const { studio, set, user } = useStore();
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const { promptSignIn } = useSignInPrompt();
   const seed = POEMS[1]!;
   const match0 = studio && POEMS.find((p) => [p.hinglish, p.hindi, p.urdu, p.english].some((v) => (v ?? []).join("\n") === studio.lines.join("\n")));
   const [script, setScript] = useState<Script>("hinglish");
@@ -99,6 +105,7 @@ export function Studio() {
   const [size, setSize] = useState(64);
   const [align, setAlign] = useState<"center" | "left">("center");
   const [showId, setShowId] = useState(true);
+  const [publishing, setPublishing] = useState(false);
   const ref = useRef<HTMLCanvasElement>(null);
   const id = user && sign === user.penName ? user.poetId : poetId(sign);
 
@@ -116,10 +123,37 @@ export function Studio() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `ek-khwaab-${ratio.split(" ")[0]!.replace(":", "x")}.png`; a.click();
     toast("HD card downloaded");
   }, "image/png");
-  const post = () => {
-    const lines = text.split("\n").filter(Boolean);
-    set((s) => ({ poems: [{ ...seed, id: uid(), takhallus: s.user?.penName ?? "Guest_Reader", format: lines.length > 2 ? "Qata" : "Sher", hinglish: lines, hindi: source?.hindi ?? lines, urdu: source?.urdu ?? lines, english: source?.english ?? [], daad: 0, muqarrar: 0, hashiya: [] }, ...s.poems] }));
-    toast("Posted to the feed"); nav({ to: "/feed" });
+  const post = async () => {
+    if (!user || user.guest) {
+      promptSignIn("write");
+      return;
+    }
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) {
+      toast.error("Add at least two lines before publishing.");
+      return;
+    }
+    setPublishing(true);
+    try {
+      const created = await createPoem({
+        shayarUid: user.poetId,
+        takhallus: user.penName,
+        lines,
+        sourceScript: script,
+        moodTag: "Life & Philosophy",
+        formatType: lines.length > 2 ? "Qata" : "Sher",
+      });
+      if (created.error || !created.poem) {
+        toast.error(created.error || "Could not publish your poem.");
+        return;
+      }
+      set((s) => ({ poems: [created.poem!, ...s.poems] }));
+      prependFeedPoem(qc, created.poem);
+      toast.success("Your poem is now live on the feed");
+      nav({ to: "/feed" });
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -152,11 +186,11 @@ export function Studio() {
             {showId && <input value={sign} onChange={(e) => setSign(e.target.value)} className={cn(input, "mt-2")} />}
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center gap-5 rounded-2xl bg-secondary p-4 sm:p-6 md:p-8">
-          <canvas ref={ref} aria-label="Card preview" style={{ maxHeight: "min(580px, 60vh)", maxWidth: "100%", height: "auto" }} className="w-auto rounded-xl shadow-float object-contain" />
-          <div className="flex w-full flex-col sm:flex-row flex-wrap justify-center gap-2.5 sm:gap-3">
-            <button onClick={download} className={cn(btnPrimary, "w-full sm:w-auto px-5 py-2.5 sm:px-7 sm:py-3")}><Download className="size-4" /> Download HD PNG Card</button>
-            <button onClick={post} className={cn(btnOutline, "w-full sm:w-auto px-5 py-2.5 sm:px-7 sm:py-3")}><Send className="size-4" /> Post to Feed</button>
+        <div className="flex min-w-0 flex-col items-center justify-center gap-5 overflow-hidden rounded-2xl bg-secondary p-4 sm:p-6 md:p-8">
+          <canvas ref={ref} aria-label="Card preview" style={{ maxHeight: "65vh", maxWidth: "100%", width: "auto", height: "auto" }} className="block max-w-full rounded-xl object-contain shadow-float" />
+          <div className="flex w-full flex-col flex-wrap justify-center gap-2.5 sm:flex-row sm:gap-3">
+            <button onClick={download} className={cn(btnPrimary, "w-full px-5 py-2.5 sm:w-auto sm:px-7 sm:py-3")}><Download className="size-4" /> Download HD PNG Card</button>
+            <button onClick={() => void post()} disabled={publishing} className={cn(btnOutline, "w-full px-5 py-2.5 sm:w-auto sm:px-7 sm:py-3")}><Send className="size-4" /> {publishing ? "Publishing..." : "Publish Poem"}</button>
           </div>
         </div>
       </div>
@@ -203,7 +237,7 @@ export function Studio() {
             </div>
             <h3 className="text-base font-semibold text-ink">Contrast & Anonymous Pen Name</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              High-contrast palettes (Royal Ink Blue, Velvet Crimson, Soft Ivory, and Pure White) ensure readability on OLED and Retina displays. The watermark binds your public pen name and unique #EK-ID, keeping your private legal name zero-leak protected.
+              High-contrast palettes (Royal Ink Blue, Velvet Crimson, Soft Ivory, and Pure White) ensure readability on OLED and Retina displays. The watermark binds your public pen name and unique #EK-ID, while your real name stays private.
             </p>
           </div>
         </div>

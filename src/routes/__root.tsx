@@ -9,6 +9,9 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider, useStore } from "@/lib/store";
 import { IdBadge, btnGhost, btnOutline, btnPrimary } from "@/components/kit";
 import { AmbientAudio } from "@/components/AmbientAudio";
+import { PageTransition } from "@/components/PageTransition";
+import { CookieConsent } from "@/components/CookieConsent";
+import { SignInPromptProvider } from "@/components/SignInPrompt";
 import { cn } from "@/lib/utils";
 
 function NotFoundComponent() {
@@ -295,9 +298,9 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 sm:h-16 md:h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 md:px-12">
-        <Link to="/" className="group flex items-center gap-2 sm:gap-3" onClick={() => setOpen(false)}>
+        <Link to="/" className="group flex shrink-0 items-center gap-2 sm:gap-3" onClick={() => setOpen(false)}>
           <img src="/logo-icon.png" alt="Ek Khwaab Logo" className="size-7 sm:size-8 md:size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
-          <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-ink">Ek Khwaab<span className="text-crimson">.</span></span>
+          <span className="whitespace-nowrap font-serif text-xl sm:text-2xl font-bold tracking-tight text-ink">Ek Khwaab<span className="text-crimson">.</span></span>
         </Link>
 
         {/* Desktop Nav */}
@@ -311,8 +314,10 @@ function TopBar() {
         <div className="flex items-center gap-2 sm:gap-3">
           <AmbientAudio />
           {user ? (
-            <Link to="/profile" className="flex items-center gap-1.5 rounded-full border border-hairline py-1 pl-3 pr-1 text-xs font-medium text-ink hover:border-royal sm:py-1.5 sm:pl-4 sm:pr-1.5 sm:text-sm">
-              <span className="max-w-[80px] truncate sm:max-w-none">@{user.penName}</span> <IdBadge id={user.poetId} />
+            <Link to="/profile" className="flex items-center gap-1.5 rounded-full border border-hairline py-1 pl-2.5 pr-1 text-xs font-medium text-ink hover:border-royal sm:py-1.5 sm:pl-4 sm:pr-1.5 sm:text-sm">
+              <span className="max-w-[72px] truncate sm:max-w-none">@{user.penName}</span>
+              {/* The full #EK-ID is long; on phones it lives in the drawer/profile. */}
+              <span className="hidden sm:inline"><IdBadge id={user.poetId} /></span>
             </Link>
           ) : (
             <div className="hidden sm:flex items-center gap-2">
@@ -387,11 +392,12 @@ function Footer() {
 
           {/* Quick Explore */}
           <div className="md:col-span-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">Explore Mehfil</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">Explore</h3>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
               <li><Link to="/feed" className="transition hover:text-ink">Explore Feed</Link></li>
               <li><Link to="/ai-poet" className="transition hover:text-ink">AI Poet Co-Writer</Link></li>
               <li><Link to="/studio" className="transition hover:text-ink">Card Studio</Link></li>
+              <li><Link to="/listen-together" className="transition hover:text-ink">Listen Together</Link></li>
               <li><Link to="/dictionary" className="transition hover:text-ink">Lughat (Dictionary)</Link></li>
               <li><Link to="/guidelines" className="transition hover:text-ink">Community Guidelines</Link></li>
               <li><Link to="/privacy" className="transition hover:text-ink">Privacy Charter</Link></li>
@@ -476,11 +482,18 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
-        <TopBar />
-        <main className="pb-16 lg:pb-0"><Outlet /></main>
-        <Footer />
-        <BottomNav />
-        <Toaster />
+        <SignInPromptProvider>
+          <TopBar />
+          <main className="pb-16 lg:pb-0">
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
+          </main>
+          <Footer />
+          <BottomNav />
+          <CookieConsent />
+          <Toaster />
+        </SignInPromptProvider>
       </StoreProvider>
     </QueryClientProvider>
   );

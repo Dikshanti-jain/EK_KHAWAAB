@@ -6,6 +6,11 @@ import {
   type ShayarRequest,
 } from "@/lib/groq.service";
 
+// Two tests below call the live Groq API with the project's real key. They are
+// opt-in because they burn TPM quota and fail with a 429 on a busy minute.
+//   RUN_LIVE_AI_TESTS=1 npm test
+const LIVE = process.env["RUN_LIVE_AI_TESTS"] === "1";
+
 describe("Groq Shayar-e-Khwaab Service Tests", () => {
   it("builds a thorough creative brief with all semantic constraints", () => {
     const req: ShayarRequest = {
@@ -50,7 +55,7 @@ describe("Groq Shayar-e-Khwaab Service Tests", () => {
     expect(validateRequiredPhrases(lines, ["samundar"])).toBe(false);
   });
 
-  it("executes live Groq request and returns verified structured 3-script output", async () => {
+  it.skipIf(!LIVE)("executes live Groq request and returns verified structured 3-script output", async () => {
     const req: ShayarRequest = {
       situation: "I see her every day in college, but cannot start a conversation. I don't want to make her uncomfortable.",
       phrases: ["library", "silent"],
@@ -88,7 +93,7 @@ describe("Groq Shayar-e-Khwaab Service Tests", () => {
     expect(combined).not.toContain("dhokha");
   }, 25000);
 
-  it("personalization counterfactual test: ensures distinct situations produce distinct imagery", async () => {
+  it.skipIf(!LIVE)("personalization counterfactual test: ensures distinct situations produce distinct imagery", async () => {
     const reqA: ShayarRequest = {
       situation: "I see her every day in college, but cannot start a conversation. I don't want to make her uncomfortable.",
       phrases: [],

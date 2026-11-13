@@ -1,22 +1,53 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bookmark, Heart, MessageCircle, Palette, Mail, X, Trash2, Flag, AlertTriangle, CheckCircle2, Loader2, RotateCcw, BookOpen } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Bookmark,
+  Heart,
+  MessageCircle,
+  Palette,
+  Mail,
+  Trash2,
+  Flag,
+  AlertTriangle,
+  Loader2,
+  RotateCcw,
+  Copy,
+  MoreHorizontal,
+  Link2,
+} from "lucide-react";
 import { toast } from "sonner";
-import { poetId, getPoemSlug, type Poem, type Script } from "@/data/poems";
+import { poetId, getPoemSlug, isLivePoemId, type Poem, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
-import { togglePoemLike, togglePoemBookmark, addPoemComment, deletePoem, reportContent } from "@/lib/poems.service";
+import { patchFeedPoem, removeFeedPoem } from "@/lib/feed-cache";
+import {
+  togglePoemLike,
+  togglePoemBookmark,
+  addPoemComment,
+  deletePoemComment,
+  deletePoem,
+  reportContent,
+} from "@/lib/poems.service";
 import { triggerAutoTranslation } from "@/lib/translation.service";
-import { IdBadge, Pill, ScriptSwitch, Verse, card, input, btnPrimary, btnOutline } from "./kit";
+import { copyPoem, sharePoem } from "@/lib/share";
+import { IdBadge, Pill, ScriptSwitch, Verse, card, input, label, btnPrimary, btnOutline } from "./kit";
+import { Modal } from "./Modal";
+import { useSignInPrompt } from "./SignInPrompt";
 import { cn } from "@/lib/utils";
 
 export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Script }) {
   const store = useStore();
+  const qc = useQueryClient();
   const nav = useNavigate();
+  const { promptSignIn } = useSignInPrompt();
   const [override, setOverride] = useState<Script | null>(null);
   const [meaning, setMeaning] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [reply, setReply] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
   const [ripple, setRipple] = useState(0);
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Author Deletion & Moderation Report States
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -28,69 +59,164 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
   const liked = store.liked.includes(poem.id);
   const saved = store.saved.includes(poem.id);
   const me = store.user;
-  const isAuthor = Boolean(poem.isOwner || (me && me.penName === poem.takhallus));
+  // A local "guest demo" user has no Supabase session, so every write would
+  // fail server-side. Treat it as signed out for interactions.
+  const canWrite = Boolean(me && !me.guest);
+  // Curated archive verses have no database row. Their appreciation is a
+  // personal, locally remembered action; live poems use the real server count.
+  const isCurated = !isLivePoemId(poem.id);
+  const isAuthor = Boolean(!isCurated && (poem.isOwner || (canWrite && me && me.penName === poem.takhallus)));
 
-  const toggle = async (k: "liked" | "saved") => {
-    const userUid = me?.poetId;
-    if (!userUid) {
-      toast.error("Please sign in or choose a pen name first.");
+  const daad = isCurated ? poem.daad + (liked ? 1 : 0) : poem.daad;
+  const commentCount = poem.hashiya.length;
+  // The feed RPC returns at most three recent comments, so "3+" is honest
+  // when the list is full and the true total is unknown.
+  const commentLabel = commentCount === 0 ? "Comment" : commentCount >= 3 ? "3+" : String(commentCount);
+
+  // Close the overflow menu on Escape and on any outside click.
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [menu]);
+
+  const toggleLike = async () => {
+    if (!canWrite || !me) {
+      promptSignIn("appreciate");
       return;
     }
-    const currentlyActive = k === "liked" ? liked : saved;
-    const res =
-      k === "liked"
-        ? await togglePoemLike(poem.id, userUid, currentlyActive)
-        : await togglePoemBookmark(poem.id, userUid, currentlyActive);
 
+    // Curated archive verses have no poem_likes row to write. Keep the
+    // appreciation personal and local instead of failing a foreign key.
+    if (isCurated) {
+      store.set((s) => ({
+        liked: s.liked.includes(poem.id) ? s.liked.filter((x) => x !== poem.id) : [...s.liked, poem.id],
+      }));
+      setRipple((r) => r + 1);
+      return;
+    }
+
+    const userUid = me.poetId;
+    const previous = store.liked;
+    const nextDaad = Math.max(0, daad + (liked ? -1 : 1));
+
+    // Optimistic: heart flips and the count moves immediately. The count is
+    // patched by exactly one, never `serverCount + 1`, so it cannot double-count.
+    store.set((s) => ({
+      liked: s.liked.includes(poem.id) ? s.liked.filter((x) => x !== poem.id) : [...s.liked, poem.id],
+    }));
+    store.updatePoem(poem.id, { daad: nextDaad });
+    patchFeedPoem(qc, poem.id, { daad: nextDaad });
+    setRipple((r) => r + 1);
+
+    const res = await togglePoemLike(poem.id, userUid, liked);
     if (!res.success) {
-      toast.error(res.error || `Could not update ${k}.`);
+      store.set({ liked: previous });
+      store.updatePoem(poem.id, { daad });
+      patchFeedPoem(qc, poem.id, { daad });
+      toast.error(res.error || "Could not update your appreciation.");
+    }
+  };
+
+  const toggleSave = async () => {
+    if (!canWrite || !me) {
+      promptSignIn("save");
       return;
     }
 
-    store.set((s) => ({ [k]: s[k].includes(poem.id) ? s[k].filter((x) => x !== poem.id) : [...s[k], poem.id] }));
+    // Saves for curated verses live in the reader's local collection.
+    if (isCurated) {
+      store.set((s) => ({
+        saved: s.saved.includes(poem.id) ? s.saved.filter((x) => x !== poem.id) : [...s.saved, poem.id],
+      }));
+      toast.success(saved ? "Removed from Saved Poems" : "Saved to your collection");
+      return;
+    }
+
+    const userUid = me.poetId;
+    const previous = store.saved;
+
+    store.set((s) => ({
+      saved: s.saved.includes(poem.id) ? s.saved.filter((x) => x !== poem.id) : [...s.saved, poem.id],
+    }));
+
+    const res = await togglePoemBookmark(poem.id, userUid, saved);
+    if (!res.success) {
+      store.set({ saved: previous });
+      toast.error(res.error || "Could not update your saved poems.");
+      return;
+    }
+    toast.success(saved ? "Removed from Saved Poems" : "Saved to your collection");
+  };
+
+  const openComments = () => {
+    if (!canWrite) {
+      promptSignIn("comment");
+      return;
+    }
+    setDrawer(true);
   };
 
   const addReply = async () => {
-    if (!reply.trim()) return;
+    if (isCurated || !reply.trim() || postingComment) return;
+    if (!canWrite || !me) {
+      promptSignIn("comment");
+      return;
+    }
     const replyText = reply.trim();
-    const byName = store.user?.penName ?? "Guest_Reader";
-    const userUid = store.user?.poetId;
-    if (!userUid) {
-      toast.error("Please sign in or choose a pen name to comment.");
-      return;
+    const byName = me.penName;
+    setPostingComment(true);
+    try {
+      const res = await addPoemComment(poem.id, me.poetId, replyText);
+      if (!res.success) {
+        toast.error(res.error || "Could not submit comment.");
+        return;
+      }
+      const next = [
+        ...poem.hashiya,
+        { by: byName, text: replyText, ...(res.commentId ? { id: res.commentId } : {}) },
+      ];
+      store.updatePoem(poem.id, { hashiya: next });
+      patchFeedPoem(qc, poem.id, { hashiya: next });
+      setReply("");
+      toast.success("Comment added");
+    } finally {
+      setPostingComment(false);
     }
-    const res = await addPoemComment(poem.id, userUid, replyText);
-    if (!res.success) {
-      toast.error(res.error || "Could not submit comment.");
-      return;
-    }
-    store.set((s) => ({
-      poems: s.poems.map((p) =>
-        p.id === poem.id ? { ...p, hashiya: [...p.hashiya, { by: byName, text: replyText }] } : p
-      ),
-    }));
-    setReply("");
-    toast.success("Comment added to hashiya");
   };
 
-  const deleteComment = (commentIdx: number) => {
-    store.set((s) => ({
-      poems: s.poems.map((p) =>
-        p.id === poem.id ? { ...p, hashiya: p.hashiya.filter((_, idx) => idx !== commentIdx) } : p
-      ),
-    }));
+  const deleteComment = async (comment: Poem["hashiya"][number], index: number) => {
+    if (isCurated || !me) return;
+    if (comment.id) {
+      const res = await deletePoemComment(comment.id, me.poetId);
+      if (!res.success) {
+        toast.error(res.error || "Could not delete the comment.");
+        return;
+      }
+    }
+    const next = poem.hashiya.filter((_, i) => i !== index);
+    store.updatePoem(poem.id, { hashiya: next });
+    patchFeedPoem(qc, poem.id, { hashiya: next });
     toast("Comment removed");
   };
 
   const handleDeletePoem = async () => {
-    const userUid = me?.poetId;
-    if (!userUid) {
-      toast.error("Authentication required to delete verse.");
+    if (isCurated) return;
+    if (!canWrite || !me) {
+      promptSignIn("write");
       return;
     }
-    const res = await deletePoem(poem.id, userUid);
+    const res = await deletePoem(poem.id, me.poetId);
     if (!res.success) {
-      toast.error(res.error || "Could not delete verse from server.");
+      toast.error(res.error || "Could not delete the verse.");
       return;
     }
     store.set((s) => ({
@@ -98,8 +224,9 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
       saved: s.saved.filter((id) => id !== poem.id),
       liked: s.liked.filter((id) => id !== poem.id),
     }));
+    removeFeedPoem(qc, poem.id);
     setShowDeleteConfirm(false);
-    toast.success("Verse removed from the Mehfil");
+    toast.success("Verse removed");
   };
 
   const handleReportPoem = async (e: React.FormEvent) => {
@@ -158,10 +285,13 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     });
   };
 
-  const act = "inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 py-1.5 text-xs sm:text-sm text-muted-foreground transition hover:bg-muted hover:text-ink";
+  const act =
+    "inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-[10px] font-medium text-muted-foreground transition hover:bg-muted hover:text-ink sm:gap-1.5 sm:px-2.5 sm:text-sm";
+  const menuItem =
+    "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-medium text-ink transition hover:bg-muted sm:text-sm";
 
   return (
-    <article className={cn(card, "p-4 sm:p-6 md:p-8 transition hover:shadow-float")}>
+    <article className={cn(card, "p-4 transition hover:shadow-float sm:p-6 md:p-8")}>
       {/* Card Header: Author info, ID badge, Mood & Compact Script Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -175,17 +305,72 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
           )}
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {isAuthor && (
-            <button
-              title="Delete your poem"
-              aria-label="Delete your poem"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-full p-1 text-subtle transition hover:bg-blush hover:text-crimson"
-            >
-              <Trash2 className="size-3.5 sm:size-4" />
-            </button>
-          )}
           <ScriptSwitch value={script} onChange={setOverride} meaning={meaning} onMeaning={() => setMeaning(!meaning)} />
+
+          {/* Secondary actions live here, never in the primary row. */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="More actions"
+              aria-haspopup="menu"
+              aria-expanded={menu}
+              onClick={() => setMenu((m) => !m)}
+              className="grid size-8 place-items-center rounded-full text-subtle transition hover:bg-muted hover:text-ink"
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+            {menu && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-50 mt-1 w-52 rounded-2xl border border-hairline bg-popover p-1.5 shadow-float"
+              >
+                <button type="button" role="menuitem" onClick={() => { setMenu(false); void toggleSave(); }} className={menuItem}>
+                  <Bookmark className={cn("size-4", saved && "fill-current text-royal")} />
+                  {saved ? "Remove from Saved Poems" : "Save Poem"}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenu(false);
+                    store.set({ studio: { lines: canonicalLines, penName: poem.takhallus } });
+                    nav({ to: "/letters", search: {} });
+                  }}
+                  className={menuItem}
+                >
+                  <Mail className="size-4" /> Send as Secret Letter
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { setMenu(false); void sharePoem(poem, script); }}
+                  className={menuItem}
+                >
+                  <Link2 className="size-4" /> Share Link
+                </button>
+                {!isCurated && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setMenu(false); setShowReportModal(true); }}
+                    className={menuItem}
+                  >
+                    <Flag className="size-4" /> Report
+                  </button>
+                )}
+                {isAuthor && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setMenu(false); setShowDeleteConfirm(true); }}
+                    className={cn(menuItem, "text-crimson hover:bg-blush")}
+                  >
+                    <Trash2 className="size-4" /> Delete Verse
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -211,11 +396,13 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
           </div>
         )}
 
-        <Link to="/poetry/$slug" params={{ slug: getPoemSlug(poem) }} className="block transition-opacity hover:opacity-90" title="Read full verse, script translations and tashreeh">
-          <Verse
-            lines={currentLines || canonicalLines}
-            script={currentLines ? script : canonicalScript}
-          />
+        <Link
+          to="/poetry/$slug"
+          params={{ slug: getPoemSlug(poem) }}
+          className="block transition-opacity hover:opacity-90"
+          title="Read full verse, script translations and tashreeh"
+        >
+          <Verse lines={currentLines || canonicalLines} script={currentLines ? script : canonicalScript} />
         </Link>
 
         {/* English poetic meaning if toggled and not already in English */}
@@ -231,223 +418,197 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
         {poem.tags && poem.tags.length > 0 && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             {poem.tags.map((tag) => (
-              <span
+              <button
                 key={tag}
-                onClick={() => nav({ to: "/feed", search: {} as any })}
+                type="button"
+                onClick={() =>
+                  nav({ to: "/feed", search: { q: tag.replace(/^#/, "") } })
+                }
                 className="cursor-pointer rounded-full bg-wash/80 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-royal transition-all hover:bg-royal hover:text-white sm:text-xs"
               >
                 {tag.startsWith("#") ? tag : `#${tag}`}
-              </span>
+              </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Compact, responsive action bar */}
-      <div className="flex flex-wrap items-center justify-between gap-1 border-t border-hairline pt-3 sm:pt-4">
-        <div className="flex flex-wrap items-center gap-1">
-          <button
-            type="button"
-            aria-label="Appreciate verse"
-            onClick={() => {
-              toggle("liked");
-              setRipple((r) => r + 1);
-            }}
-            className={cn(act, liked && "text-crimson hover:text-crimson font-semibold")}
-          >
-            <Heart key={ripple} className={cn("ink-ripple size-3.5 sm:size-4", liked && "fill-current")} />
-            <span>{poem.daad + (liked ? 1 : 0)}</span>
-          </button>
-
-          <button
-            type="button"
-            aria-label="Comments"
-            onClick={() => setDrawer(true)}
-            className={act}
-          >
-            <MessageCircle className="size-3.5 sm:size-4" />
-            <span>{poem.hashiya.length}</span>
-          </button>
-
-          <button
-            type="button"
-            aria-label={saved ? "Saved in your Basta" : "Save in Basta"}
-            onClick={() => {
-              toggle("saved");
-              toast(saved ? "Removed from your collection" : "Saved to your collection");
-            }}
-            className={cn(act, saved && "text-royal hover:text-royal font-semibold")}
-          >
-            <Bookmark className={cn("size-3.5 sm:size-4", saved && "fill-current")} />
-            <span className="hidden xs:inline">{saved ? "Saved" : "Save"}</span>
-          </button>
-
-          <button
-            type="button"
-            title="Open in Card Studio"
-            aria-label="Open in Card Studio"
-            onClick={toStudio}
-            className={act}
-          >
-            <Palette className="size-3.5 sm:size-4" />
-            <span className="hidden sm:inline">Studio</span>
-          </button>
-
-          <button
-            type="button"
-            title="Send as Secret Letter"
-            aria-label="Send as Secret Letter"
-            onClick={() => {
-              store.set({ studio: { lines: canonicalLines, penName: poem.takhallus } });
-              nav({ to: "/letters", search: {} as any });
-            }}
-            className={act}
-          >
-            <Mail className="size-3.5 sm:size-4" />
-            <span className="hidden md:inline">Letter</span>
-          </button>
-
-          <Link
-            to="/poetry/$slug"
-            params={{ slug: getPoemSlug(poem) }}
-            className={act}
-            title="Read full verse, translations & tashreeh"
-            aria-label="Read full verse and translations"
-          >
-            <BookOpen className="size-3.5 sm:size-4" />
-            <span className="hidden sm:inline">Read Verse</span>
-          </Link>
-        </div>
+      {/* Four primary actions only. Everything else lives in •••. */}
+      <div className="grid grid-cols-4 items-center gap-0.5 border-t border-hairline pt-2 sm:gap-1 sm:pt-3">
+        <button
+          type="button"
+          aria-label={daad > 0 ? `Appreciate verse, ${daad} appreciations` : "Appreciate verse"}
+          onClick={toggleLike}
+          className={cn(act, liked && "font-semibold text-crimson hover:text-crimson")}
+        >
+          <Heart key={ripple} className={cn("ink-ripple size-3.5 shrink-0 sm:size-4", liked && "fill-current")} />
+          <span className="truncate">{daad > 0 ? daad : "Appreciate"}</span>
+        </button>
 
         <button
           type="button"
-          title="Report inappropriate content"
-          aria-label="Report inappropriate content"
-          onClick={() => setShowReportModal(true)}
-          className="rounded-full p-1.5 text-subtle hover:bg-muted hover:text-ink"
+          aria-label={commentCount > 0 ? `Comments, ${commentLabel}` : "Comment"}
+          onClick={openComments}
+          className={act}
         >
-          <Flag className="size-3 sm:size-3.5" />
+          <MessageCircle className="size-3.5 shrink-0 sm:size-4" />
+          <span className="truncate">{commentLabel}</span>
+        </button>
+
+        <button
+          type="button"
+          aria-label="Copy shayari to clipboard"
+          onClick={() => void copyPoem(poem, script)}
+          className={act}
+        >
+          <Copy className="size-3.5 shrink-0 sm:size-4" />
+          <span className="truncate">Copy</span>
+        </button>
+
+        <button
+          type="button"
+          title="Open in Card Studio"
+          aria-label="Create a card from this verse"
+          onClick={toStudio}
+          className={act}
+        >
+          <Palette className="size-3.5 shrink-0 sm:size-4" />
+          <span className="truncate">Create Card</span>
         </button>
       </div>
 
-      {/* Comments Drawer */}
-      {drawer && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-ink/20" onClick={() => setDrawer(false)}>
-          <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-md flex-col bg-background p-4 sm:p-6 md:p-8 shadow-float">
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-semibold">Comments</h3>
-              <button aria-label="Close comments" onClick={() => setDrawer(false)} className="rounded-full p-2 hover:bg-muted">
-                <X className="size-5" />
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">Everyone appears only by pen name and poet ID.</p>
-            <div className="mt-6 flex-1 space-y-5 overflow-y-auto">
-              {poem.hashiya.map((h, i) => (
-                <div key={i} className="group relative rounded-xl p-2 transition hover:bg-secondary/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-semibold text-ink">@{h.by}</span>
-                      <IdBadge id={h.by === me?.penName ? me.poetId : poetId(h.by)} />
-                    </div>
-                    {me && h.by === me.penName && (
-                      <button
-                        title="Delete comment"
-                        onClick={() => deleteComment(i)}
-                        className="rounded p-1 text-subtle hover:text-crimson"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{h.text}</p>
-                </div>
-              ))}
-              {!poem.hashiya.length && <p className="text-sm text-subtle">No comments yet. Be the first to appreciate this verse.</p>}
-            </div>
-            <div className="mt-4 flex gap-2">
+      {/* Comments — a real modal: Escape, backdrop, scroll lock, 40 px close. */}
+      <Modal
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        title="Comments"
+        description="Everyone appears only by pen name and poet ID."
+        maxWidth="max-w-lg"
+        footer={
+          isCurated ? (
+            <p className="rounded-xl bg-secondary p-3 text-xs leading-relaxed text-muted-foreground">
+              This is a curated verse from the archive, so comments are closed. Poems published in the
+              live feed are open for conversation.
+            </p>
+          ) : (
+            <div className="flex gap-2">
               <input
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 placeholder="Write a comment or a reply couplet…"
                 className={input}
-                onKeyDown={(e) => e.key === "Enter" && addReply()}
+                maxLength={600}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void addReply();
+                  }
+                }}
               />
-              <button onClick={addReply} className={btnPrimary}>Post</button>
+              <button onClick={() => void addReply()} disabled={postingComment} className={btnPrimary}>
+                {postingComment ? <Loader2 className="size-4 animate-spin" /> : "Post"}
+              </button>
             </div>
-          </aside>
+          )
+        }
+      >
+        <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
+          {poem.hashiya.map((h, i) => (
+            <div key={h.id ?? i} className="group relative rounded-xl p-2 transition hover:bg-secondary/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-semibold text-ink">@{h.by}</span>
+                  <IdBadge id={h.by === me?.penName ? me.poetId : poetId(h.by)} />
+                </div>
+                {canWrite && me && h.by === me.penName && (
+                  <button
+                    title="Delete comment"
+                    aria-label="Delete comment"
+                    onClick={() => void deleteComment(h, i)}
+                    className="rounded p-1 text-subtle hover:text-crimson"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{h.text}</p>
+            </div>
+          ))}
+          {!poem.hashiya.length && (
+            <p className="py-6 text-center text-sm text-subtle">
+              {isCurated
+                ? "No comments on this archived verse."
+                : "No comments yet. Be the first to respond to this verse."}
+            </p>
+          )}
+          {!isCurated && poem.hashiya.length >= 3 && (
+            <p className="pt-1 text-center text-[11px] text-subtle">
+              Showing the 3 most recent comments.
+            </p>
+          )}
         </div>
-      )}
+      </Modal>
 
       {/* Author Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
-          onClick={() => setShowDeleteConfirm(false)}
-        >
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-3xl border border-hairline bg-background p-8 shadow-float">
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-full bg-blush text-crimson">
-                <AlertTriangle className="size-5" />
-              </div>
-              <h3 className="text-xl font-semibold text-ink">Delete this Verse?</h3>
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              This will permanently remove this poem and its appreciations from the Mehfil feed. This action cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className={btnOutline}>
-                Cancel
-              </button>
-              <button onClick={handleDeletePoem} className={cn(btnPrimary, "bg-crimson hover:bg-crimson/90")}>
-                Confirm Delete
-              </button>
-            </div>
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete this verse?"
+        tone="danger"
+        description="This permanently removes the poem and its appreciations. This cannot be undone."
+        footer={
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setShowDeleteConfirm(false)} className={btnOutline}>
+              Cancel
+            </button>
+            <button onClick={() => void handleDeletePoem()} className={cn(btnPrimary, "bg-crimson hover:bg-crimson/90")}>
+              Confirm Delete
+            </button>
           </div>
+        }
+      >
+        <div className="flex items-center gap-3 rounded-2xl bg-blush/60 p-4 text-xs text-crimson">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>Readers will no longer find this verse in the feed.</span>
         </div>
-      )}
+      </Modal>
 
       {/* Community Moderation Report Modal */}
-      {showReportModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
-          onClick={() => setShowReportModal(false)}
-        >
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-3xl border border-hairline bg-background p-8 shadow-float">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-ink">Report Verse to Editorial</h3>
-              <button onClick={() => setShowReportModal(false)} className="rounded-full p-1 text-subtle hover:text-ink">
-                <X className="size-5" />
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Help us maintain the safe, anonymous literary atmosphere of Ek Khwaab.
-            </p>
-            <form onSubmit={handleReportPoem} className="mt-5 space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-subtle">Reason for Report</label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className={cn(input, "mt-1 text-sm")}
-                >
-                  <option value="Contains real personal identity info">Reveals real personal info / doxxing</option>
-                  <option value="Hateful or abusive content">Hateful or abusive content</option>
-                  <option value="Plagiarism without attribution">Plagiarism / copied work</option>
-                  <option value="Spam or promotional material">Spam or advertising</option>
-                </select>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowReportModal(false)} className={btnOutline}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={submittingReport} className={btnPrimary}>
-                  {submittingReport ? "Submitting..." : "Submit Report"}
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        title="Report this verse"
+        description="Help us keep Ek Khwaab a safe, anonymous place to read."
+        footer={
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setShowReportModal(false)} className={btnOutline}>
+              Cancel
+            </button>
+            <button type="submit" form="report-poem-form" disabled={submittingReport} className={btnPrimary}>
+              {submittingReport ? "Submitting..." : "Submit Report"}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="report-poem-form" onSubmit={handleReportPoem} className="space-y-4">
+          <div>
+            <label className={label} htmlFor="report-reason">
+              Reason for report
+            </label>
+            <select
+              id="report-reason"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className={cn(input, "text-sm")}
+            >
+              <option value="Contains real personal identity info">Reveals real personal info / doxxing</option>
+              <option value="Hateful or abusive content">Hateful or abusive content</option>
+              <option value="Plagiarism without attribution">Plagiarism / copied work</option>
+              <option value="Spam or promotional material">Spam or advertising</option>
+            </select>
+          </div>
+        </form>
+      </Modal>
     </article>
   );
 }

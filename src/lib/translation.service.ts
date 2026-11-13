@@ -304,15 +304,22 @@ export async function triggerAutoTranslation(
     let res: { success?: boolean; data?: TranslationResult; error?: string } | null = null;
 
     const apiBase =
-      (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
-      (typeof process !== "undefined" && process.env?.VITE_API_BASE_URL);
+      (typeof import.meta !== "undefined" && import.meta.env?.["VITE_API_BASE_URL"]) ||
+      (typeof process !== "undefined" && process.env?.["VITE_API_BASE_URL"]);
 
     if (apiBase) {
       try {
         const cleanBase = apiBase.replace(/\/+$/, "");
+        // Translation is a background job, so a Turnstile timeout must not
+        // hold the poem hostage. A null token is simply omitted.
+        const { getTurnstileToken } = await import("./turnstile");
+        const turnstileToken = await getTurnstileToken("translate");
         const apiRes = await fetch(`${cleanBase}/api/ai/translate`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(turnstileToken ? { "CF-Turnstile-Response": turnstileToken } : {}),
+          },
           body: JSON.stringify({
             poemId,
             sourceLines,

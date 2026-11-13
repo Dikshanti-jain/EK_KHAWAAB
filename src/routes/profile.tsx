@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lock, LogOut, ShieldCheck, KeyRound, CheckCircle2, Bookmark, Feather, Mail, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
 import { updateVaultPassword, signOut, updatePublicTakhallus } from "@/lib/auth.service";
+import { fetchMySavedPoems } from "@/lib/poems.service";
 import { PoemCard } from "@/components/PoemCard";
 import { IdBadge, btnOutline, btnPrimary, card, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
@@ -12,9 +13,9 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "My Profile — Ek Khwaab" },
-      { name: "description", content: "Your public poet profile, saved poems and private vault." },
+      { name: "description", content: "Your public poet profile, saved poems and privacy settings." },
       { property: "og:title", content: "My Profile — Ek Khwaab" },
-      { property: "og:description", content: "Your pen name, poems and private vault." },
+      { property: "og:description", content: "Your pen name, poems and privacy settings." },
     ],
   }),
   component: Profile,
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/profile")({
 function Profile() {
   const s = useStore();
   const nav = useNavigate();
-  const [tab, setTab] = useState<"public" | "saved" | "vault">("public");
+  const [tab, setTab] = useState<"public" | "saved" | "privacy">("public");
   const u = s.user;
 
   // Change Password state
@@ -37,6 +38,27 @@ function Profile() {
   const [penDraft, setPenDraft] = useState(u?.penName || "");
   const [penLoading, setPenLoading] = useState(false);
 
+  // Live bookmarks: the feed's saved poems live in Supabase, not in the seed
+  // store, so hydrate them once per signed-in reader.
+  const [savedFromDb, setSavedFromDb] = useState<Awaited<ReturnType<typeof fetchMySavedPoems>>["poems"]>([]);
+
+  useEffect(() => {
+    if (!u || u.guest) return;
+    let active = true;
+    void fetchMySavedPoems(u.poetId).then(({ poems, error }) => {
+      if (!active || error) return;
+      setSavedFromDb(poems);
+      if (poems.length) {
+        s.set((st) => ({
+          saved: Array.from(new Set([...st.saved, ...poems.map((p) => p.id)])),
+        }));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [u, s.set]);
+
   if (!u) {
     return (
       <div className="mx-auto max-w-xl px-6 py-24 text-center">
@@ -45,7 +67,7 @@ function Profile() {
         </div>
         <h1 className="mt-6 text-4xl font-semibold text-ink">Your profile lives behind a pen name</h1>
         <p className="mt-3 text-muted-foreground">
-          Create an anonymous pen name and #EK-ID to start publishing couplets, saving to your basta, and sealing secret letters.
+          Create an anonymous pen name and #EK-ID to start publishing couplets, saving poems, and sealing secret letters.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link to="/auth" search={{ mode: "signup" }} className={cn(btnPrimary, "px-7 py-3")}>
@@ -60,7 +82,11 @@ function Profile() {
   }
 
   const mine = s.poems.filter((p) => p.takhallus === u.penName);
-  const saved = s.poems.filter((p) => s.saved.includes(p.id));
+  const savedLocal = s.poems.filter((p) => s.saved.includes(p.id));
+  const saved = [
+    ...savedFromDb.filter((p) => s.saved.includes(p.id)),
+    ...savedLocal.filter((p) => !savedFromDb.some((q) => q.id === p.id)),
+  ];
   const appreciations = mine.reduce((a, p) => a + p.daad, 0);
   const mask = (v?: string | null) => (v ? v.slice(0, 2) + "•".repeat(Math.max(3, v.length - 4)) + v.slice(-2) : "—");
 
@@ -82,9 +108,9 @@ function Profile() {
         setCurrentPwd("");
         setNewPwd("");
         setConfirmPwd("");
-        toast.success("Vault password updated successfully!");
+        toast.success("Password updated successfully!");
       } else {
-        toast.error(res.error || "Could not update vault password.");
+        toast.error(res.error || "Could not update your password.");
       }
     } finally {
       setPwdLoading(false);
@@ -141,7 +167,7 @@ function Profile() {
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <IdBadge id={u.poetId} />
             <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] text-muted-foreground sm:text-xs">
-              <ShieldCheck className="size-3.5 text-royal" /> Real identity locked in private vault
+              <ShieldCheck className="size-3.5 text-royal" /> Your real identity stays private
             </span>
           </div>
         </div>
@@ -170,8 +196,8 @@ function Profile() {
         {(
           [
             ["public", "My Verses", "Public Poet Profile"],
-            ["saved", "Saved Basta", "Saved Collection (Basta)"],
-            ["vault", "Vault", "Private Vault & Settings"],
+            ["saved", "Saved", "Saved Poems"],
+            ["privacy", "Privacy", "Privacy & Settings"],
           ] as const
         ).map(([k, shortLabel, longLabel]) => (
           <button
@@ -193,8 +219,8 @@ function Profile() {
       {tab === "public" && (
         <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6">
           <div className="rounded-2xl border border-hairline bg-secondary/50 p-4 text-xs text-muted-foreground">
-            <b>Public View Preview:</b> Other readers and visitors on the feed only see this profile section with your pen name
-            <b> @{u.penName}</b>, poet ID <b>{u.poetId}</b>, and your published verses.
+            <b>How readers see you:</b> your pen name <b>@{u.penName}</b>, poet ID <b>{u.poetId}</b>, and
+            your published verses. Nothing else.
           </div>
           {mine.map((p) => (
             <PoemCard key={p.id} poem={p} globalScript={s.script} />
@@ -216,53 +242,52 @@ function Profile() {
         </div>
       )}
 
-      {/* Tab 2: Saved Collection (Basta) */}
+      {/* Tab 2: Saved Poems */}
       {tab === "saved" && (
         <div className="mx-auto max-w-3xl space-y-6">
           <p className="text-sm text-muted-foreground">
-            Your personal literary collection (Basta) of bookmarked verses.
+            Verses you've kept for a slower evening.
           </p>
           {saved.map((p) => (
             <PoemCard key={p.id} poem={p} globalScript={s.script} />
           ))}
           {!saved.length && (
-            <div className={cn(card, "p-12 text-center")}>
-              <Bookmark className="mx-auto size-8 text-subtle" />
-              <p className="mt-4 font-serif text-lg text-ink">Your Basta is empty.</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Click "Save" on any poem in the feed to save it to your private library.
+            <div className={cn(card, "px-6 py-16 text-center")}>
+              <Bookmark className="mx-auto size-10 text-subtle" />
+              <p className="mt-4 font-serif text-xl text-ink">You haven't saved any verses yet</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Tap the <b>•••</b> menu on any poem, then <b>Save Poem</b>. It will wait for you here.
               </p>
-              <Link to="/feed" className={cn(btnOutline, "mt-6")}>
-                Explore Mehfil Feed
+              <Link to="/feed" className={cn(btnPrimary, "mt-6")}>
+                Explore Trending Shayari
               </Link>
             </div>
           )}
         </div>
       )}
 
-      {/* Tab 3: Private Vault Settings */}
-      {tab === "vault" && (
+      {/* Tab 3: Privacy & Settings */}
+      {tab === "privacy" && (
         <div className="mx-auto max-w-2xl space-y-8">
-          {/* Vault Info Card */}
+          {/* Private details */}
           <div className={cn(card, "p-8 md:p-10")}>
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-1.5 text-xs font-semibold text-primary-foreground">
-                <Lock className="size-3.5" /> Encrypted Private Vault
+                <Lock className="size-3.5" /> Private details
               </span>
               <span className="font-mono text-xs text-subtle">{u.poetId}</span>
             </div>
 
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              These details are strictly isolated in your encrypted private vault. They are NEVER shared with third
-              parties, commenters, or recipient readers.
+              Only you can see this. Readers never see your name, email or phone — just your pen name.
             </p>
 
             <dl className="mt-6 divide-y divide-hairline">
               {[
-                ["Legal / Full Name", u.fullName || "—"],
-                ["Email Address", mask(u.email)],
-                ["Phone Number", mask(u.phone)],
-                ["Public Pen Name", `@${u.penName}`],
+                ["Full name (optional)", u.fullName || "—"],
+                ["Email address", mask(u.email)],
+                ["Phone number (optional)", mask(u.phone)],
+                ["Public pen name", `@${u.penName}`],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between py-3.5 text-sm">
                   <dt className="text-subtle">{k}</dt>
@@ -279,15 +304,15 @@ function Profile() {
           <div className={cn(card, "p-8 md:p-10")}>
             <div className="flex items-center gap-2">
               <Feather className="size-5 text-royal" />
-              <h2 className="text-xl font-semibold text-ink">Change Public Pen Name (Takhallus)</h2>
+              <h2 className="text-xl font-semibold text-ink">Change your pen name</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your pen name is your public poetic identity. Changing your pen name updates your public profile and future poems without exposing your vault.
+              This is the name readers see. Your new pen name applies to your profile and future poems.
             </p>
 
             <form onSubmit={handleUpdatePenName} className="mt-6 space-y-4">
               <div>
-                <label className={label}>New Pen Name (Takhallus)</label>
+                <label className={label}>New pen name</label>
                 <div className="relative mt-1">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-muted-foreground">@</span>
                   <input
@@ -307,7 +332,7 @@ function Profile() {
               <button disabled={penLoading || penDraft.trim() === u.penName} type="submit" className={cn(btnPrimary, "w-full py-3")}>
                 {penLoading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="size-4 animate-spin" /> Updating Public Identity...
+                    <Loader2 className="size-4 animate-spin" /> Updating...
                   </span>
                 ) : (
                   "Update Pen Name"
@@ -320,10 +345,10 @@ function Profile() {
           <div className={cn(card, "p-8 md:p-10")}>
             <div className="flex items-center gap-2">
               <KeyRound className="size-5 text-royal" />
-              <h2 className="text-xl font-semibold text-ink">Change Vault Password</h2>
+              <h2 className="text-xl font-semibold text-ink">Change password</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Update the security key used to protect your private credentials.
+              Choose a new password for signing in on any device.
             </p>
 
             {pwdChanged ? (
@@ -376,10 +401,10 @@ function Profile() {
                 <button disabled={pwdLoading} type="submit" className={cn(btnPrimary, "w-full py-3")}>
                   {pwdLoading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="size-4 animate-spin" /> Updating Vault Key...
+                      <Loader2 className="size-4 animate-spin" /> Updating...
                     </span>
                   ) : (
-                    "Update Vault Password"
+                    "Update Password"
                   )}
                 </button>
               </form>

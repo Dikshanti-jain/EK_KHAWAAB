@@ -28,7 +28,7 @@ export function getAuthRedirectUrl(path: string = "/auth"): string {
   if (typeof window !== "undefined" && window.location?.origin) {
     origin = window.location.origin;
   } else if (typeof process !== "undefined" && process.env) {
-    origin = process.env.VITE_SITE_URL || process.env.SITE_URL || origin;
+    origin = process.env["VITE_SITE_URL"] || process.env["SITE_URL"] || origin;
   }
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${origin.replace(/\/+$/, "")}${cleanPath}`;
@@ -100,13 +100,13 @@ export async function signUpWithVault(payload: SignUpPayload): Promise<AuthRespo
       phone_number: payload.phone?.trim() || null,
     }, { onConflict: "auth_user_id" });
 
-    await supabase.from("public_shayars").upsert({
-      auth_user_id: authUserId,
-      shayar_uid: cleanUid,
-      takhallus: cleanTakhallus,
-      takhallus_meaning: payload.takhallusMeaning?.trim() || null,
-      vibe_category: payload.vibeCategory || null,
-    }, { onConflict: "auth_user_id" });
+    // The on_auth_user_created trigger has already provisioned public_shayars
+    // from the signup metadata. Re-assert the pen name through the
+    // SECURITY DEFINER RPC so the client never needs auth_user_id access.
+    await supabase.rpc("update_my_takhallus", {
+      p_takhallus: cleanTakhallus,
+      p_meaning: payload.takhallusMeaning?.trim() || null,
+    });
 
     return {
       user: {
@@ -170,19 +170,18 @@ export async function signInWithIdentifier(
       };
     }
 
-    // Fetch public shayar profile
-    const { data: profile } = await supabase
-      .from("public_shayars")
-      .select("shayar_uid, takhallus")
-      .eq("auth_user_id", data.user.id)
-      .maybeSingle();
+    // Fetch public shayar profile.
+    // get_my_shayar_profile() is the only supported read path: the client no
+    // longer has SELECT on public_shayars.auth_user_id (migration 2026111301).
+    const { data: profileRows } = await supabase.rpc("get_my_shayar_profile");
+    const profile = profileRows?.[0] ?? null;
 
     const meta = data.user.user_metadata || {};
     let penName = profile?.takhallus;
     let poetId = profile?.shayar_uid;
 
-    // Self-healing: If public_shayars record is missing in database, create it now!
-    // Since the user now has an active authenticated session, RLS allows this upsert.
+    // Self-healing: if the profile row is missing, create it now. The session
+    // is authenticated, so the INSERT policy permits this.
     if (!profile || !profile.shayar_uid) {
       penName = (meta["takhallus"] as string | undefined)?.trim() || cleanIdent.split("@")[0]!.replace(/\W/g, "_");
       poetId = (meta["shayar_uid"] as string | undefined) || `#EK-${data.user.id.slice(0, 6).toUpperCase()}`;
@@ -193,13 +192,13 @@ export async function signInWithIdentifier(
         email: data.user.email || cleanIdent.toLowerCase(),
       }, { onConflict: "auth_user_id" });
 
-      await supabase.from("public_shayars").upsert({
+      await supabase.from("public_shayars").insert({
         auth_user_id: data.user.id,
         shayar_uid: poetId,
         takhallus: penName,
         takhallus_meaning: (meta["takhallus_meaning"] as string | undefined) || null,
         vibe_category: (meta["vibe_category"] as string | undefined) || null,
-      }, { onConflict: "auth_user_id" });
+      });
     }
 
     return {
@@ -316,16 +315,20 @@ export async function updatePublicTakhallus(
       return { success: false, penName: cleanTakhallus, error: "You must be signed in to change your pen name." };
     }
 
-    const { error } = await supabase
-      .from("public_shayars")
-      .update({
-        takhallus: cleanTakhallus,
-        takhallus_meaning: meaning?.trim() || null,
-      })
-      .eq("auth_user_id", authData.user.id);
+    const { data: updated, error } = await supabase.rpc("update_my_takhallus", {
+      p_takhallus: cleanTakhallus,
+      p_meaning: meaning?.trim() || null,
+    });
 
     if (error) {
       return { success: false, penName: cleanTakhallus, error: error.message };
+    }
+    if (!updated) {
+      return {
+        success: false,
+        penName: cleanTakhallus,
+        error: "No public profile found for this account. Please sign in again.",
+      };
     }
 
     return { success: true, penName: cleanTakhallus, error: null };

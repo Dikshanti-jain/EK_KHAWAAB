@@ -10,7 +10,7 @@ import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/letters")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { id?: string | undefined } => ({
     id: typeof s["id"] === "string" ? s["id"] : undefined,
   }),
   head: () => ({

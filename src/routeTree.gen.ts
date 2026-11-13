@@ -18,6 +18,7 @@ import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as GuidelinesRouteImport } from './routes/guidelines'
 import { Route as LettersRouteImport } from './routes/letters'
+import { Route as ListenTogetherRouteImport } from './routes/listen-together'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SecretLettersRouteImport } from './routes/secret-letters'
@@ -71,6 +72,11 @@ const LettersRoute = LettersRouteImport.update({
   path: '/letters',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ListenTogetherRoute = ListenTogetherRouteImport.update({
+  id: '/listen-together',
+  path: '/listen-together',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
   '/letters': typeof LettersRoute
+  '/listen-together': typeof ListenTogetherRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
   '/letters': typeof LettersRoute
+  '/listen-together': typeof ListenTogetherRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
   '/letters': typeof LettersRoute
+  '/listen-together': typeof ListenTogetherRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/guidelines'
     | '/letters'
+    | '/listen-together'
     | '/privacy'
     | '/profile'
     | '/secret-letters'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/guidelines'
     | '/letters'
+    | '/listen-together'
     | '/privacy'
     | '/profile'
     | '/secret-letters'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/guidelines'
     | '/letters'
+    | '/listen-together'
     | '/privacy'
     | '/profile'
     | '/secret-letters'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   FeedRoute: typeof FeedRoute
   GuidelinesRoute: typeof GuidelinesRoute
   LettersRoute: typeof LettersRoute
+  ListenTogetherRoute: typeof ListenTogetherRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   SecretLettersRoute: typeof SecretLettersRoute
@@ -300,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/letters'
       fullPath: '/letters'
       preLoaderRoute: typeof LettersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/listen-together': {
+      id: '/listen-together'
+      path: '/listen-together'
+      fullPath: '/listen-together'
+      preLoaderRoute: typeof ListenTogetherRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -376,6 +396,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedRoute: FeedRoute,
   GuidelinesRoute: GuidelinesRoute,
   LettersRoute: LettersRoute,
+  ListenTogetherRoute: ListenTogetherRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   SecretLettersRoute: SecretLettersRoute,

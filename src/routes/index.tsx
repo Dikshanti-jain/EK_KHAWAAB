@@ -1,9 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, Flame, ArrowRight, ChevronLeft, ChevronRight, Bookmark, Linkedin, Mail, BookOpen } from "lucide-react";
+import { Heart, Palette, Share2, ShieldCheck, Sparkles, Languages, Image as Img, ArrowRight, ChevronLeft, ChevronRight, Bookmark, Linkedin, Mail, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { POEMS, poetId, getPoemSlug, type Script } from "@/data/poems";
+import { useQueryClient } from "@tanstack/react-query";
+import { POEMS, poetId, getPoemSlug, isLivePoemId, type Script } from "@/data/poems";
 import { useStore } from "@/lib/store";
+import { togglePoemLike, togglePoemBookmark } from "@/lib/poems.service";
+import { patchFeedPoem } from "@/lib/feed-cache";
+import { sharePoem } from "@/lib/share";
+import { useSignInPrompt } from "@/components/SignInPrompt";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { IdBadge, Pill, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
 import { cn } from "@/lib/utils";
@@ -37,7 +42,7 @@ export const Route = createFileRoute("/")({
 });
 
 const FEATURES = [
-  { i: ShieldCheck, t: "100% Masked Identity", d: "Your real details stay in a private vault. Only your pen name and #EK-ID ever represent you." },
+  { i: ShieldCheck, t: "100% Masked Identity", d: "Your real details stay private. Only your pen name and #EK-ID ever represent you." },
   { i: Sparkles, t: "Word-to-Verse AI Co-Writer", d: "Give 3–5 of your own words and let AI weave them into metered shayari." },
   { i: Languages, t: "Instant Multi-Script Reader", d: "Read any poem in Hinglish, Hindi or Urdu with a single click." },
   { i: Img, t: "High-Res Card Studio & Secret Letters", d: "Download 9:16 story cards, or send wax-sealed riddle letters." },
@@ -50,31 +55,83 @@ function Home() {
     canonicalPath: "/",
   });
   const [s, setS] = useState<Script>("hinglish");
-  const { liked, saved, set } = useStore();
+  const { liked, saved, set, user } = useStore();
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const { promptSignIn } = useSignInPrompt();
   const demo = POEMS[0]!;
   const on = liked.includes(demo.id);
+  const canWrite = Boolean(user && !user.guest);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const daadOf = (poem: { id: string; daad: number }) =>
+    isLivePoemId(poem.id) ? (counts[poem.id] ?? poem.daad) : poem.daad + (liked.includes(poem.id) ? 1 : 0);
 
   // Calm, serene Featured Couplet (manual toggle only, no jittery auto-slide)
   const tickerPoems = POEMS.slice(0, 5);
   const [tickerIndex, setTickerIndex] = useState(0);
   const activeTickerPoem = tickerPoems[tickerIndex]!;
 
-  // Top Trending Shayaris of the Mehfil (sorted by appreciations)
-  const trendingPoems = [...POEMS].sort((a, b) => b.daad - a.daad).slice(0, 6);
+  // Curated, not "trending": the editor's six, in a fixed order.
+  const curatedPoems = POEMS.slice(0, 6);
 
-  const toggleLiked = (id: string) => {
+  const toggleLiked = async (poemId: string, baseDaad: number) => {
+    if (!canWrite || !user) {
+      promptSignIn("appreciate");
+      return;
+    }
+    const isOn = liked.includes(poemId);
+
+    // Curated archive verses are not database rows; keep the appreciation
+    // personal instead of attempting an insert that cannot succeed.
+    if (!isLivePoemId(poemId)) {
+      set((st) => ({
+        liked: isOn ? st.liked.filter((x) => x !== poemId) : [...st.liked, poemId],
+      }));
+      return;
+    }
+
+    const next = Math.max(0, baseDaad + (isOn ? -1 : 1));
+    const previous = liked;
+
+    setCounts((c) => ({ ...c, [poemId]: next }));
     set((st) => ({
-      liked: st.liked.includes(id) ? st.liked.filter((x) => x !== id) : [...st.liked, id],
+      liked: st.liked.includes(poemId) ? st.liked.filter((x) => x !== poemId) : [...st.liked, poemId],
     }));
+    patchFeedPoem(qc, poemId, { daad: next });
+
+    const res = await togglePoemLike(poemId, user.poetId, isOn);
+    if (!res.success) {
+      setCounts((c) => ({ ...c, [poemId]: baseDaad }));
+      set({ liked: previous });
+      patchFeedPoem(qc, poemId, { daad: baseDaad });
+      toast.error(res.error || "Could not update your appreciation.");
+    }
   };
 
-  const toggleSaved = (id: string) => {
-    const isSaved = saved.includes(id);
+  const toggleSaved = async (poemId: string) => {
+    if (!canWrite || !user) {
+      promptSignIn("save");
+      return;
+    }
+    const isSaved = saved.includes(poemId);
+    const previous = saved;
     set((st) => ({
-      saved: isSaved ? st.saved.filter((x) => x !== id) : [...st.saved, id],
+      saved: isSaved ? st.saved.filter((x) => x !== poemId) : [...st.saved, poemId],
     }));
-    toast(isSaved ? "Removed from your collection" : "Saved to your collection");
+
+    // Local collection for curated archive verses.
+    if (!isLivePoemId(poemId)) {
+      toast.success(isSaved ? "Removed from Saved Poems" : "Saved to your collection");
+      return;
+    }
+
+    const res = await togglePoemBookmark(poemId, user.poetId, isSaved);
+    if (!res.success) {
+      set({ saved: previous });
+      toast.error(res.error || "Could not update your saved poems.");
+      return;
+    }
+    toast.success(isSaved ? "Removed from Saved Poems" : "Saved to your collection");
   };
 
   return (
@@ -92,7 +149,7 @@ function Home() {
             Where unspoken feelings find their verse, <span className="italic text-crimson">anonymously.</span>
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-            Write, read, and share deep poetry in Hinglish, Hindi, Urdu, and English. Your real identity stays locked in a private vault—only your pen name and words appear in the feed.
+            Write, read, and share deep poetry in Hinglish, Hindi, Urdu, and English. Your real identity stays private—only your pen name and words appear in the feed.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
             <Link to="/feed" className={cn(btnPrimary, "px-5 py-2.5 text-xs sm:px-6 sm:py-3 sm:text-sm md:text-base")}>
@@ -132,11 +189,11 @@ function Home() {
           <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-3 sm:pt-4">
             <button
               type="button"
-              onClick={() => toggleLiked(demo.id)}
+              onClick={() => void toggleLiked(demo.id, demo.daad)}
               className={cn(btnOutline, "py-1.5 px-3 text-xs sm:text-sm", on && "border-crimson text-crimson")}
             >
               <Heart className={cn("size-3.5 sm:size-4", on && "fill-current text-crimson")} />
-              <span>Appreciate ({demo.daad + (on ? 1 : 0)})</span>
+              <span>{daadOf(demo) > 0 ? daadOf(demo) : "Appreciate"}</span>
             </button>
             <Link
               to="/studio"
@@ -156,23 +213,7 @@ function Home() {
             </Link>
             <button
               type="button"
-              onClick={async () => {
-                const shareData = {
-                  title: "Ek Khwaab — Created by Dikshanti Jain",
-                  text: "Ek Khwaab — Hindi, Urdu & Hinglish Poetry Sanctuary created by Dikshanti Jain\n",
-                  url: window.location.origin,
-                };
-                if (typeof navigator !== "undefined" && navigator.share) {
-                  try {
-                    await navigator.share(shareData);
-                    return;
-                  } catch {
-                    // user dismissed share sheet
-                  }
-                }
-                navigator.clipboard?.writeText(window.location.origin);
-                toast.success("Link copied! Created by Dikshanti Jain");
-              }}
+              onClick={() => void sharePoem(demo, s)}
               className={cn(btnOutline, "py-1.5 px-3 text-xs sm:text-sm")}
             >
               <Share2 className="size-3.5 sm:size-4" />
@@ -234,17 +275,17 @@ function Home() {
         </div>
       </section>
 
-      {/* Top Trending Shayaris of the Mehfil Section */}
+      {/* Curated couplets */}
       <section className="bg-secondary/60 py-8 sm:py-12 md:py-18">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-12">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <span className="flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-crimson">
-                <Flame className="size-3.5 sm:size-4" /> Trending in the Mehfil
+                <Sparkles className="size-3.5 sm:size-4" /> CURATED BY THE EDITOR
               </span>
-              <h2 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl md:text-4xl">Top Appreciated Couplets</h2>
+              <h2 className="mt-1 text-2xl font-semibold text-ink sm:text-3xl md:text-4xl">Six couplets to begin with</h2>
               <p className="mt-1 text-xs text-muted-foreground sm:text-sm md:text-base">
-                Resonant and bookmarked verses written by anonymous poets.
+                Chosen for the feeling, not for a counter.
               </p>
             </div>
             <Link to="/feed" className="inline-flex items-center gap-1 text-xs font-semibold text-royal hover:underline sm:text-sm">
@@ -253,7 +294,7 @@ function Home() {
           </div>
 
           <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 md:grid-cols-2">
-            {trendingPoems.map((poem) => {
+            {curatedPoems.map((poem) => {
               const isLiked = liked.includes(poem.id);
               const isSaved = saved.includes(poem.id);
               return (
@@ -280,7 +321,7 @@ function Home() {
                           {poem.tags.map((tag) => (
                             <span
                               key={tag}
-                              onClick={() => nav({ to: "/feed", search: {} as any })}
+                              onClick={() => nav({ to: "/feed", search: { q: tag.replace(/^#/, "") } })}
                               className="cursor-pointer rounded-full bg-wash/80 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-royal transition-all hover:bg-royal hover:text-white sm:text-xs"
                             >
                               {tag.startsWith("#") ? tag : `#${tag}`}
@@ -295,19 +336,19 @@ function Home() {
                     <div className="flex items-center gap-1 sm:gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleLiked(poem.id)}
+                        onClick={() => void toggleLiked(poem.id, poem.daad)}
                         className={cn(
                           "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition sm:px-3 sm:py-1.5 sm:text-sm",
                           isLiked ? "bg-blush font-semibold text-crimson" : "text-muted-foreground hover:bg-muted hover:text-ink"
                         )}
                       >
                         <Heart className={cn("size-3.5 sm:size-4", isLiked && "fill-current text-crimson")} />
-                        <span>{poem.daad + (isLiked ? 1 : 0)}</span>
+                        <span>{daadOf(poem) > 0 ? daadOf(poem) : "Appreciate"}</span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => toggleSaved(poem.id)}
+                        onClick={() => void toggleSaved(poem.id)}
                         className={cn(
                           "rounded-full p-1.5 transition sm:p-2",
                           isSaved ? "text-royal" : "text-muted-foreground hover:bg-muted hover:text-ink"

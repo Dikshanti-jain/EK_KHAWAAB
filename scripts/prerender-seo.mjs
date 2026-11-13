@@ -144,3 +144,5 @@ console.log("\n=======================================================");
 console.log(`🎉 Hostinger public_html bundle successfully prepared in ${DIST_DIR}`);
 console.log(`Total pre-rendered HTML files: ${corePages.length + topicCount + poemCount + wordCount}`);
 console.log("=======================================================\n");
+process.exit(0);
+console.log("=======================================================\n");

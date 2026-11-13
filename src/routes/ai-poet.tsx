@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import {
   Loader2,
@@ -37,6 +38,10 @@ import {
 import { POEMS, type Script } from "@/data/poems";
 import { useStore, uid } from "@/lib/store";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
+import { createPoem } from "@/lib/poems.service";
+import { prependFeedPoem } from "@/lib/feed-cache";
+import { copyText } from "@/lib/share";
+import { useSignInPrompt } from "@/components/SignInPrompt";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, btnRoyal, card, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 import { highlightSeeds } from "@/lib/seeds";
@@ -82,8 +87,10 @@ const POETRY_TYPE_LABELS: Record<PoetryType, { title: string; desc: string }> = 
 
 export function AiPoet() {
   const compose = useServerFn(composeShayari);
-  const { set, poems } = useStore();
+  const { set, poems, user } = useStore();
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const { promptSignIn } = useSignInPrompt();
 
   // Core Configuration
   const [poetryType, setPoetryType] = useState<PoetryType>("shayari");
@@ -183,6 +190,15 @@ export function AiPoet() {
     setBusy(true);
     try {
       const payload = {
+        // Legacy mode/seed fields are still part of ShayarInputPayload and are
+        // used by seed highlighting; map them from the rich UI state.
+        mode:
+          poetryType === "improve"
+            ? ("improve" as const)
+            : poetryType === "continue"
+              ? ("complete" as const)
+              : ("words" as const),
+        seeds: phrases,
         situation,
         phrases,
         isPhraseMandatory,
@@ -243,18 +259,26 @@ export function AiPoet() {
     toast.success("Applied continuation to your verse.");
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (!res) return;
     const val = res[script];
     const lines = Array.isArray(val) ? val.join("\n") : String(val ?? "");
-    navigator.clipboard.writeText(lines);
+    const ok = await copyText(lines);
+    if (!ok) {
+      toast.error("Could not copy. Long-press the verse to select it.");
+      return;
+    }
     setCopied(true);
-    toast.success("Poem copied to clipboard!");
+    toast.success("✓ Shayari copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const saveToBasta = () => {
+  const savePoem = () => {
     if (!res) return;
+    if (!user || user.guest) {
+      promptSignIn("save");
+      return;
+    }
     const newPoemId = uid();
     set((s) => ({
       saved: s.saved.includes(newPoemId) ? s.saved : [...s.saved, newPoemId],
@@ -277,41 +301,45 @@ export function AiPoet() {
         ...s.poems,
       ],
     }));
-    toast.success("Poem saved to your private Basta!");
+    toast.success("Poem saved to Saved Poems");
   };
 
-  const publishToFeed = () => {
+  const [publishing, setPublishing] = useState(false);
+  const publishToFeed = async () => {
     if (!res) return;
-    set((s) => ({
-      poems: [
-        {
-          ...POEMS[0]!,
-          id: uid(),
-          takhallus: s.user?.penName ?? "Guest_Reader",
-          format: poetryType.toUpperCase(),
-          mood,
-          style,
-          hinglish: res.hinglish,
-          hindi: res.hindi,
-          urdu: res.urdu,
-          english: [res.english],
-          daad: 0,
-          muqarrar: 0,
-          hashiya: [],
-        },
-        ...s.poems,
-      ],
-    }));
-    toast.success("Published to the Mehfil feed!");
-    nav({ to: "/feed" });
+    if (!user || user.guest) {
+      promptSignIn("write");
+      return;
+    }
+    setPublishing(true);
+    try {
+      const created = await createPoem({
+        shayarUid: user.poetId,
+        takhallus: user.penName,
+        lines: res.hinglish,
+        sourceScript: "hinglish",
+        moodTag: mood,
+        formatType: poetryType === "shayari" ? "Sher" : poetryType.toUpperCase(),
+      });
+      if (created.error || !created.poem) {
+        toast.error(created.error || "Could not publish your poem.");
+        return;
+      }
+      set((s) => ({ poems: [created.poem!, ...s.poems] }));
+      prependFeedPoem(qc, created.poem);
+      toast.success("Your poem is now live on the feed");
+      nav({ to: "/feed" });
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
     <div className="mx-auto max-w-7xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       <PageHead
-        kicker="SHAYAR-E-KHWAAB · POWERED BY GROQ"
-        title="Personalized Poetry Writing Studio"
-        sub="Describe what happened or what you feel. The AI Shayar crafts authentic, metered verse in Hinglish, Hindi, and Urdu specifically for your moment."
+        kicker="AI POET · YOUR WORDS, IN VERSE"
+        title="Write a poem from how you feel"
+        sub="Describe the moment, choose a mood, and get original verse in Hinglish, Hindi and Urdu — yours to edit before you share."
       />
 
       {/* Main Grid: Input Studio & Live Output Canvas */}
@@ -615,7 +643,7 @@ export function AiPoet() {
           >
             {busy ? (
               <span className="flex items-center justify-center gap-2">
-                <Loader2 className="size-4 animate-spin" /> Composing with Groq AI...
+                <Loader2 className="size-4 animate-spin" /> Composing your verse...
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
@@ -628,17 +656,29 @@ export function AiPoet() {
         {/* Right Column: Editorial Poetry Output Canvas */}
         <div className={cn(card, "flex min-h-[26rem] sm:min-h-[36rem] flex-col p-4 sm:p-6 md:p-8")}>
           {!res ? (
-            <div className="m-auto max-w-sm text-center">
-              <div className="mx-auto grid size-16 place-items-center rounded-full bg-wash text-royal shadow-sm">
-                <Feather className="size-8" />
+            busy ? (
+              <div
+                className="m-auto w-full max-w-md animate-pulse space-y-4 py-10"
+                role="status"
+                aria-label="Writing your poem"
+              >
+                <div className="mx-auto h-5 w-2/3 rounded-full bg-slate-100" />
+                <div className="mx-auto h-5 w-1/2 rounded-full bg-slate-100" />
+                <div className="mx-auto h-5 w-3/5 rounded-full bg-slate-100" />
+                <div className="mx-auto h-5 w-2/5 rounded-full bg-slate-100" />
+                <span className="sr-only">Writing your poem…</span>
               </div>
-              <p className="mt-5 font-serif text-2xl italic text-ink">
-                {busy ? "Shayar-e-Khwaab is choosing words…" : "Your poem will be born here."}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Enter your situation, pick your poetic form, and receive original verse that respects your true emotions.
-              </p>
-            </div>
+            ) : (
+              <div className="m-auto max-w-sm text-center">
+                <div className="mx-auto grid size-16 place-items-center rounded-full bg-wash text-royal shadow-sm">
+                  <Feather className="size-8" />
+                </div>
+                <p className="mt-5 font-serif text-2xl italic text-ink">Your poem will be born here.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Enter your situation, pick your poetic form, and receive original verse that respects your true emotions.
+                </p>
+              </div>
+            )
           ) : (
             <>
               {/* Header Bar */}
@@ -742,8 +782,8 @@ export function AiPoet() {
 
               {/* Bottom Action Toolbar */}
               <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4 sm:pt-5">
-                <button onClick={publishToFeed} className={cn(btnPrimary, "px-4 py-2 text-xs sm:text-sm")}>
-                  <Send className="size-3.5 sm:size-4" /> Post to Mehfil
+                <button onClick={() => void publishToFeed()} disabled={publishing} className={cn(btnPrimary, "px-4 py-2 text-xs sm:text-sm")}>
+                  <Send className="size-3.5 sm:size-4" /> {publishing ? "Publishing..." : "Publish Poem"}
                 </button>
                 <button
                   onClick={() => {
@@ -754,10 +794,10 @@ export function AiPoet() {
                 >
                   <Palette className="size-3.5 sm:size-4" /> Card Studio
                 </button>
-                <button onClick={saveToBasta} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
-                  <Bookmark className="size-3.5 sm:size-4" /> Save in Basta
+                <button onClick={savePoem} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
+                  <Bookmark className="size-3.5 sm:size-4" /> Save Poem
                 </button>
-                <button onClick={copyToClipboard} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
+                <button onClick={() => void copyToClipboard()} className={cn(btnOutline, "px-3.5 py-2 text-xs sm:text-sm")}>
                   {copied ? <Check className="size-3.5 sm:size-4 text-emerald-600" /> : <Copy className="size-3.5 sm:size-4" />}
                   {copied ? "Copied" : "Copy"}
                 </button>

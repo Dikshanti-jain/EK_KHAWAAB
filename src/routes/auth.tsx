@@ -1,6 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Lock, RefreshCw, Shuffle, Sparkles, KeyRound, Mail, CheckCircle2, X, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Lock,
+  RefreshCw,
+  Sparkles,
+  Mail,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useStore, randomPoetId, type User } from "@/lib/store";
 import {
@@ -11,19 +19,26 @@ import {
   updateVaultPassword,
 } from "@/lib/auth.service";
 import { IdBadge, btnOutline, btnPrimary, chip, input, label } from "@/components/kit";
+import { Modal } from "@/components/Modal";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (
+    s: Record<string, unknown>
+  ): { mode: "signin" | "signup" | "reset"; confirmed?: boolean | undefined; next?: string | undefined } => ({
     mode: s["mode"] === "signin" ? ("signin" as const) : s["mode"] === "reset" ? ("reset" as const) : ("signup" as const),
     confirmed: s["confirmed"] === "true",
+    next:
+      typeof s["next"] === "string" && s["next"].startsWith("/") && !s["next"].startsWith("//")
+        ? s["next"]
+        : undefined,
   }),
   head: () => ({
     meta: [
       { title: "Get Started — Ek Khwaab" },
       { name: "description", content: "Create a private account and choose your public pen name and poet ID." },
       { property: "og:title", content: "Get Started — Ek Khwaab" },
-      { property: "og:description", content: "Your real identity stays in a private vault. Only your pen name appears." },
+      { property: "og:description", content: "Your email stays private. Only your pen name appears publicly." },
     ],
   }),
   component: Auth,
@@ -64,7 +79,7 @@ const VIBES: Record<string, (readonly [string, string])[]> = {
     ["Falsafi_Qalam", "Philosopher's Pen"],
     ["Sawaal_e_Rooh", "Question of the Soul"],
     ["Waqt_Shanas", "Knower of Time"],
-    ["Aaina_Bin", "Mirror Gazer"],
+    ["Aina_Bin", "Mirror Gazer"],
     ["Justajoo_Dil", "Seeking Heart"],
     ["Khalaa_Nasheen", "Dweller of the Void"],
     ["Haqeeqat_Go", "Teller of Truth"],
@@ -74,20 +89,54 @@ const VIBES: Record<string, (readonly [string, string])[]> = {
 type Vibe = string;
 const TAKEN = ["abr_e_shab", "siyahi_qaasid", "khamosh_musafir"];
 const shuffle = <T,>(a: readonly T[]) => [...a].sort(() => Math.random() - 0.5);
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
+
+function passwordScore(p: string): number {
+  if (!p) return 0;
+  let score = 0;
+  if (p.length >= 8) score += 1;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score += 1;
+  if (/\d/.test(p) || /[^A-Za-z0-9]/.test(p)) score += 1;
+  return score;
+}
+
+const STRENGTH = [
+  { text: "Too short", cls: "bg-blush text-crimson" },
+  { text: "Okay", cls: "bg-amber-50 text-amber-700" },
+  { text: "Good", cls: "bg-wash text-royal" },
+  { text: "Strong", cls: "bg-emerald-50 text-emerald-700" },
+];
+
+function FieldError({ children }: { children?: string | undefined }) {
+  if (!children) return null;
+  return (
+    <p className="mt-1.5 flex items-start gap-1.5 text-xs text-crimson">
+      <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+      <span>{children}</span>
+    </p>
+  );
+}
 
 function Auth() {
-  const { mode, confirmed } = Route.useSearch();
+  const { mode, confirmed, next } = Route.useSearch();
   const { set } = useStore();
   const nav = useNavigate();
   const [step, setStep] = useState(1);
-  const [priv, setPriv] = useState({ fullName: "", email: "", phone: "", password: "" });
+  const [priv, setPriv] = useState({ email: "", password: "" });
   const [id, setId] = useState("#EK-7492");
   useEffect(() => setId(randomPoetId()), []);
   const [vibe, setVibe] = useState<Vibe>("Late Night Solitude");
   const [order, setOrder] = useState(0);
   const [pen, setPen] = useState("");
-  const [signin, setSignin] = useState({ identifier: "", password: "" });
+  const [signin, setSignin] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    signin?: string;
+    pen?: string;
+    form?: string;
+  }>({});
 
   // Email Confirmation State
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
@@ -107,12 +156,12 @@ function Auth() {
   // Handle confirmed flag or recovery token in hash
   useEffect(() => {
     if (confirmed) {
-      toast.success("Email confirmed successfully! You can now sign in with your password.");
+      toast.success("Email confirmed. You can sign in now.");
     }
     if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
-      nav({ to: "/auth", search: { mode: "reset" } });
+      nav({ to: "/auth", search: { mode: "reset", ...(next ? { next } : {}) } });
     }
-  }, [confirmed, nav]);
+  }, [confirmed, nav, next]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -121,54 +170,82 @@ function Auth() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const suggestions = (order ? shuffle(VIBES[vibe] ?? []) : VIBES[vibe] ?? []).slice(0, 6);
-  const norm = pen.trim().replace(/[\s-]+/g, "_");
+  const suggestions = useMemo(
+    () => (order ? shuffle(VIBES[vibe] ?? []) : (VIBES[vibe] ?? [])).slice(0, 6),
+    [vibe, order]
+  );
+  const norm = pen.trim().replace(/^@/, "").replace(/[\s-]+/g, "_");
   const taken = TAKEN.includes(norm.toLowerCase());
-  const step1ok =
-    priv.fullName.trim().length > 1 &&
-    /\S+@\S+\.\S+/.test(priv.email) &&
-    priv.phone.replace(/\D/g, "").length >= 10 &&
-    priv.password.length >= 6;
+  const score = passwordScore(priv.password);
 
   const finish = (u: User) => {
     set({ user: u });
-    toast(`Welcome to the Mehfil, @${u.penName}`);
-    nav({ to: "/feed" });
+    toast.success(`Welcome, @${u.penName}`);
+    if (next) nav({ to: next as never, replace: true });
+    else nav({ to: "/feed" });
+  };
+
+  const validateStepOne = () => {
+    const nextErrors: typeof errors = {};
+    if (!EMAIL_RE.test(priv.email.trim())) {
+      nextErrors.email = "Enter a real email address, like you@domain.com.";
+    }
+    if (priv.password.length < 6) {
+      nextErrors.password = "Use at least 6 characters so your account stays safe.";
+    }
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSignIn = async () => {
-    const ident = signin.identifier.trim();
-    if (!ident) {
-      toast.error("Please enter your registered email address.");
+    const email = signin.email.trim();
+    if (!EMAIL_RE.test(email)) {
+      setErrors({ signin: "Enter the email address you signed up with." });
       return;
     }
+    if (!signin.password) {
+      setErrors({ signin: "Enter your password." });
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
-      const res = await signInWithIdentifier(ident, signin.password);
+      const res = await signInWithIdentifier(email, signin.password);
       if (res.user) {
         finish(res.user);
-      } else {
-        if (res.needsEmailConfirmation) {
-          setPendingConfirmationEmail(res.email || ident);
-        }
-        toast.error(res.error || "Unable to sign in. Please verify your credentials.");
+        return;
       }
+      if (res.needsEmailConfirmation) {
+        setPendingConfirmationEmail(res.email || email);
+      }
+      setErrors({
+        signin:
+          res.error ||
+          "That email and password don't match. Try again, or reset your password below.",
+      });
     } catch {
-      toast.error("Sign in failed. Please try again.");
+      setErrors({ signin: "Sign in failed. Check your connection and try again." });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSignUp = async () => {
-    if (norm.length < 3 || taken) return;
+    if (norm.length < 3) {
+      setErrors({ pen: "A pen name needs at least 3 characters." });
+      return;
+    }
+    if (taken) {
+      setErrors({ pen: "That pen name is already taken. Try another one." });
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       const res = await signUpWithVault({
-        email: priv.email,
+        email: priv.email.trim(),
         password: priv.password,
-        fullName: priv.fullName,
-        phone: priv.phone,
+        fullName: "",
         takhallus: norm,
         shayarUid: id,
         vibeCategory: vibe,
@@ -176,14 +253,26 @@ function Auth() {
 
       if (res.needsEmailConfirmation) {
         setPendingConfirmationEmail(res.email || priv.email);
-        toast.success("Confirmation link sent to your email!");
-      } else if (res.user) {
+        toast.success("Confirmation link sent. Check your inbox.");
+        return;
+      }
+      if (res.user) {
         finish(res.user);
+        return;
+      }
+
+      const message = res.error || "We couldn't create your account. Please try again.";
+      if (/already|registered|exists/i.test(message)) {
+        setStep(1);
+        setErrors({
+          email: "This email already has an account. Sign in instead, or use a different email.",
+        });
+        nav({ to: "/auth", search: { mode: "signup", ...(next ? { next } : {}) } });
       } else {
-        toast.error(res.error || "Sign up could not be completed.");
+        setErrors({ form: message });
       }
     } catch {
-      toast.error("Sign up encountered an issue. Please try again.");
+      setErrors({ form: "Something went wrong while creating your account. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -195,10 +284,10 @@ function Auth() {
     try {
       const res = await resendConfirmationEmail(pendingConfirmationEmail);
       if (res.success) {
-        toast.success("A fresh confirmation link has been sent to your email!");
+        toast.success("A fresh confirmation link is on its way.");
         setResendCooldown(60);
       } else {
-        toast.error(res.error || "Could not resend confirmation email.");
+        toast.error(res.error || "Could not resend the confirmation email.");
       }
     } finally {
       setResending(false);
@@ -208,21 +297,23 @@ function Auth() {
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+      setErrors({ password: "Use at least 6 characters." });
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      toast.error("New password and confirmation do not match.");
+      setErrors({ password: "The two passwords don't match." });
       return;
     }
+    setErrors({});
     setResetUpdating(true);
     try {
       const res = await updateVaultPassword(newPassword);
       if (res.success) {
-        toast.success("Your vault password has been updated! Welcome back.");
-        nav({ to: "/feed" });
+        toast.success("Password updated. Welcome back.");
+        if (next) nav({ to: next as never, replace: true });
+        else nav({ to: "/feed" });
       } else {
-        toast.error(res.error || "Could not update password.");
+        setErrors({ password: res.error || "Could not update your password." });
       }
     } finally {
       setResetUpdating(false);
@@ -231,53 +322,46 @@ function Auth() {
 
   const handleSendReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail.includes("@")) {
-      toast.error("Please enter a valid email address.");
+    if (!EMAIL_RE.test(resetEmail.trim())) {
+      toast.error("Enter the email address you signed up with.");
       return;
     }
     setLoading(true);
     try {
-      await sendPasswordResetEmail(resetEmail);
+      await sendPasswordResetEmail(resetEmail.trim());
       setResetSent(true);
-      toast("Password reset instructions sent to your email.");
     } finally {
       setLoading(false);
     }
   };
 
-  const demo = () =>
-    finish({
-      penName: "Abr_e_Shab_Guest",
-      poetId: randomPoetId(),
-      fullName: "Demo Reader",
-      email: "demo@ekkhwaab.in",
-      phone: "+91 98765 43210",
-      guest: true,
-    });
-
   return (
     <div className="bg-secondary px-3.5 py-6 sm:px-6 sm:py-12 md:py-16">
       <div className="mx-auto max-w-xl">
-        <div className="rounded-2xl sm:rounded-3xl border border-hairline bg-card p-4 sm:p-8 shadow-float md:p-12">
+        <div className="rounded-2xl border border-hairline bg-card p-4 shadow-float sm:rounded-3xl sm:p-8 md:p-12">
           {/* PASSWORD RECOVERY MODE */}
           {mode === "reset" ? (
             <div className="space-y-6">
               <div>
                 <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
-                  VAULT KEY RECOVERY
+                  RESET PASSWORD
                 </span>
-                <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Set New Vault Password</h1>
-                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                  Choose a secure new key to protect your private vault and writings.
+                <h1 className="mt-3 text-2xl font-semibold text-ink sm:text-3xl">Choose a new password</h1>
+                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                  Pick something you'll remember. At least 6 characters.
                 </p>
               </div>
 
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
                 <div>
-                  <label className={label}>New Password</label>
+                  <label className={label} htmlFor="new-password">
+                    New password
+                  </label>
                   <input
+                    id="new-password"
                     type="password"
                     required
+                    autoComplete="new-password"
                     className={input}
                     placeholder="At least 6 characters"
                     value={newPassword}
@@ -285,53 +369,56 @@ function Auth() {
                   />
                 </div>
                 <div>
-                  <label className={label}>Confirm New Password</label>
+                  <label className={label} htmlFor="confirm-password">
+                    Confirm new password
+                  </label>
                   <input
+                    id="confirm-password"
                     type="password"
                     required
+                    autoComplete="new-password"
                     className={input}
-                    placeholder="Re-type new password"
+                    placeholder="Re-type your new password"
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                   />
                 </div>
+                <FieldError>{errors.password}</FieldError>
 
                 <button
-                  disabled={resetUpdating || newPassword.length < 6 || newPassword !== confirmNewPassword}
+                  disabled={resetUpdating}
                   type="submit"
                   className={cn(btnPrimary, "w-full py-3.5 text-base")}
                 >
                   {resetUpdating ? (
                     <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="size-4 animate-spin" /> Updating Key...
+                      <Loader2 className="size-4 animate-spin" /> Updating...
                     </span>
                   ) : (
-                    "Update Password & Enter Feed →"
+                    "Update Password"
                   )}
                 </button>
               </form>
             </div>
           ) : pendingConfirmationEmail ? (
             /* EMAIL CONFIRMATION PENDING NOTICE */
-            <div className="space-y-6 text-center py-4">
+            <div className="space-y-6 py-4 text-center">
               <div className="mx-auto grid size-16 place-items-center rounded-full bg-wash text-royal shadow-sm">
                 <Mail className="size-8" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Check Your Email</h1>
-                <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
-                  We sent a secure activation link to:
-                </p>
-                <p className="mt-1 font-mono text-sm sm:text-base font-semibold text-royal">
+                <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Check your email</h1>
+                <p className="mt-2 text-xs text-muted-foreground sm:text-sm">We sent a confirmation link to:</p>
+                <p className="mt-1 font-mono text-sm font-semibold text-royal sm:text-base">
                   {pendingConfirmationEmail}
                 </p>
               </div>
-              <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-xs leading-relaxed text-muted-foreground text-left">
-                <p className="font-semibold text-wash-foreground mb-1">What to do next:</p>
-                <ol className="list-decimal list-inside space-y-1">
-                  <li>Open your email inbox (check Spam or Updates if not visible).</li>
-                  <li>Click the <b>Confirm your mail</b> link.</li>
-                  <li>You will be automatically verified and logged in!</li>
+              <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-left text-xs leading-relaxed text-muted-foreground">
+                <p className="mb-1 font-semibold text-wash-foreground">What to do next</p>
+                <ol className="list-inside list-decimal space-y-1">
+                  <li>Open your inbox (check Spam or Updates too).</li>
+                  <li>Click the confirmation link.</li>
+                  <li>You'll come back here, signed in.</li>
                 </ol>
               </div>
               <div className="space-y-3 pt-2">
@@ -342,7 +429,7 @@ function Auth() {
                 >
                   {resending ? (
                     <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="size-4 animate-spin" /> Sending Link...
+                      <Loader2 className="size-4 animate-spin" /> Sending...
                     </span>
                   ) : resendCooldown > 0 ? (
                     `Resend Email (${resendCooldown}s)`
@@ -353,7 +440,7 @@ function Auth() {
                 <button
                   onClick={() => {
                     setPendingConfirmationEmail(null);
-                    nav({ to: "/auth", search: { mode: "signin" } });
+                    nav({ to: "/auth", search: { mode: "signin", ...(next ? { next } : {}) } });
                   }}
                   className={cn(btnPrimary, "w-full py-3 text-xs sm:text-sm")}
                 >
@@ -363,25 +450,25 @@ function Auth() {
             </div>
           ) : (
             <>
-              {/* Top Switcher: Sign Up vs Sign In */}
-              <div className="mb-6 sm:mb-8 flex gap-1.5 sm:gap-2 rounded-full bg-muted p-1 text-xs sm:text-sm font-medium">
+              {/* Top Switcher: Create account vs Sign in */}
+              <div className="mb-6 flex gap-1.5 rounded-full bg-muted p-1 text-xs font-medium sm:mb-8 sm:gap-2 sm:text-sm">
                 <button
-                  onClick={() => nav({ to: "/auth", search: { mode: "signup" } })}
+                  onClick={() => nav({ to: "/auth", search: { mode: "signup", ...(next ? { next } : {}) } })}
                   className={cn(
-                    "flex-1 rounded-full py-2 sm:py-2.5 transition",
+                    "flex-1 rounded-full py-2 transition sm:py-2.5",
                     mode === "signup" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
                   )}
                 >
-                  Get Started (Sign Up)
+                  Create Account
                 </button>
                 <button
-                  onClick={() => nav({ to: "/auth", search: { mode: "signin" } })}
+                  onClick={() => nav({ to: "/auth", search: { mode: "signin", ...(next ? { next } : {}) } })}
                   className={cn(
-                    "flex-1 rounded-full py-2 sm:py-2.5 transition",
+                    "flex-1 rounded-full py-2 transition sm:py-2.5",
                     mode === "signin" ? "bg-background font-semibold text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
                   )}
                 >
-                  Sign In (Wapsi)
+                  Sign In
                 </button>
               </div>
 
@@ -389,164 +476,204 @@ function Auth() {
               {mode === "signin" ? (
                 <div className="space-y-5">
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-semibold text-ink">Welcome back to Ek Khwaab</h1>
-                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                      Enter with your registered email address.
+                    <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Welcome back</h1>
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                      Sign in with the email you used to create your account.
                     </p>
                   </div>
 
                   <div>
-                    <label className={label}>Registered Email Address</label>
+                    <label className={label} htmlFor="signin-email">
+                      Email address
+                    </label>
                     <input
+                      id="signin-email"
                       className={input}
                       type="email"
-                      placeholder="name@domain.com"
-                      value={signin.identifier}
-                      onChange={(e) => setSignin({ ...signin, identifier: e.target.value })}
+                      autoComplete="email"
+                      placeholder="you@domain.com"
+                      value={signin.email}
+                      onChange={(e) => setSignin({ ...signin, email: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && void handleSignIn()}
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between">
-                      <label className={label}>Vault Password</label>
+                      <label className={label} htmlFor="signin-password">
+                        Password
+                      </label>
                       <button
                         type="button"
                         onClick={() => {
                           setForgotModal(true);
                           setResetSent(false);
-                          setResetEmail("");
+                          setResetEmail(signin.email);
                         }}
                         className="text-xs font-semibold text-royal hover:underline"
                       >
-                        Forgot Password?
+                        Forgot password?
                       </button>
                     </div>
                     <input
+                      id="signin-password"
                       type="password"
+                      autoComplete="current-password"
                       className={input}
-                      placeholder="Enter your password"
+                      placeholder="Your password"
                       value={signin.password}
                       onChange={(e) => setSignin({ ...signin, password: e.target.value })}
-                      onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                      onKeyDown={(e) => e.key === "Enter" && void handleSignIn()}
                     />
                   </div>
 
+                  <FieldError>{errors.signin}</FieldError>
+
                   <button
-                    disabled={loading || !signin.identifier.trim() || signin.password.length < 4}
-                    onClick={handleSignIn}
-                    className={cn(btnPrimary, "w-full py-3 sm:py-3.5 text-sm sm:text-base")}
+                    disabled={loading}
+                    onClick={() => void handleSignIn()}
+                    className={cn(btnPrimary, "w-full py-3 text-sm sm:py-3.5 sm:text-base")}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="size-4 animate-spin" /> Entering Private Vault...
+                        <Loader2 className="size-4 animate-spin" /> Signing in...
                       </span>
                     ) : (
-                      "Sign In to Private Vault"
+                      "Sign In"
                     )}
                   </button>
 
-                  <div className="relative my-4 text-center">
-                    <span className="bg-card px-3 text-xs text-subtle">or</span>
-                    <div className="absolute inset-x-0 top-1/2 -z-10 border-t border-hairline" />
-                  </div>
-
-                  <button onClick={demo} className={cn(btnOutline, "w-full py-2.5 sm:py-3 text-xs sm:text-sm")}>
-                    ⚡ One-Click Instant Guest Demo Login
-                  </button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    New here?{" "}
+                    <button
+                      type="button"
+                      onClick={() => nav({ to: "/auth", search: { mode: "signup", ...(next ? { next } : {}) } })}
+                      className="font-semibold text-royal hover:underline"
+                    >
+                      Create an account
+                    </button>
+                  </p>
                 </div>
               ) : step === 1 ? (
-                /* SIGN UP - STEP 1 (Private Tijori Vault Details) */
+                /* SIGN UP - STEP 1: email + password only */
                 <div className="space-y-6">
                   <div>
                     <span className="rounded-full bg-wash px-3 py-1 font-mono text-xs font-semibold text-royal">
-                      STEP 1 OF 2 · PRIVATE VAULT
+                      STEP 1 OF 2
                     </span>
-                    <h1 className="mt-3 text-2xl sm:text-3xl font-semibold text-ink">Create Your Private Account</h1>
+                    <h1 className="mt-3 text-2xl font-semibold text-ink sm:text-3xl">Create your account</h1>
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                      Two fields now, a pen name next. That's it.
+                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-royal/20 bg-wash/60 p-4 text-sm text-wash-foreground">
                     <p className="flex items-center gap-2 font-semibold">
-                      <Lock className="size-4" /> 100% Zero-Leak Privacy Guarantee
+                      <Lock className="size-4" /> Your email stays private
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      Your real name, email, and phone number are strictly encrypted in our private vault and NEVER shown to
-                      other readers, on cards, in comments, or in secret letters.
+                      Readers only ever see your pen name and poet ID. Your email is never shown on poems,
+                      comments, cards or letters.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <form
+                    className="space-y-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (validateStepOne()) {
+                        setErrors({});
+                        setStep(2);
+                      }
+                    }}
+                  >
                     <div>
-                      <label className={label}>Full Name (Private)</label>
+                      <label className={label} htmlFor="signup-email">
+                        Email address
+                      </label>
                       <input
-                        className={input}
-                        placeholder="Your legal or real name"
-                        value={priv.fullName}
-                        onChange={(e) => setPriv({ ...priv, fullName: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className={label}>Email Address (Private)</label>
-                      <input
+                        id="signup-email"
                         type="email"
+                        autoComplete="email"
                         className={input}
                         placeholder="you@domain.com"
                         value={priv.email}
                         onChange={(e) => setPriv({ ...priv, email: e.target.value })}
+                        onBlur={() => {
+                          if (priv.email && !EMAIL_RE.test(priv.email.trim())) {
+                            setErrors((x) => ({ ...x, email: "Enter a real email address, like you@domain.com." }));
+                          }
+                        }}
                       />
+                      <FieldError>{errors.email}</FieldError>
                     </div>
+
                     <div>
-                      <label className={label}>Phone Number (Private)</label>
+                      <label className={label} htmlFor="signup-password">
+                        Password
+                      </label>
                       <input
-                        type="tel"
-                        className={input}
-                        value={priv.phone}
-                        onChange={(e) => setPriv({ ...priv, phone: e.target.value })}
-                        placeholder="+91 98765 43210"
-                      />
-                    </div>
-                    <div>
-                      <label className={label}>Create Vault Password</label>
-                      <input
+                        id="signup-password"
                         type="password"
+                        autoComplete="new-password"
                         className={input}
                         value={priv.password}
                         onChange={(e) => setPriv({ ...priv, password: e.target.value })}
                         placeholder="At least 6 characters"
                       />
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                            priv.password ? STRENGTH[score]!.cls : "bg-muted text-subtle"
+                          )}
+                        >
+                          {priv.password ? STRENGTH[score]!.text : "Password strength"}
+                        </span>
+                        <span className="text-[11px] text-subtle">
+                          Mix letters, numbers or a symbol for a stronger password.
+                        </span>
+                      </div>
+                      <FieldError>{errors.password}</FieldError>
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    <button
-                      disabled={!step1ok}
-                      onClick={() => setStep(2)}
-                      className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
-                    >
-                      Continue to Pen Name Selection →
+                    <FieldError>{errors.form}</FieldError>
+
+                    <button type="submit" className={cn(btnPrimary, "w-full py-3.5 text-base")}>
+                      Continue to Pen Name →
                     </button>
-                    <button onClick={demo} className={cn(btnOutline, "py-3 text-sm")}>
-                      Instant Demo
-                    </button>
-                  </div>
+                  </form>
+
+                  <p className="text-center text-[11px] leading-relaxed text-subtle">
+                    By continuing you agree to our{" "}
+                    <a href="/privacy" className="font-semibold text-royal hover:underline">
+                      privacy charter
+                    </a>{" "}
+                    and{" "}
+                    <a href="/guidelines" className="font-semibold text-royal hover:underline">
+                      community guidelines
+                    </a>
+                    .
+                  </p>
                 </div>
               ) : (
-                /* SIGN UP - STEP 2 (Public Poet Identity) */
+                /* SIGN UP - STEP 2: public pen name */
                 <div className="space-y-7">
                   <div>
                     <span className="rounded-full bg-blush px-3 py-1 font-mono text-xs font-semibold text-crimson">
-                      STEP 2 OF 2 · PUBLIC IDENTITY
+                      STEP 2 OF 2 · YOUR PEN NAME
                     </span>
-                    <h1 className="mt-3 text-3xl font-semibold text-ink">Choose Your Public Pen Name</h1>
+                    <h1 className="mt-3 text-2xl font-semibold text-ink sm:text-3xl">Choose your pen name</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      This pen name and your unique poet ID are all the world will ever see.
+                      This is the only name readers will see. Pick one that feels like you.
                     </p>
                   </div>
 
-                  {/* Unique ID Badge & Regenerate */}
+                  {/* Auto-assigned poet ID */}
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary p-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Your Unique Shayar ID:
+                        Your poet ID
                       </span>
                       <span className="rounded-full bg-wash px-3.5 py-1 font-mono text-sm font-bold text-royal">
                         {id}
@@ -557,32 +684,32 @@ function Auth() {
                       onClick={() => setId(randomPoetId())}
                       className="flex items-center gap-1.5 text-xs font-semibold text-royal transition hover:text-vivid"
                     >
-                      <RefreshCw className="size-3.5" /> Regenerate ID
+                      <RefreshCw className="size-3.5" /> New ID
                     </button>
                   </div>
 
-                  {/* Vibe Selector */}
+                  {/* Vibe selector */}
                   <div>
-                    <label className={label}>Select Inspiration Vibe</label>
+                    <label className={label}>Pick a vibe</label>
                     <div className="flex flex-wrap gap-2">
                       {Object.keys(VIBES).map((v) => (
-                        <button key={v} onClick={() => setVibe(v)} className={chip(vibe === v)}>
+                        <button key={v} type="button" onClick={() => setVibe(v)} className={chip(vibe === v)}>
                           {v}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Curated Suggested Names */}
+                  {/* Six poetic pen-name cards */}
                   <div>
                     <div className="mb-2 flex items-center justify-between">
-                      <label className={label}>Pick a Curated Pen Name</label>
+                      <label className={label}>Six names for this mood</label>
                       <button
                         type="button"
                         onClick={() => setOrder((o) => o + 1)}
                         className="flex items-center gap-1 text-xs font-semibold text-royal hover:underline"
                       >
-                        <Shuffle className="size-3.5" /> Shuffle
+                        🎲 Shuffle Names
                       </button>
                     </div>
 
@@ -591,61 +718,72 @@ function Auth() {
                         <button
                           key={n}
                           type="button"
-                          onClick={() => setPen(n)}
+                          onClick={() => {
+                            setPen(n);
+                            setErrors((x) => ({ ...x, pen: "" }));
+                          }}
                           className={cn(
                             "rounded-2xl border p-4 text-left transition",
-                            pen === n
+                            norm === n.replace(/[\s-]+/g, "_")
                               ? "border-crimson bg-blush shadow-sm"
                               : "border-hairline bg-card hover:border-border hover:shadow-card"
                           )}
                         >
-                          <p className="font-serif text-lg font-semibold text-ink">@{n}</p>
+                          <p className="font-serif text-lg font-semibold text-ink">@{n.replace(/[\s-]+/g, "_")}</p>
                           <p className="text-xs italic text-muted-foreground">{m}</p>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Custom Pen Name Input */}
+                  {/* Custom pen name */}
                   <div>
-                    <label className={label}>Or Enter Your Own Custom Pen Name</label>
+                    <label className={label} htmlFor="custom-pen">
+                      Or type your own pen name
+                    </label>
                     <input
+                      id="custom-pen"
                       value={pen}
-                      onChange={(e) => setPen(e.target.value)}
+                      onChange={(e) => {
+                        setPen(e.target.value);
+                        setErrors((x) => ({ ...x, pen: "" }));
+                      }}
                       placeholder="e.g. Shab_e_Umeed, Tanha_Dil"
                       className={cn(input, "rounded-xl")}
+                      maxLength={32}
                     />
+                    <FieldError>{errors.pen}</FieldError>
                   </div>
 
-                  {taken && <p className="text-xs font-semibold text-crimson">That pen name is reserved — please choose another.</p>}
-
-                  {/* Comparison Box */}
+                  {/* What stays private / public */}
                   <div className="space-y-2 rounded-2xl border border-hairline bg-secondary p-5 text-sm">
                     <p className="flex items-center gap-2">
                       <Lock className="size-4 text-subtle" />
-                      <span className="text-xs font-semibold uppercase text-subtle">Private in Vault:</span>
-                      <span className="font-medium text-ink">{priv.fullName || "Your real name"} · {priv.phone || "Your phone"}</span>
+                      <span className="text-xs font-semibold uppercase text-subtle">Private:</span>
+                      <span className="truncate font-medium text-ink">{priv.email || "your email"}</span>
                     </p>
                     <p className="flex items-center gap-2">
                       <Sparkles className="size-4 text-crimson" />
-                      <span className="text-xs font-semibold uppercase text-subtle">Visible on Mehfil:</span>
-                      <span className="font-semibold text-ink">@{norm || "your_pen_name"}</span>
-                      <IdBadge id={id} />
+                      <span className="text-xs font-semibold uppercase text-subtle">Public:</span>
+                      <span className="min-w-0 truncate font-semibold text-ink">@{norm || "your_pen_name"}</span>
+                      <span className="shrink-0"><IdBadge id={id} /></span>
                     </p>
                   </div>
 
+                  <FieldError>{errors.form}</FieldError>
+
                   <div className="flex flex-wrap gap-3">
                     <button
-                      disabled={loading || norm.length < 3 || taken}
-                      onClick={handleSignUp}
+                      disabled={loading}
+                      onClick={() => void handleSignUp()}
                       className={cn(btnPrimary, "flex-1 py-3.5 text-base")}
                     >
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
-                          <Loader2 className="size-4 animate-spin" /> Sealing Vault & Entering Feed...
+                          <Loader2 className="size-4 animate-spin" /> Creating your account...
                         </span>
                       ) : (
-                        "Complete Setup & Enter Feed →"
+                        "Enter Ek Khwaab →"
                       )}
                     </button>
                     <button disabled={loading} onClick={() => setStep(1)} className={cn(btnOutline, "px-6 py-3.5")}>
@@ -659,86 +797,59 @@ function Auth() {
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
-      {forgotModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4 backdrop-blur-sm"
-          onClick={() => setForgotModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-3xl border border-hairline bg-background p-8 shadow-float"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <KeyRound className="size-5 text-royal" />
-                <h3 className="text-2xl font-semibold text-ink">Reset Vault Password</h3>
+      {/* Forgot password — a real modal: Escape, backdrop, scroll lock, 40 px close. */}
+      <Modal
+        open={forgotModal}
+        onClose={() => setForgotModal(false)}
+        title="Reset your password"
+        description="Enter your account email and we'll send you a secure reset link."
+      >
+        {resetSent ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              <p className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="size-4" /> Reset link sent
+              </p>
+              <p className="mt-1 text-xs">
+                Instructions are on their way to <b>{resetEmail}</b>. Open the link to choose a new password.
+              </p>
+            </div>
+            <button type="button" onClick={() => setForgotModal(false)} className={cn(btnPrimary, "w-full py-3")}>
+              Back to Sign In
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSendReset} className="space-y-4">
+            <div>
+              <label className={label} htmlFor="reset-email">
+                Email address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle" />
+                <input
+                  id="reset-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="you@domain.com"
+                  className={cn(input, "pl-10")}
+                />
               </div>
-              <button
-                aria-label="Close"
-                onClick={() => setForgotModal(false)}
-                className="rounded-full p-2 text-subtle hover:bg-muted hover:text-ink"
-              >
-                <X className="size-5" />
-              </button>
             </div>
 
-            <p className="mt-2 text-sm text-muted-foreground">
-              Enter your registered email address and we will generate a secure reset link for your encrypted vault.
-            </p>
-
-            {resetSent ? (
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                  <p className="flex items-center gap-2 font-semibold">
-                    <CheckCircle2 className="size-4" /> Reset Link Generated
-                  </p>
-                  <p className="mt-1 text-xs">
-                    Instructions sent to <b>{resetEmail}</b>. Please check your inbox and click the reset link to choose a new vault password.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForgotModal(false)}
-                  className={cn(btnPrimary, "w-full py-3")}
-                >
-                  Return to Sign In
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSendReset} className="mt-6 space-y-4">
-                <div>
-                  <label className={label}>Registered Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-subtle" />
-                    <input
-                      type="email"
-                      required
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="you@domain.com"
-                      className={cn(input, "pl-10")}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setForgotModal(false)}
-                    className={cn(btnOutline, "flex-1 py-2.5")}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className={cn(btnPrimary, "flex-1 py-2.5")}>
-                    Send Reset Link
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => setForgotModal(false)} className={cn(btnOutline, "flex-1 py-2.5")}>
+                Cancel
+              </button>
+              <button type="submit" disabled={loading} className={cn(btnPrimary, "flex-1 py-2.5")}>
+                {loading ? <Loader2 className="size-4 animate-spin" /> : "Send Reset Link"}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

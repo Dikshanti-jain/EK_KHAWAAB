@@ -73,12 +73,22 @@ describe("Backend Security & Remediation Test Suite", () => {
 
     it("wraps user inputs inside <user_supplied_data> blocks in creative briefs", () => {
       const brief = buildCreativeBrief({
+        phrases: [],
+        isPhraseMandatory: false,
+        tags: [],
         poetryType: "shayari",
+        primaryLanguage: "hinglish",
         mood: "Quiet longing",
         intensity: "Moderate",
         length: "couplet",
         vocabComplexity: "conversational",
         rhymePreference: "rhymed",
+        radif: "",
+        qafiya: "",
+        metaphorDensity: "moderate",
+        perspective: "first_person",
+        avoidWords: "",
+        poeticStyleLens: "",
         situation: "Sitting on the old library stairs in winter rain",
         draftText: "Tere aane ki khabar",
       });

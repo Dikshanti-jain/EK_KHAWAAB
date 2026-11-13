@@ -102,3 +102,25 @@
 @utility seal-break { animation: sealbreak 0.7s ease-in forwards; }
 @keyframes ripple { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes sealbreak { 0% { transform: scale(1) rotate(0); opacity: 1; } 100% { transform: scale(1.6) rotate(25deg); opacity: 0; } }
+
+/* Route change: a short rise-and-fade so pages never snap. */
+@utility page-enter {
+  /* `backwards`, not `both`: a filled-forward `transform` would keep the
+     wrapper as the containing block and break `position: fixed` descendants
+     (the mobile FAB, back-to-top). After 180 ms the transform returns to none. */
+  animation: page-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

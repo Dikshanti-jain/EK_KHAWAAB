@@ -1,53 +1,138 @@
+# ============================================================================
+# Ek Khwaab — Hostinger LiteSpeed / Apache
+# Order matters: HTTPS → canonical host → directory index → static → 404 → SPA
+# Keep a copy of the previous file as .htaccess.bak on the server before upload.
+# Upload this file AFTER dist/ is in place, or every route 404s until the
+# upload finishes.
+# ============================================================================
+
+Options -Indexes
+DirectoryIndex index.html
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Force HTTPS
+  # 1. Force HTTPS. Both conditions must agree, so a Cloudflare "Flexible"
+  #    setup (HTTPS off at origin, X-Forwarded-Proto=https) cannot loop.
   RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-  # 2. Redirect www to non-www (Canonical https://ekkhwaab.in)
+  # 2. Canonical host: www → apex, one hop.
   RewriteCond %{HTTP_HOST} ^www\.ekkhwaab\.in$ [NC]
   RewriteRule ^ https://ekkhwaab.in%{REQUEST_URI} [L,R=301]
 
-  # 3. Serve pre-rendered directory index.html if it exists (e.g., /dictionary/tagaful -> /dictionary/tagaful/index.html)
+  # 3. Pre-rendered directory index: /dictionary/tagaful → .../index.html
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteCond %{REQUEST_FILENAME}/index.html -f
   RewriteRule ^(.+?)/?$ $1/index.html [L]
 
-  # 4. Serve existing static files (assets, sitemap.xml, robots.txt, images) directly
+  # 4. Real files (assets, sitemap, robots, images, audio) served directly.
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
-  # 5. SPA Fallback for dynamic client-side routes
+  # 5. Unknown content routes must 404, not return the SPA shell with 200.
+  #    Googlebot currently discovers infinite soft-404s through shared links.
+  #    /poetry/* that exists is already served by rule 3; the Cloudflare SEO
+  #    Worker (blueprint §3.8) handles new slugs before the origin sees them.
+  RewriteRule ^(poetry|dictionary)(/|$) - [R=404,L]
+
+  # 6. SPA fallback for known client routes only.
   RewriteRule ^ /index.html [L]
 </IfModule>
 
-# Correct MIME Types for SEO files
+# ----------------------------------------------------------------------------
+# MIME types
+# ----------------------------------------------------------------------------
 <IfModule mod_mime.c>
   AddType application/xml .xml
   AddType text/plain .txt
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType font/woff2 .woff2
+  AddType audio/mpeg .mp3
 </IfModule>
 
-# Security Headers for Hostinger LiteSpeed
+# ----------------------------------------------------------------------------
+# Compression (LiteSpeed does this natively; this is the Apache fallback)
+# ----------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE application/xml image/svg+xml
+</IfModule>
+
+# ----------------------------------------------------------------------------
+# Security headers
+# ----------------------------------------------------------------------------
 <IfModule mod_headers.c>
-  Header always set X-Robots-Tag "index, follow, max-image-preview:large, max-snippet:-1"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
   Header always set Cross-Origin-Opener-Policy "same-origin"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com https://api.ekkhwaab.in;"
+  Header always set X-Frame-Options "DENY"
+
+  # frame-ancestors/object-src/base-uri are the directives X-Frame-Options
+  # cannot express. Turnstile needs challenges.cloudflare.com in script/frame/
+  # connect; YouTube remains allowed for embeds.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self'; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.onrender.com https://api.ekkhwaab.in https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
 </IfModule>
 
-# Browser Caching for Performance
+# Per-path robots policy. Global "index, follow" currently leaks indexable
+# /auth, /profile and /letters pages into the index.
+<IfModule mod_setenvif.c>
+  SetEnvIf Request_URI "^/(auth|profile|letters|secret-letters|private-vault|listen-together)" NOINDEX
+</IfModule>
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive" env=NOINDEX
+  Header set X-Robots-Tag "index, follow, max-image-preview:large, max-snippet:-1" env=!NOINDEX
+</IfModule>
+
+# ----------------------------------------------------------------------------
+# Cache-Control
+# ----------------------------------------------------------------------------
+<IfModule mod_setenvif.c>
+  # Only hashed build output gets a one-year immutable cache. Root-level
+  # SVGs/JS must not be frozen for a year.
+  SetEnvIf Request_URI "^/assets/" IMMUTABLE
+  # Ambient beds are unhashed and replaced rarely: seven days in the browser,
+  # thirty at the edge, then stale-while-revalidate.
+  SetEnvIf Request_URI "^/audio/" AUDIO
+</IfModule>
+<IfModule mod_headers.c>
+  # HTML: revalidate in the browser, cache 5 min at the edge, serve stale for
+  # a day while refreshing. This is the line that removes the origin cliff.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "public, max-age=0, s-maxage=300, stale-while-revalidate=86400"
+  </FilesMatch>
+
+  # Hashed build assets: immutable for a year.
+  Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE
+
+  # Audio beds: seven days in the browser.
+  Header set Cache-Control "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400" env=AUDIO
+
+  # Unhashed images: shorter, purge on change.
+  <FilesMatch "\.(png|jpg|jpeg|gif|ico)$">
+    Header set Cache-Control "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400"
+  </FilesMatch>
+
+  <FilesMatch "^(sitemap.*\.xml|robots\.txt)$">
+    Header set Cache-Control "public, max-age=3600, s-maxage=3600"
+  </FilesMatch>
+</IfModule>
+
+# Apache fallback if mod_headers is unavailable.
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
-  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 month"
   ExpiresByType image/png "access plus 1 month"
   ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType audio/mpeg "access plus 7 days"
+  ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>
-
