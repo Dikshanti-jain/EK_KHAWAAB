@@ -9,6 +9,9 @@ export const Route = createFileRoute("/guidelines")({
     { name: "author", content: "Dikshanti Jain" },
     { property: "og:title", content: "Community Guidelines — Ek Khwaab" },
     { property: "og:description", content: "Our etiquette and anti-plagiarism policy." },
+    { property: "og:url", content: "https://ekkhwaab.in/guidelines" },
+  ], links: [
+    { rel: "canonical", href: "https://ekkhwaab.in/guidelines" },
   ] }),
   component: () => (
     <div className="mx-auto max-w-3xl px-6 py-16">

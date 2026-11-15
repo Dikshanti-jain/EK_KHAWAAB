@@ -94,7 +94,8 @@ async function prerenderRoute(routePath) {
   }
 }
 
-// A. Core Static Pages
+// A. Core Static Pages. Canonical hubs plus the working aliases. The aliases
+// keep a unique title/description and canonicalise to their primary hub.
 const corePages = [
   "/",
   "/explore",
@@ -105,6 +106,9 @@ const corePages = [
   "/secret-letters",
   "/letters",
   "/dictionary",
+  "/stages-of-love",
+  "/directory",
+  "/listen-together",
   "/guidelines",
   "/privacy",
 ];
@@ -140,9 +144,121 @@ for (const word of LUGHAT) {
 }
 console.log(`✓ Pre-rendered ${wordCount} Lughat dictionary routes.`);
 
+// E. Machine-readable assets: sitemap, RSS, llms.txt, llms-full.txt.
+//    generate-sitemap.ts runs before vite build so the files are also copied
+//    through .output/public; re-writing them here guarantees the dist bundle
+//    is complete even if that step is skipped.
+const SEO_LASTMOD = "2026-11-14";
+const machineFiles = ["sitemap.xml", "rss.xml", "llms.txt", "llms-full.txt", "seo-manifest.json"];
+
+for (const name of machineFiles) {
+  const source = path.resolve("public", name);
+  if (!fs.existsSync(source)) {
+    console.error(`❌ Missing public/${name}. Run \`npx tsx scripts/generate-sitemap.ts\` first.`);
+    process.exit(1);
+  }
+  let content = fs.readFileSync(source, "utf8");
+  if (name === "sitemap.xml" || name === "rss.xml") {
+    content = content.replace(/<lastmod>[^<]*<\/lastmod>/g, `<lastmod>${SEO_LASTMOD}</lastmod>`);
+  }
+  fs.writeFileSync(path.join(DIST_DIR, name), content, "utf8");
+  console.log(`✓ Wrote dist/${name}`);
+}
+
+// F. Verification gate: every pre-rendered page must carry exactly one unique
+//    title, description and canonical. Duplicate metadata is the fastest way
+//    for Google to collapse 70 pages into one.
+function collectHtmlFiles(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) collectHtmlFiles(full, out);
+    else if (entry.name === "index.html") out.push(full);
+  }
+  return out;
+}
+
+const htmlFiles = collectHtmlFiles(DIST_DIR);
+const titles = new Map();
+const descriptions = new Map();
+const errors = [];
+
+for (const file of htmlFiles) {
+  const html = fs.readFileSync(file, "utf8");
+  const relative = path.relative(DIST_DIR, file).replace(/\\/g, "/");
+
+  const titleMatches = [...html.matchAll(/<title[^>]*>([\s\S]*?)<\/title>/gi)];
+  const descMatches = [
+    ...html.matchAll(/<meta[^>]+name=["']description["'][^>]*>/gi),
+  ];
+  const canonicalMatches = [
+    ...html.matchAll(/<link[^>]+rel=["']canonical["'][^>]*>/gi),
+  ];
+
+  if (titleMatches.length !== 1) {
+    errors.push(`${relative}: expected 1 <title>, found ${titleMatches.length}`);
+  }
+  if (descMatches.length !== 1) {
+    errors.push(`${relative}: expected 1 meta description, found ${descMatches.length}`);
+  }
+  if (canonicalMatches.length !== 1) {
+    errors.push(`${relative}: expected 1 canonical, found ${canonicalMatches.length}`);
+  }
+
+  const title = (titleMatches[0]?.[1] || "").trim();
+  const desc = (descMatches[0]?.[0] || "").trim();
+  if (!title) errors.push(`${relative}: empty title`);
+  if (!desc) errors.push(`${relative}: empty description`);
+
+  if (title) {
+    if (titles.has(title)) errors.push(`${relative}: duplicate title with ${titles.get(title)} — "${title}"`);
+    else titles.set(title, relative);
+  }
+  if (desc) {
+    if (descriptions.has(desc)) errors.push(`${relative}: duplicate description with ${descriptions.get(desc)}`);
+    else descriptions.set(desc, relative);
+  }
+}
+
+for (const name of ["sitemap.xml", "rss.xml", "llms.txt", "llms-full.txt", "seo-manifest.json", "robots.txt", "directory/index.html", "stages-of-love/index.html"]) {
+  const target = path.join(DIST_DIR, name);
+  if (!fs.existsSync(target) || fs.statSync(target).size === 0) {
+    errors.push(`missing or empty dist/${name}`);
+  }
+}
+
+// IndexNow key files are 32 hex characters + .txt and must remain reachable at
+// https://ekkhwaab.in/<key>.txt for the lifetime of the submission.
+const indexNowKeys = fs
+  .readdirSync(path.resolve("public"))
+  .filter((entry) => /^[a-f0-9]{32}\.txt$/i.test(entry));
+if (indexNowKeys.length === 0) {
+  errors.push("no IndexNow key file found in public/ (expected <32-hex>.txt)");
+}
+for (const keyFile of indexNowKeys) {
+  if (!fs.existsSync(path.join(DIST_DIR, keyFile))) {
+    errors.push(`missing dist/${keyFile} (IndexNow key)`);
+  }
+}
+
+const sitemapXml = fs.readFileSync(path.join(DIST_DIR, "sitemap.xml"), "utf8");
+const rssXml = fs.readFileSync(path.join(DIST_DIR, "rss.xml"), "utf8");
+const sitemapCount = (sitemapXml.match(/<loc>/g) || []).length;
+const rssCount = (rssXml.match(/<item>/g) || []).length;
+
 console.log("\n=======================================================");
-console.log(`🎉 Hostinger public_html bundle successfully prepared in ${DIST_DIR}`);
-console.log(`Total pre-rendered HTML files: ${corePages.length + topicCount + poemCount + wordCount}`);
+if (errors.length > 0) {
+  console.error("❌ SEO VERIFICATION FAILED");
+  for (const error of errors) console.error(`   - ${error}`);
+  console.error("=======================================================\n");
+  process.exit(1);
+}
+
+console.log("✓ SEO verification passed");
+console.log(`   HTML files: ${htmlFiles.length}`);
+console.log(`   Unique titles: ${titles.size}`);
+console.log(`   Unique descriptions: ${descriptions.size}`);
+console.log(`   Sitemap URLs: ${sitemapCount}`);
+console.log(`   RSS items: ${rssCount}`);
+console.log(`🎉 Production bundle successfully prepared in ${DIST_DIR}`);
 console.log("=======================================================\n");
 process.exit(0);
-console.log("=======================================================\n");

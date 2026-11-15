@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { ALL_FORMS, findWord } from "@/data/lughat";
 import type { Script } from "@/data/poems";
+import { rankFor } from "@/lib/ranks";
 import { cn } from "@/lib/utils";
 
 export function Lughat({ token }: { token: string }) {
@@ -28,43 +29,142 @@ export function Line({ text }: { text: string }) {
   return <>{text.split(RE).map((p, i) => (findWord(p) ? <Lughat key={i} token={p} /> : <span key={i}>{p}</span>))}</>;
 }
 
-export function Verse({ lines, script, className }: { lines: string[]; script: Script; className?: string }) {
+export function Verse({
+  lines,
+  script,
+  className,
+  ornament = false,
+}: {
+  lines: string[];
+  script: Script;
+  className?: string;
+  ornament?: boolean;
+}) {
   const safeLines = Array.isArray(lines) && lines.length > 0 ? lines : [];
+  const showOrnament = ornament && safeLines.length === 2;
+  // Each script keeps its own responsive base size; the reader's Aa choice
+  // multiplies it through --verse-scale on <html>.
+  const baseSize =
+    script === "english"
+      ? "[--verse-base:1rem] sm:[--verse-base:1.125rem] md:[--verse-base:1.25rem]"
+      : "[--verse-base:1.125rem] sm:[--verse-base:1.25rem] md:[--verse-base:1.5rem]";
+
   return (
     <div
+      data-verse-body
       dir={script === "urdu" ? "rtl" : "ltr"}
+      style={{ fontSize: "calc(var(--verse-base) * var(--verse-scale, 1))" }}
       className={cn(
-        "text-center text-ink transition-all duration-300",
+        "text-center text-ink transition-[font-size,color] duration-300",
         script === "urdu"
-          ? "urdu text-lg sm:text-xl md:text-2xl leading-relaxed"
+          ? "urdu leading-relaxed"
           : script === "hindi"
-          ? "deva text-lg sm:text-xl md:text-2xl leading-relaxed"
+          ? "deva leading-relaxed"
           : script === "english"
-          ? "font-serif italic text-base sm:text-lg md:text-xl leading-relaxed text-ink/90"
-          : "font-serif text-lg sm:text-xl md:text-2xl leading-relaxed",
+          ? "font-serif italic leading-relaxed text-ink/90"
+          : "font-serif leading-relaxed",
+        baseSize,
         className
       )}
     >
       {safeLines.map((l, i) => (
-        <p key={i} className="my-1 sm:my-1.5">
-          <Line text={l} />
-        </p>
+        <Fragment key={i}>
+          {showOrnament && i === 1 && (
+            <span
+              aria-hidden="true"
+              className="my-1.5 block select-none text-center font-serif text-[11px] tracking-[0.45em] text-gold sm:my-2"
+            >
+              ❖
+            </span>
+          )}
+          <p className="my-1 sm:my-1.5">
+            <Line text={l} />
+          </p>
+        </Fragment>
       ))}
     </div>
   );
 }
 
-export function ScriptSwitch({
-  value,
-  onChange,
-  meaning,
-  onMeaning,
+export type VerseTone = "white" | "cashmere" | "midnight";
+
+const VERSE_TONE: Record<VerseTone, { panel: string; frame: string; mark: string }> = {
+  white: { panel: "bg-white", frame: "border-gold/35", mark: "text-gold/20" },
+  cashmere: { panel: "bg-cashmere", frame: "border-gold/45", mark: "text-gold/25" },
+  midnight: { panel: "bg-midnight", frame: "border-gold/30", mark: "text-gold/20" },
+};
+
+/**
+ * The reading panel inside a PoemCard: an inner gold rule and an oversized
+ * serif opening quote, both decorative. The panel is the only surface the
+ * three tone dots repaint; header and actions stay editorial white.
+ */
+export function VerseFrame({
+  tone = "white",
+  className,
+  children,
 }: {
-  value: Script;
-  onChange: (s: Script) => void;
-  meaning?: boolean;
-  onMeaning?: () => void;
+  tone?: VerseTone;
+  className?: string;
+  children: ReactNode;
 }) {
+  const skin = VERSE_TONE[tone];
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl px-4 pb-3 pt-8 sm:px-8 sm:pt-10",
+        skin.panel,
+        className
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn("pointer-events-none absolute inset-2 rounded-xl border sm:inset-3", skin.frame)}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute left-4 top-0.5 select-none font-serif text-[64px] leading-none sm:text-[84px]",
+          skin.mark
+        )}
+      >
+        “
+      </span>
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+export function RankBadge({
+  count,
+  prefix,
+  className,
+}: {
+  count: number;
+  prefix?: string;
+  className?: string;
+}) {
+  const rank = rankFor(count);
+  const title = `${prefix ? `${prefix} · ` : ""}${rank.name} (${rank.english}) · ${count} ${
+    count === 1 ? "verse" : "verses"
+  }`;
+  return (
+    <span
+      title={title}
+      aria-label={title}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-gold-line bg-cashmere px-2 py-0.5 text-[10px] font-medium text-gold-ink sm:px-2.5 sm:text-[11px]",
+        className
+      )}
+    >
+      <span aria-hidden="true">✦</span>
+      {prefix ? `${prefix} · ` : ""}
+      {rank.name}
+    </span>
+  );
+}
+
+export function ScriptSwitch({ value, onChange }: { value: Script; onChange: (s: Script) => void }) {
   const opts: [Script, string][] = [
     ["hinglish", "Hinglish"],
     ["hindi", "हिन्दी"],
@@ -88,18 +188,6 @@ export function ScriptSwitch({
           {l}
         </button>
       ))}
-      {onMeaning && (
-        <button
-          type="button"
-          onClick={onMeaning}
-          className={cn(
-            "rounded-full px-3 py-1.5 transition",
-            meaning ? "bg-royal text-primary-foreground font-semibold" : "text-muted-foreground hover:text-ink"
-          )}
-        >
-          Meaning
-        </button>
-      )}
     </div>
   );
 }

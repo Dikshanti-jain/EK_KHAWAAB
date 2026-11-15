@@ -44,6 +44,9 @@ export const Route = createFileRoute("/listen-together")({
       },
       { property: "og:url", content: "https://ekkhwaab.in/listen-together" },
     ],
+    links: [
+      { rel: "canonical", href: "https://ekkhwaab.in/listen-together" },
+    ],
   }),
   component: ListenTogether,
 });

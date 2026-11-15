@@ -13,12 +13,29 @@ import { PoemCard } from "@/components/PoemCard";
 import { PoemSkeletonList } from "@/components/PoemSkeleton";
 import { Modal } from "@/components/Modal";
 import { useSignInPrompt } from "@/components/SignInPrompt";
+import { SurpriseVerse } from "@/components/SurpriseVerse";
+import { TimeGreeting } from "@/components/TimeGreeting";
+import { VerseScaleControl } from "@/components/VerseScaleControl";
 import { ScriptSwitch, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
+const FEED_TOPIC_LINKS = [
+  ["ai-shayari-generator", "AI Shayari"],
+  ["two-line-shayari", "2-Line Sher"],
+  ["heartbreak-shayari", "Heartbreak"],
+  ["love-shayari", "Ishq & Love"],
+  ["loneliness-shayari", "Late Night Tanhai"],
+  ["jaun-elia-style-shayari", "Jaun Elia Style"],
+  ["gulzar-style-poetry", "Gulzar Style"],
+  ["shayari-for-instagram", "Instagram Cards"],
+] as const;
+
 export const Route = createFileRoute("/feed")({
-  validateSearch: (s: Record<string, unknown>): { q?: string | undefined } => ({
+  validateSearch: (
+    s: Record<string, unknown>
+  ): { q?: string | undefined; mood?: string | undefined } => ({
     q: typeof s["q"] === "string" && s["q"].trim() ? s["q"] : undefined,
+    mood: typeof s["mood"] === "string" && s["mood"].trim() ? s["mood"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -35,6 +52,11 @@ export const Route = createFileRoute("/feed")({
           "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
       },
       { property: "og:url", content: "https://ekkhwaab.in/feed" },
+      { name: "twitter:title", content: "Explore Hindi, Urdu & Hinglish Shayari | Ek Khwaab" },
+      { name: "twitter:description", content: "Two-line shayari, heartbreak poetry, late-night tanhai, and unspoken love ghazals in three scripts." },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ekkhwaab.in/feed" },
     ],
   }),
   component: Feed,
@@ -52,9 +74,15 @@ export function Feed() {
   const { promptSignIn } = useSignInPrompt();
   // `/explore` reuses this component outside the `/feed` route, so read the
   // nearest search params instead of the route-bound hook (which would throw).
-  const routeSearch = useSearch({ strict: false }) as { q?: string | undefined };
+  const routeSearch = useSearch({ strict: false }) as {
+    q?: string | undefined;
+    mood?: string | undefined;
+  };
   const q = typeof routeSearch.q === "string" ? routeSearch.q : undefined;
-  const [f, setF] = useState("All Moods");
+  const moodParam = typeof routeSearch.mood === "string" ? routeSearch.mood : undefined;
+  const [f, setF] = useState(() =>
+    moodParam && FILTERS.includes(moodParam) ? moodParam : "All Moods"
+  );
   const [search, setSearch] = useState(q ?? "");
   const [compose, setCompose] = useState(false);
   const [text, setText] = useState("");
@@ -74,6 +102,11 @@ export function Feed() {
   useEffect(() => {
     setSearch(q ?? "");
   }, [q]);
+
+  // The time greeting can land here as ?mood=Late Night Tanhai.
+  useEffect(() => {
+    if (moodParam && FILTERS.includes(moodParam)) setF(moodParam);
+  }, [moodParam]);
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 600);
@@ -205,6 +238,7 @@ export function Feed() {
       // and the query cache that /feed will re-render from on the next visit.
       set((s) => ({
         poems: [newPoem, ...s.poems],
+        myPoemCount: s.myPoemCount + 1,
       }));
       prependFeedPoem(qc, newPoem);
 
@@ -232,20 +266,24 @@ export function Feed() {
   return (
     <div className="mx-auto max-w-6xl px-3.5 py-6 sm:px-6 md:px-12 md:py-14">
       {/* Top Header & Write Button */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <TimeGreeting className="mb-2" />
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl md:text-5xl">Explore Feed</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm md:text-base">
             Verses from anonymous poets sheltered behind their pen names.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCompose}
-          className={cn(btnPrimary, "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm")}
-        >
-          <Plus className="size-3.5 sm:size-4" /> Write a Poem
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <SurpriseVerse />
+          <button
+            type="button"
+            onClick={openCompose}
+            className={cn(btnPrimary, "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm")}
+          >
+            <Plus className="size-3.5 sm:size-4" /> Write a Poem
+          </button>
+        </div>
       </div>
 
       {/* Sticky Filter & Search Bar Header */}
@@ -294,39 +332,28 @@ export function Feed() {
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-[11px] font-medium text-muted-foreground sm:text-xs">Script:</span>
             <ScriptSwitch value={script} onChange={(s: Script) => set({ script: s })} />
+            <VerseScaleControl />
           </div>
         </div>
 
-        {/* High-Intent Topic Explorations */}
+        {/* High-Intent Topic Explorations — all 8 pSEO pillars, one click away. */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] sm:text-xs">
           <span className="font-mono text-subtle">Topics:</span>
+          {FEED_TOPIC_LINKS.map(([slug, label]) => (
+            <Link
+              key={slug}
+              to="/topic/$topic"
+              params={{ topic: slug }}
+              className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+            >
+              {label}
+            </Link>
+          ))}
           <Link
-            to="/topic/$topic"
-            params={{ topic: "heartbreak-shayari" }}
-            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
+            to="/directory"
+            className="rounded-full border border-gold-line bg-cashmere px-2.5 py-0.5 font-medium text-gold-ink transition hover:border-gold"
           >
-            Heartbreak
-          </Link>
-          <Link
-            to="/topic/$topic"
-            params={{ topic: "two-line-shayari" }}
-            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
-          >
-            Two-Line Couplets
-          </Link>
-          <Link
-            to="/topic/$topic"
-            params={{ topic: "loneliness-shayari" }}
-            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
-          >
-            Tanhai (Solitude)
-          </Link>
-          <Link
-            to="/topic/$topic"
-            params={{ topic: "love-shayari" }}
-            className="rounded-full border border-hairline/70 bg-card/60 px-2.5 py-0.5 text-muted-foreground transition hover:border-royal hover:text-royal"
-          >
-            Mohabbat (Love)
+            Full directory →
           </Link>
         </div>
       </div>

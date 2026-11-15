@@ -11,31 +11,48 @@ import { sharePoem } from "@/lib/share";
 import { useSignInPrompt } from "@/components/SignInPrompt";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 import { IdBadge, Pill, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
+import { SurpriseVerse } from "@/components/SurpriseVerse";
+import { TimeGreeting } from "@/components/TimeGreeting";
+import { SeoComparison, SeoFaq } from "@/components/SeoAuthority";
 import { cn } from "@/lib/utils";
+
+const HOME_TOPIC_LINKS = [
+  ["ai-shayari-generator", "AI Shayari Generator", "Your words, in meter"],
+  ["two-line-shayari", "2-Line Shayari", "Do line sher"],
+  ["heartbreak-shayari", "Heartbreak & Hijr", "Dard, firaaq, farewell"],
+  ["love-shayari", "Love & Ishq", "Unspoken mohabbat"],
+  ["loneliness-shayari", "Late Night Tanhai", "2 AM solitude"],
+  ["jaun-elia-style-shayari", "Jaun Elia Style", "Existential irony"],
+  ["gulzar-style-poetry", "Gulzar Style", "Nostalgic nazms"],
+  ["shayari-for-instagram", "Instagram Shayari", "9:16 card-ready"],
+] as const;
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
+      { title: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform | Hindi, Urdu & Hinglish" },
       {
         name: "description",
         content:
-          "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+          "Ek Khwaab is the first AI-native multi-script shayari platform. Generate word-seeded poetry in Hinglish, Hindi and Urdu, read ghazals and nazms in 4 scripts, send wax-sealed letters, explore the 7 stages of love, and export 9:16 cards.",
       },
       { name: "author", content: "Dikshanti Jain" },
-      { property: "og:title", content: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry" },
+      { property: "og:title", content: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform" },
       {
         property: "og:description",
         content:
-          "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+          "Word-seeded AI shayari, instant 3-script reading, anonymous Khwaab Khat letters, Saat Muqaam-e-Ishq, HD 9:16 cards and Hum-Nawa co-listening.",
       },
       { property: "og:url", content: "https://ekkhwaab.in/" },
-      { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
+      { name: "twitter:title", content: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform" },
       {
         name: "twitter:description",
         content:
-          "Created by Dikshanti Jain. Anonymous Hindi, Urdu and Hinglish poetry sanctuary.",
+          "AI shayari in Hinglish, Hindi and Urdu. Read, write, seal a letter, or design a story card.",
       },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ekkhwaab.in/" },
     ],
   }),
   component: Home,
@@ -50,8 +67,9 @@ const FEATURES = [
 
 function Home() {
   useDocumentSEO({
-    title: "Ek Khwaab — Created by Dikshanti Jain | Hindi, Urdu & Hinglish Poetry",
-    description: "Created by Dikshanti Jain. Read and share original Hindi, Urdu and Hinglish shayari, two-line couplets, ghazals and nazms anonymously. Explore our Urdu poetry dictionary, AI shayari writer and card studio.",
+    title: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform | Hindi, Urdu & Hinglish",
+    description:
+      "Ek Khwaab is the first AI-native multi-script shayari platform. Generate word-seeded poetry in Hinglish, Hindi and Urdu, read ghazals and nazms in 4 scripts, send wax-sealed letters, explore the 7 stages of love, and export 9:16 cards.",
     canonicalPath: "/",
   });
   const [s, setS] = useState<Script>("hinglish");
@@ -144,6 +162,7 @@ function Home() {
             <span className="rounded-full bg-wash px-3 py-1 text-[11px] font-semibold tracking-wide text-royal sm:px-4 sm:py-1.5 sm:text-xs">
               ANONYMOUS LITERARY SANCTUARY
             </span>
+            <TimeGreeting />
           </div>
           <h1 className="mt-3 text-3xl font-semibold leading-[1.15] tracking-tight text-ink sm:text-4xl md:text-5xl lg:text-6xl">
             Where unspoken feelings find their verse, <span className="italic text-crimson">anonymously.</span>
@@ -158,6 +177,7 @@ function Home() {
             <Link to="/auth" search={{ mode: "signup" }} className={cn(btnOutline, "px-5 py-2.5 text-xs sm:px-6 sm:py-3 sm:text-sm md:text-base")}>
               Create Your Pen Name
             </Link>
+            <SurpriseVerse className="px-5 py-2.5 text-xs sm:px-6 sm:py-3 sm:text-sm md:text-base" />
           </div>
         </div>
 
@@ -378,6 +398,39 @@ function Home() {
         </div>
       </section>
 
+      {/* Crawlable topic hubs — every high-intent pillar is one click from home. */}
+      <section aria-labelledby="home-topics-heading" className="bg-background py-8 sm:py-12 md:py-18">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-12">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-crimson">Explore by feeling</span>
+              <h2 id="home-topics-heading" className="mt-1 text-2xl font-semibold text-ink sm:text-3xl md:text-4xl">
+                Shayari for the exact thing you are feeling
+              </h2>
+              <p className="mt-1 max-w-2xl text-xs text-muted-foreground sm:text-sm md:text-base">
+                Eight curated hubs with original commentary, multi-script couplets, vocabulary, and a one-click AI writing prompt.
+              </p>
+            </div>
+            <Link to="/directory" className="inline-flex items-center gap-1 text-xs font-semibold text-royal hover:underline sm:text-sm">
+              Full literary index <ArrowRight className="size-3.5 sm:size-4" />
+            </Link>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {HOME_TOPIC_LINKS.map(([slug, label, sub]) => (
+              <Link
+                key={slug}
+                to="/topic/$topic"
+                params={{ topic: slug }}
+                className="group rounded-2xl border border-hairline bg-card p-4 transition hover:border-gold hover:shadow-card sm:p-5"
+              >
+                <h3 className="text-sm font-semibold text-ink group-hover:text-crimson sm:text-base">{label}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Why Ek Khwaab Bento Grid */}
       <section className="bg-background py-8 sm:py-12 md:py-18">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 md:px-12">
@@ -431,6 +484,10 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* Below-the-fold authority matrix and visible AEO answers. */}
+      <SeoComparison />
+      <SeoFaq />
     </div>
   );
 }

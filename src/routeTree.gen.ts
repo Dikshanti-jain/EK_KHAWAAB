@@ -14,6 +14,7 @@ import { Route as AiPoetRouteImport } from './routes/ai-poet'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CardStudioRouteImport } from './routes/card-studio'
 import { Route as DictionaryRouteImport } from './routes/dictionary'
+import { Route as DirectoryRouteImport } from './routes/directory'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as GuidelinesRouteImport } from './routes/guidelines'
@@ -22,8 +23,9 @@ import { Route as ListenTogetherRouteImport } from './routes/listen-together'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SecretLettersRouteImport } from './routes/secret-letters'
+import { Route as StagesOfLoveRouteImport } from './routes/stages-of-love'
 import { Route as StudioRouteImport } from './routes/studio'
-import { Route as DictionaryWordRouteImport } from './routes/dictionary.$word'
+import { Route as DictionaryWordRouteImport } from './routes/dictionary_.$word'
 import { Route as PoetrySlugRouteImport } from './routes/poetry.$slug'
 import { Route as TopicTopicRouteImport } from './routes/topic.$topic'
 
@@ -50,6 +52,11 @@ const CardStudioRoute = CardStudioRouteImport.update({
 const DictionaryRoute = DictionaryRouteImport.update({
   id: '/dictionary',
   path: '/dictionary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DirectoryRoute = DirectoryRouteImport.update({
+  id: '/directory',
+  path: '/directory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -92,15 +99,20 @@ const SecretLettersRoute = SecretLettersRouteImport.update({
   path: '/secret-letters',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StagesOfLoveRoute = StagesOfLoveRouteImport.update({
+  id: '/stages-of-love',
+  path: '/stages-of-love',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DictionaryWordRoute = DictionaryWordRouteImport.update({
-  id: '/$word',
-  path: '/$word',
-  getParentRoute: () => DictionaryRoute,
+  id: '/dictionary_/$word',
+  path: '/dictionary/$word',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PoetrySlugRoute = PoetrySlugRouteImport.update({
   id: '/poetry/$slug',
@@ -118,7 +130,8 @@ export interface FileRoutesByFullPath {
   '/ai-poet': typeof AiPoetRoute
   '/auth': typeof AuthRoute
   '/card-studio': typeof CardStudioRoute
-  '/dictionary': typeof DictionaryRouteWithChildren
+  '/dictionary': typeof DictionaryRoute
+  '/directory': typeof DirectoryRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
@@ -127,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
+  '/stages-of-love': typeof StagesOfLoveRoute
   '/studio': typeof StudioRoute
   '/dictionary/$word': typeof DictionaryWordRoute
   '/poetry/$slug': typeof PoetrySlugRoute
@@ -137,7 +151,8 @@ export interface FileRoutesByTo {
   '/ai-poet': typeof AiPoetRoute
   '/auth': typeof AuthRoute
   '/card-studio': typeof CardStudioRoute
-  '/dictionary': typeof DictionaryRouteWithChildren
+  '/dictionary': typeof DictionaryRoute
+  '/directory': typeof DirectoryRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
@@ -146,6 +161,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
+  '/stages-of-love': typeof StagesOfLoveRoute
   '/studio': typeof StudioRoute
   '/dictionary/$word': typeof DictionaryWordRoute
   '/poetry/$slug': typeof PoetrySlugRoute
@@ -157,7 +173,8 @@ export interface FileRoutesById {
   '/ai-poet': typeof AiPoetRoute
   '/auth': typeof AuthRoute
   '/card-studio': typeof CardStudioRoute
-  '/dictionary': typeof DictionaryRouteWithChildren
+  '/dictionary': typeof DictionaryRoute
+  '/directory': typeof DirectoryRoute
   '/explore': typeof ExploreRoute
   '/feed': typeof FeedRoute
   '/guidelines': typeof GuidelinesRoute
@@ -166,8 +183,9 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/secret-letters': typeof SecretLettersRoute
+  '/stages-of-love': typeof StagesOfLoveRoute
   '/studio': typeof StudioRoute
-  '/dictionary/$word': typeof DictionaryWordRoute
+  '/dictionary_/$word': typeof DictionaryWordRoute
   '/poetry/$slug': typeof PoetrySlugRoute
   '/topic/$topic': typeof TopicTopicRoute
 }
@@ -179,6 +197,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/card-studio'
     | '/dictionary'
+    | '/directory'
     | '/explore'
     | '/feed'
     | '/guidelines'
@@ -187,6 +206,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/secret-letters'
+    | '/stages-of-love'
     | '/studio'
     | '/dictionary/$word'
     | '/poetry/$slug'
@@ -198,6 +218,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/card-studio'
     | '/dictionary'
+    | '/directory'
     | '/explore'
     | '/feed'
     | '/guidelines'
@@ -206,6 +227,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/secret-letters'
+    | '/stages-of-love'
     | '/studio'
     | '/dictionary/$word'
     | '/poetry/$slug'
@@ -217,6 +239,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/card-studio'
     | '/dictionary'
+    | '/directory'
     | '/explore'
     | '/feed'
     | '/guidelines'
@@ -225,8 +248,9 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/secret-letters'
+    | '/stages-of-love'
     | '/studio'
-    | '/dictionary/$word'
+    | '/dictionary_/$word'
     | '/poetry/$slug'
     | '/topic/$topic'
   fileRoutesById: FileRoutesById
@@ -236,7 +260,8 @@ export interface RootRouteChildren {
   AiPoetRoute: typeof AiPoetRoute
   AuthRoute: typeof AuthRoute
   CardStudioRoute: typeof CardStudioRoute
-  DictionaryRoute: typeof DictionaryRouteWithChildren
+  DictionaryRoute: typeof DictionaryRoute
+  DirectoryRoute: typeof DirectoryRoute
   ExploreRoute: typeof ExploreRoute
   FeedRoute: typeof FeedRoute
   GuidelinesRoute: typeof GuidelinesRoute
@@ -245,7 +270,9 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   SecretLettersRoute: typeof SecretLettersRoute
+  StagesOfLoveRoute: typeof StagesOfLoveRoute
   StudioRoute: typeof StudioRoute
+  DictionaryWordRoute: typeof DictionaryWordRoute
   PoetrySlugRoute: typeof PoetrySlugRoute
   TopicTopicRoute: typeof TopicTopicRoute
 }
@@ -285,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/dictionary'
       fullPath: '/dictionary'
       preLoaderRoute: typeof DictionaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/directory': {
+      id: '/directory'
+      path: '/directory'
+      fullPath: '/directory'
+      preLoaderRoute: typeof DirectoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -343,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecretLettersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stages-of-love': {
+      id: '/stages-of-love'
+      path: '/stages-of-love'
+      fullPath: '/stages-of-love'
+      preLoaderRoute: typeof StagesOfLoveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -350,12 +391,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dictionary/$word': {
-      id: '/dictionary/$word'
-      path: '/$word'
+    '/dictionary_/$word': {
+      id: '/dictionary_/$word'
+      path: '/dictionary/$word'
       fullPath: '/dictionary/$word'
       preLoaderRoute: typeof DictionaryWordRouteImport
-      parentRoute: typeof DictionaryRoute
+      parentRoute: typeof rootRouteImport
     }
     '/poetry/$slug': {
       id: '/poetry/$slug'
@@ -374,24 +415,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface DictionaryRouteChildren {
-  DictionaryWordRoute: typeof DictionaryWordRoute
-}
-
-const DictionaryRouteChildren: DictionaryRouteChildren = {
-  DictionaryWordRoute: DictionaryWordRoute,
-}
-
-const DictionaryRouteWithChildren = DictionaryRoute._addFileChildren(
-  DictionaryRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiPoetRoute: AiPoetRoute,
   AuthRoute: AuthRoute,
   CardStudioRoute: CardStudioRoute,
-  DictionaryRoute: DictionaryRouteWithChildren,
+  DictionaryRoute: DictionaryRoute,
+  DirectoryRoute: DirectoryRoute,
   ExploreRoute: ExploreRoute,
   FeedRoute: FeedRoute,
   GuidelinesRoute: GuidelinesRoute,
@@ -400,7 +430,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   SecretLettersRoute: SecretLettersRoute,
+  StagesOfLoveRoute: StagesOfLoveRoute,
   StudioRoute: StudioRoute,
+  DictionaryWordRoute: DictionaryWordRoute,
   PoetrySlugRoute: PoetrySlugRoute,
   TopicTopicRoute: TopicTopicRoute,
 }

@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { updateVaultPassword, signOut, updatePublicTakhallus } from "@/lib/auth.service";
 import { fetchMySavedPoems } from "@/lib/poems.service";
 import { PoemCard } from "@/components/PoemCard";
-import { IdBadge, btnOutline, btnPrimary, card, input, label } from "@/components/kit";
+import { IdBadge, RankBadge, btnOutline, btnPrimary, card, input, label } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
@@ -166,6 +166,7 @@ function Profile() {
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl">@{u.penName}</h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <IdBadge id={u.poetId} />
+            <RankBadge count={Math.max(s.myPoemCount, mine.length)} />
             <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] text-muted-foreground sm:text-xs">
               <ShieldCheck className="size-3.5 text-royal" /> Your real identity stays private
             </span>

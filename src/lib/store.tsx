@@ -34,6 +34,8 @@ type State = {
   saved: string[];
   letters: Letter[];
   studio: StudioSeed;
+  /** The signed-in poet's published verse count, used for the rank badge. */
+  myPoemCount: number;
 };
 
 const initial: State = {
@@ -44,6 +46,7 @@ const initial: State = {
   saved: [],
   letters: [],
   studio: null,
+  myPoemCount: 0,
 };
 
 type Ctx = State & {
@@ -57,21 +60,28 @@ const STORAGE_KEY = "ek-khwaab-v2";
 const LEGACY_STORAGE_KEY = "ek-khawaab-v2";
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** The signed-in reader's real likes and bookmarks, read once per session. */
-async function loadMyInteractions(poetId: string): Promise<{ liked: string[]; saved: string[] }> {
+/** The signed-in reader's real likes, bookmarks and published count. */
+async function loadMyInteractions(
+  poetId: string
+): Promise<{ liked: string[]; saved: string[]; poemCount: number }> {
   try {
-    const [likes, marks] = await Promise.all([
+    const [likes, marks, mine] = await Promise.all([
       supabase.from("poem_likes").select("poem_id").eq("shayar_uid", poetId),
       supabase.from("bookmarks").select("poem_id").eq("shayar_uid", poetId),
+      supabase
+        .from("safe_poems_feed")
+        .select("id", { count: "exact", head: true })
+        .eq("shayar_uid", poetId),
     ]);
     const ids = (rows: { poem_id: string }[] | null) =>
       (rows ?? []).map((r) => r.poem_id).filter((id): id is string => Boolean(id));
     return {
       liked: ids(likes.data as { poem_id: string }[] | null),
       saved: ids(marks.data as { poem_id: string }[] | null),
+      poemCount: mine.count ?? 0,
     };
   } catch {
-    return { liked: [], saved: [] };
+    return { liked: [], saved: [], poemCount: 0 };
   }
 }
 
@@ -79,10 +89,14 @@ async function loadMyInteractions(poetId: string): Promise<{ liked: string[]; sa
  * Remote ids replace stale live ids, while curated (non-UUID) ids stay local:
  * archive verses have no poem_likes/bookmarks row to read back.
  */
-function mergeInteractions(prev: State, remote: { liked: string[]; saved: string[] }): Partial<State> {
+function mergeInteractions(
+  prev: State,
+  remote: { liked: string[]; saved: string[]; poemCount: number }
+): Partial<State> {
   return {
     liked: Array.from(new Set([...prev.liked.filter((id) => !isLivePoemId(id)), ...remote.liked])),
     saved: Array.from(new Set([...prev.saved.filter((id) => !isLivePoemId(id)), ...remote.saved])),
+    myPoemCount: remote.poemCount,
   };
 }
 
@@ -106,6 +120,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             script: parsed.script || prev.script,
             liked: Array.isArray(parsed.liked) ? parsed.liked : prev.liked,
             saved: Array.isArray(parsed.saved) ? parsed.saved : prev.saved,
+            myPoemCount: Number.isFinite(parsed.myPoemCount) ? Math.max(0, parsed.myPoemCount) : prev.myPoemCount,
             studio: parsed.studio || null,
             // User: strictly non-PII (penName + poetId only)
             user: parsed.user?.penName
@@ -184,8 +199,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       } else if (event === "SIGNED_OUT") {
         if (mounted) {
           setS((prev) =>
-            prev.user || prev.liked.length || prev.saved.length
-              ? { ...prev, user: null, liked: [], saved: [] }
+            prev.user || prev.liked.length || prev.saved.length || prev.myPoemCount
+              ? { ...prev, user: null, liked: [], saved: [], myPoemCount: 0 }
               : prev
           );
         }
@@ -207,6 +222,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         script: s.script,
         liked: s.liked,
         saved: s.saved,
+        myPoemCount: s.myPoemCount,
         studio: s.studio,
         // Zero PII: only save pseudonymous identifiers
         user: s.user
@@ -222,7 +238,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.warn("[Store] localStorage save warning (quota exceeded or restricted):", err);
     }
-  }, [s.script, s.liked, s.saved, s.studio, s.user, ready]);
+  }, [s.script, s.liked, s.saved, s.myPoemCount, s.studio, s.user, ready]);
 
   // Memoized setter to prevent infinite render/fetch loops in consumers (Fixes RL-01)
   const set = useCallback<Ctx["set"]>((p) => {

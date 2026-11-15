@@ -43,23 +43,30 @@ import { prependFeedPoem } from "@/lib/feed-cache";
 import { copyText } from "@/lib/share";
 import { useSignInPrompt } from "@/components/SignInPrompt";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, btnRoyal, card, input, label } from "@/components/kit";
+import { SeoComparison } from "@/components/SeoAuthority";
 import { cn } from "@/lib/utils";
 import { highlightSeeds } from "@/lib/seeds";
 
 export const Route = createFileRoute("/ai-poet")({
   head: () => ({
     meta: [
-      { title: "Shayar-e-Khwaab — AI Poetry Studio | Ek Khwaab" },
+      { title: "Shayar-e-Khwaab — Word-Seeded AI Shayari Generator | Ek Khwaab" },
       {
         name: "description",
         content:
-          "Transform your raw feelings, memories, and personal situations into original Shayari, Ghazals, and Nazms powered by Groq AI.",
+          "Generate original shayari from your own seed words in Hinglish, Devanagari Hindi, and Nastaliq Urdu. Shayar-e-Khwaab preserves your situation, mood, meter, and script — first AI-native shayari co-writer.",
       },
-      { property: "og:title", content: "Shayar-e-Khwaab — AI Poetry Studio" },
+      { property: "og:title", content: "Shayar-e-Khwaab — Word-Seeded AI Shayari Generator" },
       {
         property: "og:description",
         content: "Context-aware, personalized poetry co-writer across Hinglish, Hindi, and Urdu.",
       },
+      { property: "og:url", content: "https://ekkhwaab.in/ai-poet" },
+      { name: "twitter:title", content: "Shayar-e-Khwaab — AI Shayari Generator" },
+      { name: "twitter:description", content: "Give 3–6 seed words, get a metered poem in three scripts." },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ekkhwaab.in/ai-poet" },
     ],
   }),
   component: AiPoet,
@@ -86,6 +93,12 @@ const POETRY_TYPE_LABELS: Record<PoetryType, { title: string; desc: string }> = 
 };
 
 export function AiPoet() {
+  useDocumentSEO({
+    title: "Shayar-e-Khwaab — Word-Seeded AI Shayari Generator | Ek Khwaab",
+    description:
+      "Generate original shayari from your own seed words in Hinglish, Devanagari Hindi, and Nastaliq Urdu. Shayar-e-Khwaab preserves your situation, mood, meter, and script.",
+    canonicalPath: "/ai-poet",
+  });
   const compose = useServerFn(composeShayari);
   const { set, poems, user } = useStore();
   const nav = useNavigate();
@@ -325,7 +338,7 @@ export function AiPoet() {
         toast.error(created.error || "Could not publish your poem.");
         return;
       }
-      set((s) => ({ poems: [created.poem!, ...s.poems] }));
+      set((s) => ({ poems: [created.poem!, ...s.poems], myPoemCount: s.myPoemCount + 1 }));
       prependFeedPoem(qc, created.poem);
       toast.success("Your poem is now live on the feed");
       nav({ to: "/feed" });
@@ -859,6 +872,8 @@ export function AiPoet() {
           </div>
         </div>
       </section>
+
+      <SeoComparison compact />
     </div>
   );
 }

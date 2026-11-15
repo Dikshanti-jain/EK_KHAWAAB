@@ -5,17 +5,17 @@ import { useDocumentSEO } from "@/hooks/useDocumentSEO";
 export const Route = createFileRoute("/explore")({
   head: () => ({
     meta: [
-      { title: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khwaab" },
+      { title: "Poetry by Mood — Ishq, Hijr, Tanhai & Philosophy | Ek Khwaab" },
       {
         name: "description",
         content:
-          "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+          "Browse Ek Khwaab poetry by mood: heartbreak and hijr, unspoken love, late-night tanhai, and life philosophy. Every verse reads in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
       },
-      { property: "og:title", content: "Explore Hindi, Urdu & Hinglish Shayari | Created by Dikshanti Jain | Ek Khwaab" },
+      { property: "og:title", content: "Poetry by Mood — Ishq, Hijr, Tanhai & Philosophy | Ek Khwaab" },
       {
         property: "og:description",
         content:
-          "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+          "A mood-first lens on the multi-script poetry feed: heartbreak, love, solitude and philosophy.",
       },
       { property: "og:url", content: "https://ekkhwaab.in/explore" },
     ],
@@ -28,8 +28,9 @@ export const Route = createFileRoute("/explore")({
 
 function ExplorePage() {
   useDocumentSEO({
-    title: "Explore Hindi, Urdu & Hinglish Shayari, Ghazals & Poems | Ek Khwaab",
-    description: "Browse trending two-line shayari, heartbreak poetry, late-night tanhai couplets, and unspoken love ghazals in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
+    title: "Poetry by Mood — Ishq, Hijr, Tanhai & Philosophy | Ek Khwaab",
+    description:
+      "Browse Ek Khwaab poetry by mood: heartbreak and hijr, unspoken love, late-night tanhai, and life philosophy. Every verse reads in Hinglish, Devanagari Hindi, and Nastaliq Urdu.",
     canonicalPath: "/feed",
   });
   return <Feed />;

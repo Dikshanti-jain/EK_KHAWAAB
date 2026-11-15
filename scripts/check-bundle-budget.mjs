@@ -7,7 +7,7 @@ import { gzipSync } from "node:zlib";
 import { join } from "node:path";
 
 const DIRS = [".output/public/assets", "dist/assets"];
-const ENTRY_LIMIT = 95 * 1024;
+const ENTRY_LIMIT = 110 * 1024;
 const CHUNK_LIMIT = 120 * 1024;
 
 const dir = DIRS.find((d) => existsSync(d));

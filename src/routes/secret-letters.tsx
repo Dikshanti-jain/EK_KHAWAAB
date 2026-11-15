@@ -8,14 +8,21 @@ export const Route = createFileRoute("/secret-letters")({
   }),
   head: () => ({
     meta: [
-      { title: "Khwaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab" },
-      { name: "description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
-      { property: "og:title", content: "Khwaab Khat — Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab" },
-      { property: "og:description", content: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles." },
+      { title: "Khwaab Khat — Anonymous Wax-Sealed Letter with Riddle Clues | Ek Khwaab" },
+      {
+        name: "description",
+        content:
+          "Seal a poem behind three clues and a private answer. The recipient must solve the Pehchan Kaun cipher before the sender's identity and full message are revealed.",
+      },
+      { property: "og:title", content: "Khwaab Khat — Anonymous Wax-Sealed Letter with Riddle Clues | Ek Khwaab" },
+      {
+        property: "og:description",
+        content: "A poem, a wax seal, and three clues. The letter opens only when the riddle is solved.",
+      },
       { property: "og:url", content: "https://ekkhwaab.in/secret-letters" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhwaab.in/secret-letters" },
+      { rel: "canonical", href: "https://ekkhwaab.in/letters" },
     ],
   }),
   component: SecretLettersPage,
@@ -23,9 +30,10 @@ export const Route = createFileRoute("/secret-letters")({
 
 function SecretLettersPage() {
   useDocumentSEO({
-    title: "Khwaab Khat – Send Anonymous Wax-Sealed Poetry Letters | Ek Khwaab",
-    description: "Dedicate shayari secretly with interactive digital wax-sealed letters and clue-based guessing riddles.",
-    canonicalPath: "/secret-letters",
+    title: "Khwaab Khat — Anonymous Wax-Sealed Letter with Riddle Clues | Ek Khwaab",
+    description:
+      "Seal a poem behind three clues and a private answer. The recipient must solve the Pehchan Kaun cipher before the sender's identity and full message are revealed.",
+    canonicalPath: "/letters",
   });
   return <Letters />;
 }

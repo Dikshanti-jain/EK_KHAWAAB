@@ -1,17 +1,25 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { safeJsonLd } from "@/lib/security";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, Share2, Palette, Sparkles, BookOpen, ArrowLeft, ArrowRight, Copy } from "lucide-react";
+import { Heart, Share2, Palette, BookOpen, ArrowLeft, ArrowRight, Copy, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
-import { POEMS, poetId, findPoemBySlugOrId, getPoemSlug, isLivePoemId, type Script } from "@/data/poems";
-import { LUGHAT, getWordSlug } from "@/data/lughat";
+import { POEMS, poetId, findPoemBySlugOrId, getPoemSlug, isLivePoemId, type Poem, type Script } from "@/data/poems";
+import { getWordSlug } from "@/data/lughat";
 import { useStore } from "@/lib/store";
-import { togglePoemLike, fetchPoemById } from "@/lib/poems.service";
+import {
+  togglePoemLike,
+  fetchPoemById,
+  fetchPoemComments,
+  fetchPoetPoemCount,
+} from "@/lib/poems.service";
 import { patchFeedPoem } from "@/lib/feed-cache";
 import { copyPoem, sharePoem } from "@/lib/share";
+import { detectLughat } from "@/lib/lughat-detect";
 import { useSignInPrompt } from "@/components/SignInPrompt";
-import { IdBadge, Pill, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
+import { CommentDrawer } from "@/components/CommentDrawer";
+import { VerseScaleControl } from "@/components/VerseScaleControl";
+import { IdBadge, RankBadge, ScriptSwitch, Verse, btnOutline, btnPrimary, btnRoyal, card } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/poetry/$slug")({
@@ -58,19 +66,55 @@ export const Route = createFileRoute("/poetry/$slug")({
 
 function PoemDetailPage() {
   const { poem } = Route.useLoaderData();
-  const { liked, set, user } = useStore();
+  const { liked, set, user, myPoemCount } = useStore();
   const nav = useNavigate();
   const qc = useQueryClient();
   const { promptSignIn } = useSignInPrompt();
   const [script, setScript] = useState<Script>("hinglish");
   const [showAllScripts, setShowAllScripts] = useState(true);
+  const [comments, setComments] = useState<Poem["hashiya"]>(poem.hashiya);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [authorCount, setAuthorCount] = useState(
+    () => POEMS.filter((p) => p.takhallus === poem.takhallus).length
+  );
   const isCurated = !isLivePoemId(poem.id);
+  const isOwnPoem = Boolean(user && !user.guest && user.penName === poem.takhallus);
+  const displayCount = isOwnPoem ? Math.max(1, myPoemCount) : authorCount;
   const [daadCount, setDaadCount] = useState(
     poem.daad + (isCurated && liked.includes(poem.id) ? 1 : 0)
   );
 
   const isLiked = liked.includes(poem.id);
   const canWrite = Boolean(user && !user.guest);
+
+  // Live poets get a real count for their rank badge; curated seeds keep the
+  // local fallback so the badge never flashes "0 verses".
+  useEffect(() => {
+    if (isOwnPoem || !isLivePoemId(poem.id)) return;
+    let active = true;
+    void fetchPoetPoemCount(poem.takhallus).then((count) => {
+      if (!active || count === null) return;
+      setAuthorCount((prev) => Math.max(prev, count));
+    });
+    return () => {
+      active = false;
+    };
+  }, [isOwnPoem, poem.id, poem.takhallus]);
+
+  const openComments = () => {
+    setCommentsOpen(true);
+    if (isCurated || commentsLoaded) return;
+    setCommentsLoaded(true);
+    void fetchPoemComments(poem.id).then(({ comments: fetched, error }) => {
+      if (error) {
+        setCommentsLoaded(false);
+        toast.error("Could not load the full comment thread.");
+        return;
+      }
+      setComments(fetched);
+    });
+  };
 
   const toggleDaad = async () => {
     if (!canWrite || !user) {
@@ -122,19 +166,11 @@ function PoemDetailPage() {
     nav({ to: "/studio" });
   };
 
-  // Find vocabulary from LUGHAT present in this poem
-  const allPoemText = [
-    ...poem.hinglish,
-    ...poem.hindi,
-    ...poem.urdu,
-  ].join(" ").toLowerCase();
-
-  const detectedVocab = LUGHAT.filter((w) => {
-    const r = w.roman.toLowerCase();
-    const h = w.hindi.toLowerCase();
-    const u = w.urdu;
-    return allPoemText.includes(r) || allPoemText.includes(h) || allPoemText.includes(u);
-  }).slice(0, 5);
+  // Find vocabulary from LUGHAT present in this poem, as whole words.
+  const detectedVocab = detectLughat(
+    [...poem.hinglish, ...poem.hindi, ...poem.urdu],
+    5
+  );
 
   // Related poems with matching mood
   const relatedPoems = POEMS.filter((p) => p.id !== poem.id && p.mood === poem.mood).slice(0, 3);
@@ -191,6 +227,7 @@ function PoemDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <IdBadge id={poetId(poem.takhallus)} />
             <span className="font-semibold text-sm text-ink">@{poem.takhallus}</span>
+            <RankBadge count={displayCount} />
             <span className="rounded-full bg-wash px-2.5 py-0.5 text-xs font-medium text-royal">
               {poem.format}
             </span>
@@ -203,13 +240,16 @@ function PoemDetailPage() {
               </span>
             )}
           </div>
-          <ScriptSwitch value={script} onChange={setScript} />
+          <div className="flex items-center gap-1.5">
+            <VerseScaleControl />
+            <ScriptSwitch value={script} onChange={setScript} />
+          </div>
         </header>
 
         {/* Primary Semantic H1 & Verse Display */}
         <div className="py-10 text-center">
           <h1 className="sr-only">{poem.hinglish[0]} — {poem.mood} Shayari by {poem.takhallus}</h1>
-          <Verse lines={poem[script] || poem.hinglish} script={script} />
+          <Verse lines={poem[script] || poem.hinglish} script={script} ornament />
         </div>
 
         {/* Action Toolbar */}
@@ -225,6 +265,13 @@ function PoemDetailPage() {
             >
               <Heart className={cn("size-3.5", isLiked && "fill-crimson")} />
               <span>{daadCount > 0 ? daadCount : "Appreciate"}</span>
+            </button>
+            <button
+              onClick={openComments}
+              aria-label={comments.length > 0 ? `Comments, ${comments.length}` : "Comments"}
+              className={cn(btnOutline, "px-3.5 py-2 text-xs")}
+            >
+              <MessageCircle className="size-3.5" /> Comments{comments.length > 0 ? ` · ${comments.length}` : ""}
             </button>
             <button onClick={copyShayari} className={cn(btnOutline, "px-3.5 py-2 text-xs")}>
               <Copy className="size-3.5" /> Copy Shayari
@@ -373,6 +420,19 @@ function PoemDetailPage() {
           <ArrowLeft className="size-4" /> Back to Explore Feed
         </Link>
       </div>
+
+      <CommentDrawer
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        poem={poem}
+        isCurated={isCurated}
+        comments={comments}
+        onCommentsChange={(next) => {
+          setComments(next);
+          patchFeedPoem(qc, poem.id, { hashiya: next });
+        }}
+        onRequestSignIn={() => promptSignIn("comment")}
+      />
     </div>
   );
 }

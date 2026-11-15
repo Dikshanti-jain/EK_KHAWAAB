@@ -8,7 +8,7 @@ import { POEMS, getPoemSlug } from "@/data/poems";
 import { card, btnOutline, btnPrimary, btnRoyal, IdBadge, Pill } from "@/components/kit";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/dictionary/$word")({
+export const Route = createFileRoute("/dictionary_/$word")({
   loader: ({ params }) => {
     const word = findWordBySlug(params.word);
     if (!word) {

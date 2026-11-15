@@ -13,6 +13,38 @@ import { PageTransition } from "@/components/PageTransition";
 import { CookieConsent } from "@/components/CookieConsent";
 import { SignInPromptProvider } from "@/components/SignInPrompt";
 import { cn } from "@/lib/utils";
+import {
+  BRAND_NAME,
+  CONTACT_EMAIL,
+  FOUNDER,
+  FOUNDER_LINKEDIN,
+  POSITIONING,
+  SITE_URL,
+  SLOGAN,
+  buildEntityGraph,
+} from "@/lib/seo";
+
+const TOPIC_FOOTER_LINKS = [
+  ["ai-shayari-generator", "AI Shayari Generator"],
+  ["two-line-shayari", "2-Line Shayari"],
+  ["heartbreak-shayari", "Heartbreak & Hijr"],
+  ["love-shayari", "Love & Ishq"],
+  ["loneliness-shayari", "Late Night Tanhai"],
+  ["jaun-elia-style-shayari", "Jaun Elia Style"],
+  ["gulzar-style-poetry", "Gulzar Style"],
+  ["shayari-for-instagram", "Instagram Shayari"],
+] as const;
+
+const LUGHAT_FOOTER_LINKS = [
+  ["hijr", "Hijr"],
+  ["tagaful", "Tagaful"],
+  ["vehshat", "Vehshat"],
+  ["qurbat", "Qurbat"],
+  ["firaaq", "Firaaq"],
+  ["ishq", "Ishq"],
+  ["khamoshi", "Khamoshi"],
+  ["shab-e-gham", "Shab-e-Gham"],
+] as const;
 
 function NotFoundComponent() {
   return (
@@ -42,223 +74,45 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
-const JSON_LD_SCHEMA = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": "https://ekkhwaab.in/#website",
-      "url": "https://ekkhwaab.in/",
-      "name": "Ek Khwaab",
-      "alternateName": [
-        "एक ख़्वाब",
-        "ایک خواب",
-        "Ek Khwaab — Anonymous Poetry Sanctuary",
-        "Ek Khwaab Poetry"
-      ],
-      "description": "An anonymous poetry sanctuary for lovers of Hinglish, Hindi, and Urdu shayari, ghazals, and nazms. Features AI co-writing, 1080p card studio, and secret letters.",
-      "inLanguage": ["en-IN", "hi", "ur"],
-      "publisher": {
-        "@id": "https://ekkhwaab.in/#creator"
-      },
-      "creator": {
-        "@id": "https://ekkhwaab.in/#creator"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://ekkhwaab.in/feed?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
-    },
-    {
-      "@type": "WebApplication",
-      "@id": "https://ekkhwaab.in/#webapp",
-      "name": "Ek Khwaab App",
-      "url": "https://ekkhwaab.in/",
-      "applicationCategory": "EntertainmentApplication",
-      "operatingSystem": "All",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "INR"
-      },
-      "featureList": [
-        "Word-to-Verse AI Co-Writer",
-        "1080p High-Resolution Card Studio (9:16 & 1:1)",
-        "Instant Multi-Script Reader (Hindi, Urdu, Hinglish)",
-        "Khwaab Khat Wax-Sealed Secret Letters",
-        "Comprehensive Lughat Urdu Poetry Dictionary"
-      ]
-    },
-    {
-      "@type": "Person",
-      "@id": "https://ekkhwaab.in/#creator",
-      "name": "Dikshanti Jain",
-      "jobTitle": "Owner & Creator",
-      "email": "mailto:jaindikahanti@gmail.com",
-      "url": "https://www.linkedin.com/in/dikshanti-jain-9345723a7",
-      "sameAs": [
-        "https://www.linkedin.com/in/dikshanti-jain-9345723a7"
-      ],
-      "knowsAbout": [
-        "Poetry",
-        "Creative Writing",
-        "Hindi Shayari",
-        "Urdu Poetry",
-        "Literature",
-        "Web Application Development"
-      ]
-    },
-    {
-      "@type": "Organization",
-      "@id": "https://ekkhwaab.in/#organization",
-      "name": "Ek Khwaab",
-      "url": "https://ekkhwaab.in/",
-      "founder": {
-        "@id": "https://ekkhwaab.in/#creator"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "jaindikahanti@gmail.com",
-        "contactType": "Founder & Customer Support"
-      }
-    },
-    {
-      "@type": "ItemList",
-      "@id": "https://ekkhwaab.in/#featured-shayaris",
-      "name": "Featured Couplets & Shayaris",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "item": {
-            "@type": "CreativeWork",
-            "name": "Ab kisi baat pe dil dukhta nahi",
-            "text": "Ab kisi baat pe dil dukhta nahi, shayad patthar ho gaya hai. / Roz ek nayi ummeed jagti hai, roz ek khwaab so gaya hai.",
-            "author": { "@type": "Person", "name": "Faiz-e-Khwaab" },
-            "inLanguage": "hi-Latn"
-          }
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "item": {
-            "@type": "CreativeWork",
-            "name": "Har subah ek nayi subah hoti hai",
-            "text": "Har subah ek nayi subah hoti hai, par teri yaad purani rehti hai. / Aankhon mein aasoon toh sookh gaye, par dil mein kahani rehti hai.",
-            "author": { "@type": "Person", "name": "Saahir-e-Lafz" },
-            "inLanguage": "hi-Latn"
-          }
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "item": {
-            "@type": "CreativeWork",
-            "name": "Kuch toh baat thi uski khamoshi mein",
-            "text": "Kuch toh baat thi uski khamoshi mein, jo baatein cheekh cheekh kar bhi na keh saki. / Hum toh khade rahe usi mod par, par zindagi aage beh gayi.",
-            "author": { "@type": "Person", "name": "Mirza-e-Raftaar" },
-            "inLanguage": "hi-Latn"
-          }
-        },
-        {
-          "@type": "ListItem",
-          "position": 4,
-          "item": {
-            "@type": "CreativeWork",
-            "name": "Wo jo kehte the humein kabhi chhodenge nahi",
-            "text": "Wo jo kehte the humein kabhi chhodenge nahi, aaj unki parchaayi bhi nazar nahi aati. / Hum toh chup chap sah gaye har sitam, ab kisi se koi shikayat nazar nahi aati.",
-            "author": { "@type": "Person", "name": "Zehra" },
-            "inLanguage": "hi-Latn"
-          }
-        },
-        {
-          "@type": "ListItem",
-          "position": 5,
-          "item": {
-            "@type": "CreativeWork",
-            "name": "Tanhaiyon mein aksar tera khayal aata hai",
-            "text": "Tanhaiyon mein aksar tera khayal aata hai, jaise registaan mein koi thandi hawa chale. / Humne toh maanga tha sirf tera saath, par kismat ko na jaane kya manzoor tha.",
-            "author": { "@type": "Person", "name": "Danish" },
-            "inLanguage": "hi-Latn"
-          }
-        }
-      ]
-    },
-    {
-      "@type": "FAQPage",
-      "@id": "https://ekkhwaab.in/#faq",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is Ek Khwaab?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Ek Khwaab is an anonymous poetry and shayari sanctuary where poets and readers share, explore, and co-write couplets, ghazals, and nazms in Hinglish, Hindi, and Urdu under a pen name with full identity protection."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How to read Shayari in Hinglish, Hindi, and Urdu?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Ek Khwaab features an Instant Multi-Script Reader that allows you to seamlessly toggle any poem or couplet between Hinglish (Roman script), Devanagari Hindi, and Nastaliq Urdu with a single click."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How to generate custom Shayari using AI with my own words?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Visit our AI Poet co-writer at /ai-poet, provide 3 to 5 of your own emotional seed words, select a situation and mood, and our literary AI crafts metered shayari retaining your exact feelings."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How to download high-resolution 9:16 Shayari cards for Instagram?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Navigate to the Card Studio at /card-studio, select any shayari or write your own, customize typographic themes, backgrounds, and aspect ratios (9:16 vertical or 1:1 square), and download crystal-clear 1080p images ready for Instagram Stories, WhatsApp Status, or feeds."
-          }
-        }
-      ]
-    }
-  ]
-};
+const JSON_LD_SCHEMA = buildEntityGraph();
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ek Khwaab — Anonymous Poetry Sanctuary | Created by Dikshanti Jain" },
-      { name: "description", content: "Write, read and share anonymous poetry in Hinglish, Hindi and Urdu under a pen name. Created by Dikshanti Jain, featuring an AI co-writer and HD card studio." },
-      { name: "author", content: "Dikshanti Jain" },
-      { name: "creator", content: "Dikshanti Jain" },
-      { name: "publisher", content: "Dikshanti Jain" },
-      { name: "keywords", content: "Ek Khwaab, Dikshanti Jain, poetry sanctuary, anonymous poetry, hindi shayari, urdu poetry, hinglish poetry, sher o shayari, ghazals, nazm, card studio, ai poet, lughat dictionary, poetry community" },
+      { title: "Ek Khwaab — First AI-Native Multi-Script Shayari & Poetry Sanctuary" },
+      { name: "description", content: POSITIONING },
+      { name: "author", content: FOUNDER },
+      { name: "creator", content: FOUNDER },
+      { name: "publisher", content: FOUNDER },
+      { name: "keywords", content: "Ek Khwaab, Ek Khawaab, first AI shayari platform, AI shayari generator, hindi shayari, urdu shayari, hinglish shayari, two line shayari, heartbreak shayari, ghazal, nazm, urdu lughat, shayari cards for instagram, anonymous poetry letters, Hum-Nawa, Shayar-e-Khwaab" },
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       { name: "googlebot", content: "index, follow" },
-      { name: "google-site-verification", content: "google83c1baacd5b87a86" },
       { name: "google-site-verification", content: "83c1baacd5b87a86" },
-      { property: "og:site_name", content: "Ek Khwaab" },
+      { name: "theme-color", content: "#FFFFFF" },
+      { property: "og:site_name", content: BRAND_NAME },
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "Ek Khwaab — Created by Dikshanti Jain | Poetry Sanctuary" },
-      { property: "og:description", content: "An anonymous sanctuary for poetry lovers in Hinglish, Hindi, and Urdu. Write under a pen name, generate metered shayari, export story cards, and send secret letters. Founded by Dikshanti Jain." },
-      { property: "og:url", content: "https://ekkhwaab.in" },
+      { property: "og:title", content: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform" },
+      { property: "og:description", content: SLOGAN + ". Word-seeded AI poetry in Hinglish, Hindi and Urdu, wax-sealed riddle letters, 7 stages of love, 9:16 card studio and Hum-Nawa co-listening." },
+      { property: "og:url", content: SITE_URL },
       { property: "og:locale", content: "en_IN" },
       { property: "og:locale:alternate", content: "hi_IN" },
-      { property: "og:image", content: "https://ekkhwaab.in/logo.png" },
+      { property: "og:locale:alternate", content: "ur_PK" },
+      { property: "og:image", content: `${SITE_URL}/logo.png` },
+      { property: "og:image:alt", content: "Ek Khwaab — AI-native multi-script shayari and anonymous poetry sanctuary" },
+      { property: "og:image:width", content: "512" },
+      { property: "og:image:height", content: "512" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Ek Khwaab — Created by Dikshanti Jain" },
-      { name: "twitter:description", content: "Anonymous poetry in Hinglish, Hindi, and Urdu. Founded and crafted by Dikshanti Jain." },
-      { name: "twitter:image", content: "https://ekkhwaab.in/logo.png" },
+      { name: "twitter:title", content: "Ek Khwaab — First AI-Native Multi-Script Shayari Platform" },
+      { name: "twitter:description", content: "Word-seeded AI shayari, 3-script reading, wax-sealed letters, 7 stages of love, HD 9:16 cards and synchronized co-listening." },
+      { name: "twitter:image", content: `${SITE_URL}/logo.png` },
+      { name: "twitter:image:alt", content: "Ek Khwaab poetry sanctuary" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhwaab.in" },
+      { rel: "alternate", type: "application/rss+xml", title: "Ek Khwaab — Latest Hindi, Urdu & Hinglish Shayari Feed", href: `${SITE_URL}/rss.xml` },
+      { rel: "alternate", type: "text/plain", title: "llms.txt — Ek Khwaab platform summary for AI assistants", href: `${SITE_URL}/llms.txt` },
+      { rel: "sitemap", type: "application/xml", title: "XML Sitemap", href: `${SITE_URL}/sitemap.xml` },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "192x192" },
@@ -371,13 +225,32 @@ function TopBar() {
   );
 }
 
+function FooterColumn({
+  title,
+  children,
+  label,
+}: {
+  title: string;
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <nav aria-label={label} className="md:col-span-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">{title}</h3>
+      <ul className="mt-3 space-y-2 text-[13px] leading-snug text-muted-foreground">
+        {children}
+      </ul>
+    </nav>
+  );
+}
+
 function Footer() {
   return (
     <footer className="border-t border-hairline bg-secondary text-ink">
       <div className="mx-auto max-w-6xl px-6 py-14 md:px-12">
         <div className="grid gap-10 md:grid-cols-12 md:gap-8">
-          {/* Brand & Vision */}
-          <div className="md:col-span-5">
+          {/* Brand, mandate and founder */}
+          <div className="md:col-span-4">
             <Link to="/" className="group flex items-center gap-3">
               <img src="/logo-icon.png" alt="Ek Khwaab Logo" className="size-11 object-contain transition-transform duration-300 group-hover:scale-105" />
               <span className="font-serif text-2xl font-bold text-ink">Ek Khwaab<span className="text-crimson">.</span></span>
@@ -386,64 +259,76 @@ function Footer() {
               "Jis baat ko lafz na milein, usse shayari keh dete hain."
             </p>
             <p className="mt-3 max-w-sm text-xs leading-relaxed text-muted-foreground">
-              A private, multi-script poetry sanctuary designed to preserve the beauty of Urdu, Hindi, and Hinglish verse under protected pen names.
+              The first AI-native multi-script shayari and privacy-first literary sanctuary — Hinglish,
+              Devanagari Hindi and Nastaliq Urdu under protected pen names.
             </p>
-          </div>
-
-          {/* Quick Explore */}
-          <div className="md:col-span-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">Explore</h3>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/feed" className="transition hover:text-ink">Explore Feed</Link></li>
-              <li><Link to="/ai-poet" className="transition hover:text-ink">AI Poet Co-Writer</Link></li>
-              <li><Link to="/studio" className="transition hover:text-ink">Card Studio</Link></li>
-              <li><Link to="/listen-together" className="transition hover:text-ink">Listen Together</Link></li>
-              <li><Link to="/dictionary" className="transition hover:text-ink">Lughat (Dictionary)</Link></li>
-              <li><Link to="/guidelines" className="transition hover:text-ink">Community Guidelines</Link></li>
-              <li><Link to="/privacy" className="transition hover:text-ink">Privacy Charter</Link></li>
-            </ul>
-          </div>
-
-          {/* Creator & Contact */}
-          <div className="md:col-span-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">Founder & Creator</h3>
-            <p className="mt-3 text-sm font-semibold text-ink">Dikshanti Jain</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Creator and owner of Ek Khwaab.
+            <p className="mt-4 text-xs text-muted-foreground">
+              Founder &amp; Creator: <a href={FOUNDER_LINKEDIN} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink hover:text-royal">{FOUNDER}</a>
             </p>
-            <div className="mt-4 flex flex-col gap-2.5 text-xs text-muted-foreground">
-              <a
-                href="https://www.linkedin.com/in/dikshanti-jain-9345723a7"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-royal hover:underline"
-              >
+            <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground">
+              <a href={FOUNDER_LINKEDIN} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-royal hover:underline">
                 <Linkedin className="size-3.5" />
                 <span>linkedin.com/in/dikshanti-jain</span>
               </a>
-              <a
-                href="mailto:jaindikahanti@gmail.com"
-                className="inline-flex items-center gap-2 hover:text-ink"
-              >
+              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 hover:text-ink">
                 <Mail className="size-3.5" />
-                <span>jaindikahanti@gmail.com</span>
+                <span>{CONTACT_EMAIL}</span>
               </a>
             </div>
           </div>
+
+          <FooterColumn title="AI & Studio" label="AI and studio feature links">
+            <li><Link to="/ai-poet" className="transition hover:text-ink">AI Shayari Generator</Link></li>
+            <li><Link to="/card-studio" className="transition hover:text-ink">9:16 Card Studio</Link></li>
+            <li><Link to="/letters" className="transition hover:text-ink">Khwaab Khat Letters</Link></li>
+            <li><Link to="/listen-together" className="transition hover:text-ink">Hum-Nawa Co-Listening</Link></li>
+            <li><Link to="/stages-of-love" className="transition hover:text-ink">7 Stages of Love</Link></li>
+            <li><Link to="/dictionary" className="transition hover:text-ink">Lughat Dictionary</Link></li>
+            <li><Link to="/feed" className="transition hover:text-ink">Poetry Feed</Link></li>
+          </FooterColumn>
+
+          <FooterColumn title="Shayari Topics" label="High-intent shayari topic hubs">
+            {TOPIC_FOOTER_LINKS.map(([slug, label]) => (
+              <li key={slug}>
+                <Link to="/topic/$topic" params={{ topic: slug }} className="transition hover:text-ink">
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </FooterColumn>
+
+          <FooterColumn title="Lughat Words" label="Popular Urdu poetry dictionary words">
+            {LUGHAT_FOOTER_LINKS.map(([word, label]) => (
+              <li key={word}>
+                <Link to="/dictionary/$word" params={{ word }} className="transition hover:text-ink">
+                  {label} Meaning
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link to="/dictionary" className="font-medium text-royal hover:underline">
+                All 35 words →
+              </Link>
+            </li>
+          </FooterColumn>
+
+          <FooterColumn title="Directory" label="Crawlable platform directory and feeds">
+            <li><Link to="/directory" className="font-medium text-royal hover:underline">HTML Literary Index</Link></li>
+            <li><a href="/sitemap.xml" className="transition hover:text-ink">XML Sitemap</a></li>
+            <li><a href="/rss.xml" className="transition hover:text-ink">RSS Literary Feed</a></li>
+            <li><a href="/llms.txt" className="transition hover:text-ink">llms.txt</a></li>
+            <li><a href="/llms-full.txt" className="transition hover:text-ink">llms-full.txt</a></li>
+            <li><Link to="/guidelines" className="transition hover:text-ink">Community Guidelines</Link></li>
+            <li><Link to="/privacy" className="transition hover:text-ink">Privacy Charter</Link></li>
+          </FooterColumn>
         </div>
 
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-hairline pt-6 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Ek Khwaab · Created by Dikshanti Jain. All rights reserved.</p>
-          <div className="flex items-center gap-5">
-            <Link to="/privacy" className="hover:text-ink">Privacy</Link>
-            <span>·</span>
-            <Link to="/guidelines" className="hover:text-ink">Guidelines</Link>
-            <span>·</span>
-            <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-ink">Sitemap</a>
-            <span>·</span>
-            <a href="mailto:jaindikahanti@gmail.com" className="hover:text-ink">Contact</a>
-          </div>
+          <p>© {new Date().getFullYear()} {BRAND_NAME} · Created by {FOUNDER}. All rights reserved.</p>
+          <p className="max-w-xl text-center text-[11px] leading-relaxed md:text-right">
+            {SLOGAN}. Made in India for readers of Hinglish, Hindi and Urdu.
+          </p>
         </div>
       </div>
     </footer>

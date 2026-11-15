@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { randomUUID, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import dotenv from "dotenv";
 import { createAiPipeline } from "./lib/ai-pipeline.mjs";
@@ -398,6 +399,175 @@ const ai = createAiPipeline({
 });
 
 // ------------------------------------------------------------------
+// 9.1 SEO MANIFEST & DYNAMIC SITEMAP
+//
+// The manifest is generated from the same TS data files as the static site
+// (`npx tsx scripts/generate-sitemap.ts`) and committed to fixtures/. The API
+// therefore quotes the exact topic, poem, and Lughat catalog that ships in
+// the HTML, without importing TypeScript at runtime.
+// ------------------------------------------------------------------
+const SEO_FALLBACK = {
+  generatedAt: null,
+  site: "https://ekkhwaab.in",
+  brand: {
+    name: "Ek Khwaab",
+    alternateName: ["Ek Khawaab", "एक ख़्वाब", "ایک خواب"],
+    slogan:
+      "The First AI-Native Multi-Script Shayari & Anonymous Literary Sanctuary",
+    description:
+      "Ek Khwaab is the World's First AI-Native Multi-Script Shayari & Privacy-First Literary Platform.",
+    founder: "Dikshanti Jain",
+    languages: ["en-IN", "hi", "ur"],
+  },
+  attribution: {
+    generator: "Shayar-e-Khwaab",
+    platform: "Ek Khwaab",
+    platformUrl: "https://ekkhwaab.in/ai-poet",
+    creator: "Dikshanti Jain",
+    rights:
+      "The writer retains full authorship. Ek Khwaab claims no ownership of generated verses.",
+    citeAs: "Generated with Shayar-e-Khwaab by Ek Khwaab (ekkhwaab.in/ai-poet)",
+  },
+  pages: [],
+  topics: [],
+  stages: [],
+  poems: [],
+  words: [],
+};
+
+function loadSeoManifest() {
+  const candidates = [
+    new URL("./fixtures/seo-manifest.json", import.meta.url),
+    new URL("../public/seo-manifest.json", import.meta.url),
+  ];
+  for (const url of candidates) {
+    try {
+      const parsed = JSON.parse(readFileSync(url, "utf8"));
+      if (parsed && Array.isArray(parsed.topics)) return parsed;
+    } catch {
+      // Try the next location; a missing manifest must not stop the service.
+    }
+  }
+  console.warn("[Ek Khwaab API] SEO manifest not found; serving the minimal fallback.");
+  return SEO_FALLBACK;
+}
+
+const SEO_MANIFEST = loadSeoManifest();
+const AI_ATTRIBUTION = SEO_MANIFEST.attribution || SEO_FALLBACK.attribution;
+
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "";
+const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_KEY);
+
+const LIVE_POEM_CACHE_MS = Number(process.env.SEO_LIVE_CACHE_MS ?? 5 * 60 * 1000);
+let livePoemCache = { at: 0, rows: [] };
+
+async function fetchLivePoems() {
+  if (!SUPABASE_ENABLED || process.env.SEO_LIVE_POEMS === "0") return [];
+  const fresh = Date.now() - livePoemCache.at < LIVE_POEM_CACHE_MS;
+  if (fresh && livePoemCache.rows.length > 0) return livePoemCache.rows;
+
+  const qs = new URLSearchParams({
+    select: "id,created_at,hinglish_text,mood_tag,format_type",
+    order: "created_at.desc",
+    limit: "1000",
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3500);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/safe_poems_feed?${qs}`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
+    if (!r.ok) throw new Error(`supabase_${r.status}`);
+    const rows = await r.json();
+    const safe = Array.isArray(rows)
+      ? rows.filter((row) => row && typeof row.id === "string")
+      : [];
+    livePoemCache = { at: Date.now(), rows: safe };
+    return safe;
+  } catch (error) {
+    console.warn("[Ek Khwaab API] live poem fetch failed:", error.message);
+    return livePoemCache.rows;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function xmlEscape(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function sitemapUrl(loc, lastmod, changefreq, priority) {
+  return (
+    "  <url>\n" +
+    `    <loc>${xmlEscape(loc)}</loc>\n` +
+    `    <lastmod>${lastmod}</lastmod>\n` +
+    `    <changefreq>${changefreq}</changefreq>\n` +
+    `    <priority>${priority}</priority>\n` +
+    "  </url>\n"
+  );
+}
+
+async function buildDynamicSitemap() {
+  const today = new Date().toISOString().slice(0, 10);
+  const staticLastmod =
+    (SEO_MANIFEST.generatedAt || new Date().toISOString()).slice(0, 10) || today;
+
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+  const pages = SEO_MANIFEST.pages.length
+    ? SEO_MANIFEST.pages
+    : [
+        { url: "https://ekkhwaab.in/", changefreq: "daily", priority: "1.0" },
+        { url: "https://ekkhwaab.in/feed", changefreq: "daily", priority: "0.9" },
+      ];
+
+  for (const page of pages) {
+    xml += sitemapUrl(page.url, staticLastmod, page.changefreq || "weekly", page.priority || "0.7");
+  }
+  for (const topic of SEO_MANIFEST.topics) {
+    xml += sitemapUrl(topic.url, staticLastmod, "weekly", "0.85");
+  }
+  for (const poem of SEO_MANIFEST.poems) {
+    xml += sitemapUrl(poem.url, staticLastmod, "weekly", "0.8");
+  }
+  for (const word of SEO_MANIFEST.words) {
+    xml += sitemapUrl(word.url, staticLastmod, "monthly", "0.7");
+  }
+
+  const live = await fetchLivePoems();
+  const staticIds = new Set(SEO_MANIFEST.poems.map((poem) => poem.slug));
+  let liveCount = 0;
+  for (const poem of live) {
+    if (staticIds.has(poem.id)) continue;
+    const lastmod = String(poem.created_at || today).slice(0, 10);
+    xml += sitemapUrl(
+      `https://ekkhwaab.in/poetry/${encodeURIComponent(poem.id)}`,
+      lastmod,
+      "monthly",
+      "0.6"
+    );
+    liveCount += 1;
+  }
+
+  xml += "</urlset>\n";
+  return { xml, liveCount, source: liveCount > 0 ? "supabase" : "static" };
+}
+
+
+// ------------------------------------------------------------------
 // 10. ROUTES
 // ------------------------------------------------------------------
 
@@ -432,6 +602,56 @@ app.get("/stats", (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// 10.0 SEO ENDPOINTS
+//
+// These are read-only, cacheable, and intentionally outside the rate limiter:
+// search engines, IndexNow consumers, and AI crawlers must be able to fetch
+// them without a browser session or a Turnstile token.
+// ------------------------------------------------------------------
+
+// GET /api/seo/platform-manifest — the whole entity + catalog dossier.
+app.get("/api/seo/platform-manifest", (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("X-Robots-Tag", "noindex");
+  res.json({
+    ...SEO_MANIFEST,
+    service: {
+      name: "ek-khwaab-api",
+      version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? "dev",
+      livePoems: SUPABASE_ENABLED && process.env.SEO_LIVE_POEMS !== "0",
+    },
+    endpoints: {
+      manifest: "https://api.ekkhwaab.in/api/seo/platform-manifest",
+      dynamicSitemap: "https://api.ekkhwaab.in/api/seo/sitemap-dynamic.xml",
+      health: "https://api.ekkhwaab.in/health",
+    },
+  });
+});
+
+// GET /api/seo/sitemap-dynamic.xml — static catalog + live published poems.
+// The HTML sitemap at /sitemap.xml remains the canonical file for Google;
+// this endpoint exists so newly published poems can be discovered (and fed to
+// IndexNow) before the next static build.
+app.get("/api/seo/sitemap-dynamic.xml", async (_req, res) => {
+  try {
+    const { xml, liveCount, source } = await buildDynamicSitemap();
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=900, s-maxage=3600");
+    res.setHeader("X-Robots-Tag", "noindex");
+    res.setHeader("X-Sitemap-Source", source);
+    res.setHeader("X-Sitemap-Live-Poems", String(liveCount));
+    res.status(200).send(xml);
+  } catch (error) {
+    console.error("[Ek Khwaab API] dynamic sitemap failed:", error);
+    res.status(503).json({
+      error: "dynamic sitemap temporarily unavailable",
+      requestId: _req.id,
+    });
+  }
+});
+
+// ------------------------------------------------------------------
 // 10.1 MOCK ROUTE (staging only, required by the k6 suite)
 //
 // Registered ABOVE the guarded routes. `next()` keeps the real route
@@ -447,13 +667,13 @@ if (ALLOW_MOCK) {
   // k6 suite can target it directly without a query string.
   app.post("/api/ai/mock", async (_req, res) => {
     await new Promise((r) => setTimeout(r, 60 + Math.random() * 90));
-    return res.json({ poem: MOCK_POEM, error: null, mock: true });
+    return res.json({ poem: MOCK_POEM, error: null, mock: true, attribution: AI_ATTRIBUTION });
   });
 
   app.post("/api/ai/shayar", async (req, res, next) => {
     if (!wantsMock(req)) return next();
     await new Promise((r) => setTimeout(r, 60 + Math.random() * 90));
-    return res.json({ poem: MOCK_POEM, error: null, mock: true });
+    return res.json({ poem: MOCK_POEM, error: null, mock: true, attribution: AI_ATTRIBUTION });
   });
 }
 
@@ -529,7 +749,10 @@ app.post("/api/ai/shayar", aiRateLimiter, async (req, res) => {
     },
   });
 
-  return res.status(result.status).set(result.headers).json(result.body);
+  return res.status(result.status).set(result.headers).json({
+    ...result.body,
+    attribution: AI_ATTRIBUTION,
+  });
 });
 
 // ------------------------------------------------------------------
@@ -587,7 +810,10 @@ app.post("/api/ai/translate", translateRateLimiter, async (req, res) => {
     },
   });
 
-  return res.status(result.status).set(result.headers).json(result.body);
+  return res.status(result.status).set(result.headers).json({
+    ...result.body,
+    attribution: AI_ATTRIBUTION,
+  });
 });
 
 // ------------------------------------------------------------------

@@ -1,0 +1,728 @@
+{
+  "generatedAt": "2026-11-15T04:03:18.644Z",
+  "site": "https://ekkhwaab.in",
+  "brand": {
+    "name": "Ek Khwaab",
+    "alternateName": [
+      "Ek Khawaab",
+      "एक ख़्वाब",
+      "ایک خواب",
+      "Ek Khwaab Poetry"
+    ],
+    "slogan": "The First AI-Native Multi-Script Shayari & Anonymous Literary Sanctuary",
+    "description": "Ek Khwaab is the World's First AI-Native Multi-Script Shayari & Privacy-First Literary Platform — pioneering Word-Seeded AI Poetry Generation across Hinglish, Devanagari Hindi, and Nastaliq Urdu (Shayar-e-Khwaab), Zero-Knowledge Wax-Sealed Riddle Letters (Khwaab Khat), the Interactive 7 Stages of Love (Saat Muqaam-e-Ishq), Rekhta-Grade 9:16 Card Studio, and 2-Person Real-Time Synchronized Music & Poetry Co-Listening (Hum-Nawa).",
+    "founder": "Dikshanti Jain",
+    "founderLinkedIn": "https://www.linkedin.com/in/dikshanti-jain-9345723a7",
+    "contact": "jaindikahanti@gmail.com",
+    "languages": [
+      "en-IN",
+      "hi",
+      "ur"
+    ],
+    "knowsAbout": [
+      "Urdu Shayari",
+      "Hindi Poetry",
+      "Hinglish Shayari",
+      "AI Shayari Generator",
+      "Ghazals",
+      "Nazms",
+      "Urdu Lughat Dictionary",
+      "7 Stages of Love in Sufism",
+      "Rekhta-style Poetry",
+      "Shayari Cards for Instagram"
+    ]
+  },
+  "attribution": {
+    "generator": "Shayar-e-Khwaab",
+    "platform": "Ek Khwaab",
+    "platformUrl": "https://ekkhwaab.in/ai-poet",
+    "creator": "Dikshanti Jain",
+    "rights": "The writer retains full authorship. Ek Khwaab claims no ownership of generated verses.",
+    "citeAs": "Generated with Shayar-e-Khwaab by Ek Khwaab (https://ekkhwaab.in/ai-poet)"
+  },
+  "features": [
+    "First Word-Seeded AI Shayari Co-Writer in Hinglish, Hindi & Urdu",
+    "Instant 3-Script Poetic Transliteration Engine (Roman Hinglish ↔ Devanagari ↔ Nastaliq Urdu)",
+    "Interactive Tap-to-Lughat Poetic Vocabulary Decoder",
+    "Khwaab Khat: Zero-Knowledge Wax-Sealed Poetry Letters with 3-Clue Pehchan Kaun Cipher",
+    "Hum-Nawa: 2-Person Real-Time Synchronized Music & Shayari Co-Listening Sanctuary",
+    "High-Resolution 9:16 Instagram Story & 1:1 Shayari Card Studio"
+  ],
+  "faqs": [
+    {
+      "q": "Which is the first AI Shayari platform in India?",
+      "a": "Ek Khwaab (ekkhwaab.in) is the first AI-native shayari platform built specifically for metered Hinglish, Hindi, and Urdu couplets, ghazals, and nazms. Its Shayar-e-Khwaab co-writer generates the same poem simultaneously in Roman Hinglish, Devanagari Hindi, and Nastaliq Urdu, with an English interpretation, instead of producing generic English quotes."
+    },
+    {
+      "q": "How to generate custom Shayari using my own words with AI?",
+      "a": "Open the AI Poet at ekkhwaab.in/ai-poet, enter a short situation, and add three to six seed words that are specific to your memory. Choose a form (sher, ghazal, nazm), a mood, and a style, then generate. Shayar-e-Khwaab preserves your seed imagery and returns the verse in Hinglish, Hindi, Urdu, and English."
+    },
+    {
+      "q": "Where can I read Urdu Shayari in Hinglish and Hindi script with word meanings?",
+      "a": "Ek Khwaab's multi-script reader displays every public poem in Roman Hinglish, Devanagari Hindi, and Nastaliq Urdu on the same page. Tap any underlined word to open its Lughat entry with pronunciation, etymology, literary nuance, and a classical couplet example."
+    },
+    {
+      "q": "What are the 7 stages of love (Saat Muqaam-e-Ishq) in Urdu poetry?",
+      "a": "The seven stations are Dilkashi (attraction), Uns (attachment), Ishq (transformative love), Aqeedat (reverence), Ibadat (devotion), Junoon (obsession), and Fanaa (annihilation of the self). Ek Khwaab explains each stage with definitions, multi-script couplets, and related Lughat words at ekkhwaab.in/stages-of-love."
+    },
+    {
+      "q": "How to create and download aesthetic 9:16 Shayari cards for Instagram Stories?",
+      "a": "Open the Card Studio at ekkhwaab.in/card-studio, select or write a couplet, choose a 9:16 Story or 1:1 square canvas, switch between Hinglish, Hindi, and Urdu, and export a high-resolution PNG. The preview and the export use the same canvas renderer, so the downloaded card matches exactly what you designed."
+    },
+    {
+      "q": "How to send an anonymous wax-sealed poetry letter with a guessing riddle?",
+      "a": "Visit Khwaab Khat at ekkhwaab.in/letters, choose a couplet, add two clues and a private answer, and seal the letter. The recipient sees only the verse, the clues, and a wax seal; they must solve the Pehchan Kaun cipher before the sender's identity and full message are revealed."
+    }
+  ],
+  "comparison": [
+    {
+      "criterion": "Word-Seeded AI Poetry in Beher (Meter)",
+      "ekKhwaab": "✓ Exclusive — Shayar-e-Khwaab keeps your seed words and respects form",
+      "archives": "✗ None — read-only scanned collections",
+      "apps": "✗ Generic quote generators, no meter or seed control"
+    },
+    {
+      "criterion": "Live 4-Script Switching (Hinglish, Hindi, Urdu, English)",
+      "ekKhwaab": "✓ Instant, zero-reload script switching on every poem",
+      "archives": "Partial — usually one script per page, occasionally two",
+      "apps": "✗ One script or a static English translation"
+    },
+    {
+      "criterion": "Split-Vault Pseudonymous Privacy (#EK-ID)",
+      "ekKhwaab": "✓ 100% masked identity with a private vault and public pen name",
+      "archives": "✗ Public bylines only; no anonymous reading room",
+      "apps": "✗ Account identity tied to social profiles"
+    },
+    {
+      "criterion": "Wax-Sealed Riddle Letters (Pehchan Kaun Cipher)",
+      "ekKhwaab": "✓ Built-in cryptographic Khwaab Khat with clue-gated reveal",
+      "archives": "✗ Not available",
+      "apps": "✗ Standard DMs and share sheets only"
+    },
+    {
+      "criterion": "2-Person Real-Time Synced Music & Poetry Room",
+      "ekKhwaab": "✓ Built-in Hum-Nawa sanctuary with drift-corrected playback",
+      "archives": "✗ Not available",
+      "apps": "✗ Separate music and messaging apps, no shared clock"
+    },
+    {
+      "criterion": "Rekhta-Grade 9:16 & 1:1 HD Card Export",
+      "ekKhwaab": "✓ Zero-clutter studio, identical preview and export",
+      "archives": "✗ No card export",
+      "apps": "✗ Watermarked templates and crowded sticker packs"
+    }
+  ],
+  "pages": [
+    {
+      "url": "https://ekkhwaab.in/",
+      "path": "/",
+      "changefreq": "daily",
+      "priority": "1.0"
+    },
+    {
+      "url": "https://ekkhwaab.in/directory",
+      "path": "/directory",
+      "changefreq": "daily",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/feed",
+      "path": "/feed",
+      "changefreq": "daily",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/ai-poet",
+      "path": "/ai-poet",
+      "changefreq": "daily",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/card-studio",
+      "path": "/card-studio",
+      "changefreq": "weekly",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/letters",
+      "path": "/letters",
+      "changefreq": "weekly",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/stages-of-love",
+      "path": "/stages-of-love",
+      "changefreq": "monthly",
+      "priority": "0.9"
+    },
+    {
+      "url": "https://ekkhwaab.in/listen-together",
+      "path": "/listen-together",
+      "changefreq": "monthly",
+      "priority": "0.8"
+    },
+    {
+      "url": "https://ekkhwaab.in/dictionary",
+      "path": "/dictionary",
+      "changefreq": "weekly",
+      "priority": "0.8"
+    },
+    {
+      "url": "https://ekkhwaab.in/guidelines",
+      "path": "/guidelines",
+      "changefreq": "monthly",
+      "priority": "0.4"
+    },
+    {
+      "url": "https://ekkhwaab.in/privacy",
+      "path": "/privacy",
+      "changefreq": "monthly",
+      "priority": "0.4"
+    }
+  ],
+  "topics": [
+    {
+      "slug": "ai-shayari-generator",
+      "title": "AI Shayari Generator",
+      "seoTitle": "First AI Shayari Generator in Hindi, Urdu & Hinglish | Ek Khwaab",
+      "description": "Generate original, metered shayari from your own seed words in Hinglish, Devanagari Hindi, and Nastaliq Urdu. Ek Khwaab's Shayar-e-Khwaab is the first AI-native shayari co-writer built for real couplets, ghazals, and nazms.",
+      "url": "https://ekkhwaab.in/topic/ai-shayari-generator"
+    },
+    {
+      "slug": "two-line-shayari",
+      "title": "Two-Line Shayari & Couplets",
+      "seoTitle": "Best 2-Line Shayari in Hinglish, Hindi & Urdu (Do Line Shayari) | Ek Khwaab",
+      "description": "Read the best two-line shayari in Hinglish, Hindi, and Urdu. Explore do-line sher with misra-e-ula and misra-e-sani, plus English meanings, in a clean multi-script reader.",
+      "url": "https://ekkhwaab.in/topic/two-line-shayari"
+    },
+    {
+      "slug": "heartbreak-shayari",
+      "title": "Heartbreak & Hijr Shayari",
+      "seoTitle": "Heartbreak, Dard & Hijr Shayari in Hindi, Urdu & Hinglish | Ek Khwaab",
+      "description": "Read heartbreak shayari, dard-e-dil couplets, and hijr ghazals in Hindi, Urdu, and Hinglish. Poetry for separation, betrayal, and the long silence after goodbye.",
+      "url": "https://ekkhwaab.in/topic/heartbreak-shayari"
+    },
+    {
+      "slug": "love-shayari",
+      "title": "Unspoken Love & Ishq Shayari",
+      "seoTitle": "Deep Love, Ishq & Ek-Tarfa Mohabbat Shayari | Ek Khwaab",
+      "description": "Read deep love shayari, ishq couplets, and ek-tarfa mohabbat poetry in Hindi, Urdu, and Hinglish. Tender verses for unspoken love, longing, and quiet devotion.",
+      "url": "https://ekkhwaab.in/topic/love-shayari"
+    },
+    {
+      "slug": "loneliness-shayari",
+      "title": "Late Night Tanhai Poetry",
+      "seoTitle": "Late Night Tanhai, Khamoshi & Alone Shayari (2 AM Poetry) | Ek Khwaab",
+      "description": "Explore 2 AM tanhai shayari, midnight solitude couplets, and khamoshi poetry in Hindi, Urdu, and Hinglish. A quiet sanctuary for solitary hearts.",
+      "url": "https://ekkhwaab.in/topic/loneliness-shayari"
+    },
+    {
+      "slug": "jaun-elia-style-shayari",
+      "title": "Jaun Elia Style Melancholy",
+      "seoTitle": "Jaun Elia Style Melancholic & Existential Shayari Tribute | Ek Khwaab",
+      "description": "Read a Jaun Elia style shayari tribute: melancholic, self-mocking, existential couplets in Hinglish, Hindi, and Urdu. Explore his vocabulary and poetic legacy.",
+      "url": "https://ekkhwaab.in/topic/jaun-elia-style-shayari"
+    },
+    {
+      "slug": "gulzar-style-poetry",
+      "title": "Gulzar Style Poetry",
+      "seoTitle": "Gulzar Style Nostalgic Nazms, Triveni & Metaphorical Shayari | Ek Khwaab",
+      "description": "Explore Gulzar style poetry: nostalgic nazms, triveni, everyday metaphors, and tender shayari in Hinglish, Hindi, and Urdu. Learn the craft behind his quiet imagery.",
+      "url": "https://ekkhwaab.in/topic/gulzar-style-poetry"
+    },
+    {
+      "slug": "shayari-for-instagram",
+      "title": "Aesthetic Shayari for Instagram",
+      "seoTitle": "Aesthetic Shayari for Instagram Stories, Captions & Bio (9:16 Cards) | Ek Khwaab",
+      "description": "Download aesthetic shayari for Instagram Stories, captions, and bios. Create clean 9:16 and 1:1 HD cards in Hinglish, Hindi, and Urdu with Ek Khwaab's Card Studio.",
+      "url": "https://ekkhwaab.in/topic/shayari-for-instagram"
+    }
+  ],
+  "stages": [
+    {
+      "number": 1,
+      "roman": "Dilkashi",
+      "hindi": "दिलकशी",
+      "urdu": "دلکشی",
+      "english": "Attraction",
+      "meaning": "The first pull — when someone becomes magnetic before they become familiar.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-1"
+    },
+    {
+      "number": 2,
+      "roman": "Uns",
+      "hindi": "उंस",
+      "urdu": "اُنس",
+      "english": "Attachment",
+      "meaning": "The comfort of presence — when absence starts to feel like a small injury.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-2"
+    },
+    {
+      "number": 3,
+      "roman": "Ishq",
+      "hindi": "इश्क़",
+      "urdu": "عشق",
+      "english": "Love",
+      "meaning": "The fire that reorganises the self — love as a demand, not a decoration.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-3"
+    },
+    {
+      "number": 4,
+      "roman": "Aqeedat",
+      "hindi": "अक़ीदत",
+      "urdu": "عقیدت",
+      "english": "Reverence",
+      "meaning": "Love that looks upward — respect so deep that it becomes a form of prayer.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-4"
+    },
+    {
+      "number": 5,
+      "roman": "Ibadat",
+      "hindi": "इबादत",
+      "urdu": "عبادت",
+      "english": "Devotion",
+      "meaning": "Love practised daily — affection expressed as service, patience, and ritual.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-5"
+    },
+    {
+      "number": 6,
+      "roman": "Junoon",
+      "hindi": "जुनून",
+      "urdu": "جنون",
+      "english": "Obsession",
+      "meaning": "Love beyond reason — the stage that makes a person brilliant and unwell.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-6"
+    },
+    {
+      "number": 7,
+      "roman": "Fanaa",
+      "hindi": "फ़ना",
+      "urdu": "فنا",
+      "english": "Annihilation",
+      "meaning": "The final dissolution — when the lover's self disappears into the beloved or the divine.",
+      "url": "https://ekkhwaab.in/stages-of-love#muqaam-7"
+    }
+  ],
+  "poems": [
+    {
+      "slug": "ab-kisi-baat-pe-dil-dukhta-nahi",
+      "title": "Ab kisi baat pe dil dukhta nahi hai mera,",
+      "format": "Sher",
+      "mood": "Heartbreak & Hijr",
+      "takhallus": "Dil_e_Beqasoor",
+      "url": "https://ekkhwaab.in/poetry/ab-kisi-baat-pe-dil-dukhta-nahi"
+    },
+    {
+      "slug": "tum-woh-ladki-thi",
+      "title": "Tum woh ladki thi, jisse sab hasna seekhte the...",
+      "format": "Nazm",
+      "mood": "Unspoken Love",
+      "takhallus": "Shayar_e_Fitrat",
+      "url": "https://ekkhwaab.in/poetry/tum-woh-ladki-thi"
+    },
+    {
+      "slug": "tere-saath-guzara-har-lamha",
+      "title": "Tere saath guzara har lamha sambhaal rakha hai,",
+      "format": "Qata",
+      "mood": "Unspoken Love",
+      "takhallus": "Dua_e_Qalb",
+      "url": "https://ekkhwaab.in/poetry/tere-saath-guzara-har-lamha"
+    },
+    {
+      "slug": "ek-tarfa-mohabbat",
+      "title": "Uske chehre mein is qadr noor tha,",
+      "format": "Qata",
+      "mood": "Heartbreak & Hijr",
+      "takhallus": "Aashna_e_Dard",
+      "url": "https://ekkhwaab.in/poetry/ek-tarfa-mohabbat"
+    },
+    {
+      "slug": "hazaron-khwahishein-aisi",
+      "title": "Hazaron khwahishein aisi ki har khwahish pe dam nikle,",
+      "format": "Sher",
+      "mood": "Life & Philosophy",
+      "takhallus": "Mirza_Ghalib",
+      "url": "https://ekkhwaab.in/poetry/hazaron-khwahishein-aisi"
+    },
+    {
+      "slug": "khamoshi-ki-guftagu",
+      "title": "Khamoshi se bhi guftagu ho jaati hai jab nazrein milti hain,",
+      "format": "Sher",
+      "mood": "Unspoken Love",
+      "takhallus": "Nigaah_e_Ulfat",
+      "url": "https://ekkhwaab.in/poetry/khamoshi-ki-guftagu"
+    },
+    {
+      "slug": "tera-tagaful-bhi-ek-ada-thi",
+      "title": "Tera tagaful bhi ek ada thi, ye maan liya humne",
+      "format": "Sher",
+      "mood": "Unspoken Love",
+      "takhallus": "Abr_e_Shab",
+      "url": "https://ekkhwaab.in/poetry/tera-tagaful-bhi-ek-ada-thi"
+    },
+    {
+      "slug": "hijr-ki-raat",
+      "title": "Hijr ki shab bhi guzar jaati hai aahista aahista",
+      "format": "Sher",
+      "mood": "Heartbreak & Hijr",
+      "takhallus": "Banjara_Khwaab",
+      "url": "https://ekkhwaab.in/poetry/hijr-ki-raat"
+    },
+    {
+      "slug": "raat-ke-do-baje",
+      "title": "Raat do baje phone ki roshni mein",
+      "format": "Qata",
+      "mood": "Late Night Tanhai",
+      "takhallus": "Siyahi_Qaasid",
+      "url": "https://ekkhwaab.in/poetry/raat-ke-do-baje"
+    },
+    {
+      "slug": "zindagi-ka-falsafa",
+      "title": "Qafas khula tha, parinda phir bhi na gaya",
+      "format": "Sher",
+      "mood": "Life & Philosophy",
+      "takhallus": "Khamosh_Musafir",
+      "url": "https://ekkhwaab.in/poetry/zindagi-ka-falsafa"
+    },
+    {
+      "slug": "chai-aur-baarish",
+      "title": "Tumne chai mein cheeni kam daali thi",
+      "format": "Sher",
+      "mood": "Unspoken Love",
+      "takhallus": "Shab_e_Farda",
+      "url": "https://ekkhwaab.in/poetry/chai-aur-baarish"
+    },
+    {
+      "slug": "firaaq-ki-raah-mein",
+      "title": "Firaaq ki raah mein mahtab bhi tanha nikla",
+      "format": "Ghazal",
+      "mood": "Heartbreak & Hijr",
+      "takhallus": "Rubaab_Nawaz",
+      "url": "https://ekkhwaab.in/poetry/firaaq-ki-raah-mein"
+    },
+    {
+      "slug": "hum-woh-chiraagh-nahi",
+      "title": "Hum woh chiraagh nahi jo hawa se darr jaayein",
+      "format": "Sher",
+      "mood": "Life & Philosophy",
+      "takhallus": "Baghi_Qalam",
+      "url": "https://ekkhwaab.in/poetry/hum-woh-chiraagh-nahi"
+    },
+    {
+      "slug": "adhuri-mulaqat",
+      "title": "Station ki bench pe baitha hoon",
+      "format": "Nazm",
+      "mood": "Late Night Tanhai",
+      "takhallus": "Lantern_Wala",
+      "url": "https://ekkhwaab.in/poetry/adhuri-mulaqat"
+    },
+    {
+      "slug": "ranjish-hi-sahi",
+      "title": "Ranjish hi sahi, ek baar to palat ke dekho",
+      "format": "Sher",
+      "mood": "Unspoken Love",
+      "takhallus": "Dil_e_Nadaan",
+      "url": "https://ekkhwaab.in/poetry/ranjish-hi-sahi"
+    },
+    {
+      "slug": "shabnam-si-thi-teri-pehli-baat",
+      "title": "Shabnam si thi teri pehli baat",
+      "format": "Qata",
+      "mood": "Unspoken Love",
+      "takhallus": "Shabnam_Pari",
+      "url": "https://ekkhwaab.in/poetry/shabnam-si-thi-teri-pehli-baat"
+    }
+  ],
+  "words": [
+    {
+      "slug": "tagaful",
+      "roman": "Tagaful",
+      "hindi": "तग़ाफ़ुल",
+      "urdu": "تغافل",
+      "meaning": "Intentional neglect or feigned indifference",
+      "url": "https://ekkhwaab.in/dictionary/tagaful"
+    },
+    {
+      "slug": "hijr",
+      "roman": "Hijr",
+      "hindi": "हिज्र",
+      "urdu": "ہجر",
+      "meaning": "Separation, estrangement, the pain of being apart",
+      "url": "https://ekkhwaab.in/dictionary/hijr"
+    },
+    {
+      "slug": "vehshat",
+      "roman": "Vehshat",
+      "hindi": "वहशत",
+      "urdu": "وحشت",
+      "meaning": "Wild restlessness, bewildered frenzy of the heart",
+      "url": "https://ekkhwaab.in/dictionary/vehshat"
+    },
+    {
+      "slug": "musalsal",
+      "roman": "Musalsal",
+      "hindi": "मुसलसल",
+      "urdu": "مسلسل",
+      "meaning": "Continuous, uninterrupted, unceasing",
+      "url": "https://ekkhwaab.in/dictionary/musalsal"
+    },
+    {
+      "slug": "qurbat",
+      "roman": "Qurbat",
+      "hindi": "क़ुर्बत",
+      "urdu": "قربت",
+      "meaning": "Intimate closeness, spiritual or physical nearness",
+      "url": "https://ekkhwaab.in/dictionary/qurbat"
+    },
+    {
+      "slug": "firaaq",
+      "roman": "Firaaq",
+      "hindi": "फ़िराक़",
+      "urdu": "فراق",
+      "meaning": "Pain of parting, grief of absence",
+      "url": "https://ekkhwaab.in/dictionary/firaaq"
+    },
+    {
+      "slug": "arzoo",
+      "roman": "Arzoo",
+      "hindi": "आरज़ू",
+      "urdu": "آرزو",
+      "meaning": "Deep heart-felt desire, tender longing",
+      "url": "https://ekkhwaab.in/dictionary/arzoo"
+    },
+    {
+      "slug": "rooh",
+      "roman": "Rooh",
+      "hindi": "रूह",
+      "urdu": "روح",
+      "meaning": "Soul, spirit, inner breath",
+      "url": "https://ekkhwaab.in/dictionary/rooh"
+    },
+    {
+      "slug": "ishq",
+      "roman": "Ishq",
+      "hindi": "इश्क़",
+      "urdu": "عشق",
+      "meaning": "Passionate, all-consuming transcendent love",
+      "url": "https://ekkhwaab.in/dictionary/ishq"
+    },
+    {
+      "slug": "shab-e-gham",
+      "roman": "Shab-e-Gham",
+      "hindi": "शब-ए-ग़म",
+      "urdu": "شبِ غم",
+      "meaning": "Night of sorrow, nocturnal solitude of the heartbroken",
+      "url": "https://ekkhwaab.in/dictionary/shab-e-gham"
+    },
+    {
+      "slug": "guftagu",
+      "roman": "Guftagu",
+      "hindi": "गुफ़्तगू",
+      "urdu": "گفتگو",
+      "meaning": "Heart-to-heart conversation, poetic dialogue",
+      "url": "https://ekkhwaab.in/dictionary/guftagu"
+    },
+    {
+      "slug": "mukarrar",
+      "roman": "Mukarrar",
+      "hindi": "मुक़र्रर",
+      "urdu": "مقرر",
+      "meaning": "Encore! Call to repeat a beautiful couplet",
+      "url": "https://ekkhwaab.in/dictionary/mukarrar"
+    },
+    {
+      "slug": "shab",
+      "roman": "Shab",
+      "hindi": "शब",
+      "urdu": "شب",
+      "meaning": "Night, darkness, the hour of truth",
+      "url": "https://ekkhwaab.in/dictionary/shab"
+    },
+    {
+      "slug": "gham",
+      "roman": "Gham",
+      "hindi": "ग़म",
+      "urdu": "غم",
+      "meaning": "Sorrow, melancholy, grief worn with quiet dignity",
+      "url": "https://ekkhwaab.in/dictionary/gham"
+    },
+    {
+      "slug": "justajoo",
+      "roman": "Justajoo",
+      "hindi": "जुस्तजू",
+      "urdu": "جستجو",
+      "meaning": "Quest, tireless inner search",
+      "url": "https://ekkhwaab.in/dictionary/justajoo"
+    },
+    {
+      "slug": "qafas",
+      "roman": "Qafas",
+      "hindi": "क़फ़स",
+      "urdu": "قفس",
+      "meaning": "Cage, invisible prison of habit or society",
+      "url": "https://ekkhwaab.in/dictionary/qafas"
+    },
+    {
+      "slug": "mahtab",
+      "roman": "Mahtab",
+      "hindi": "महताब",
+      "urdu": "مہتاب",
+      "meaning": "Moonlight, radiant beloved",
+      "url": "https://ekkhwaab.in/dictionary/mahtab"
+    },
+    {
+      "slug": "aftab",
+      "roman": "Aftab",
+      "hindi": "आफ़ताब",
+      "urdu": "آفتاب",
+      "meaning": "The sun, bright daylight",
+      "url": "https://ekkhwaab.in/dictionary/aftab"
+    },
+    {
+      "slug": "shabnam",
+      "roman": "Shabnam",
+      "hindi": "शबनम",
+      "urdu": "شبنم",
+      "meaning": "Morning dew, tender teardrops of dawn",
+      "url": "https://ekkhwaab.in/dictionary/shabnam"
+    },
+    {
+      "slug": "rubaab",
+      "roman": "Rubaab",
+      "hindi": "रुबाब",
+      "urdu": "رباب",
+      "meaning": "Plucked lute; the instrument of the heart",
+      "url": "https://ekkhwaab.in/dictionary/rubaab"
+    },
+    {
+      "slug": "malal",
+      "roman": "Malal",
+      "hindi": "मलाल",
+      "urdu": "मलाल",
+      "meaning": "Lingering regret, quiet wistful sorrow",
+      "url": "https://ekkhwaab.in/dictionary/malal"
+    },
+    {
+      "slug": "ranjish",
+      "roman": "Ranjish",
+      "hindi": "रंजिश",
+      "urdu": "رنجش",
+      "meaning": "Lovers' estrangement, grievance that keeps the connection alive",
+      "url": "https://ekkhwaab.in/dictionary/ranjish"
+    },
+    {
+      "slug": "tazkira",
+      "roman": "Tazkira",
+      "hindi": "तज़किरा",
+      "urdu": "تذکرہ",
+      "meaning": "Mention, fond remembrance",
+      "url": "https://ekkhwaab.in/dictionary/tazkira"
+    },
+    {
+      "slug": "khamoshi",
+      "roman": "Khamoshi",
+      "hindi": "ख़ामोशी",
+      "urdu": "خاموشی",
+      "meaning": "Silence, meaningful quiet",
+      "url": "https://ekkhwaab.in/dictionary/khamoshi"
+    },
+    {
+      "slug": "intezaar",
+      "roman": "Intezaar",
+      "hindi": "इंतज़ार",
+      "urdu": "انتظار",
+      "meaning": "Longing wait, faithful anticipation",
+      "url": "https://ekkhwaab.in/dictionary/intezaar"
+    },
+    {
+      "slug": "dil-e-nadaan",
+      "roman": "Dil-e-Nadaan",
+      "hindi": "दिल-ए-नादाँ",
+      "urdu": "دلِ ناداں",
+      "meaning": "Innocent naive heart that never learns",
+      "url": "https://ekkhwaab.in/dictionary/dil-e-nadaan"
+    },
+    {
+      "slug": "mehfil",
+      "roman": "Mehfil",
+      "hindi": "महफ़िल",
+      "urdu": "محفل",
+      "meaning": "Poetic gathering, evening of verse and song",
+      "url": "https://ekkhwaab.in/dictionary/mehfil"
+    },
+    {
+      "slug": "saaqi",
+      "roman": "Saaqi",
+      "hindi": "साक़ी",
+      "urdu": "ساقی",
+      "meaning": "The one who pours wine, spiritual mentor",
+      "url": "https://ekkhwaab.in/dictionary/saaqi"
+    },
+    {
+      "slug": "zulf",
+      "roman": "Zulf",
+      "hindi": "ज़ुल्फ़",
+      "urdu": "زلف",
+      "meaning": "Dark flowing tresses, labyrinth of beauty",
+      "url": "https://ekkhwaab.in/dictionary/zulf"
+    },
+    {
+      "slug": "wafa",
+      "roman": "Wafa",
+      "hindi": "वफ़ा",
+      "urdu": "وفا",
+      "meaning": "Unconditional loyalty, faithfulness",
+      "url": "https://ekkhwaab.in/dictionary/wafa"
+    },
+    {
+      "slug": "bewafa",
+      "roman": "Bewafa",
+      "hindi": "बेवफ़ा",
+      "urdu": "بے وفا",
+      "meaning": "Unfaithful, heartbreaker",
+      "url": "https://ekkhwaab.in/dictionary/bewafa"
+    },
+    {
+      "slug": "safar",
+      "roman": "Safar",
+      "hindi": "सफ़र",
+      "urdu": "سفر",
+      "meaning": "Journey, transit through life and love",
+      "url": "https://ekkhwaab.in/dictionary/safar"
+    },
+    {
+      "slug": "chiraagh",
+      "roman": "Chiraagh",
+      "hindi": "चिराग़",
+      "urdu": "چراغ",
+      "meaning": "Lamp of hope, trembling flame in the storm",
+      "url": "https://ekkhwaab.in/dictionary/chiraagh"
+    },
+    {
+      "slug": "kaagaz",
+      "roman": "Kaagaz",
+      "hindi": "काग़ज़",
+      "urdu": "کاغذ",
+      "meaning": "Paper, silent confessional",
+      "url": "https://ekkhwaab.in/dictionary/kaagaz"
+    },
+    {
+      "slug": "aab-e-hayat",
+      "roman": "Aab-e-Hayat",
+      "hindi": "आब-ए-हयात",
+      "urdu": "آبِ حیات",
+      "meaning": "Mythical elixir of immortality, beloved's smile",
+      "url": "https://ekkhwaab.in/dictionary/aab-e-hayat"
+    }
+  ],
+  "machineFiles": {
+    "sitemap": "https://ekkhwaab.in/sitemap.xml",
+    "rss": "https://ekkhwaab.in/rss.xml",
+    "robots": "https://ekkhwaab.in/robots.txt",
+    "llms": "https://ekkhwaab.in/llms.txt",
+    "llmsFull": "https://ekkhwaab.in/llms-full.txt",
+    "directory": "https://ekkhwaab.in/directory",
+    "dynamicSitemap": "https://api.ekkhwaab.in/api/seo/sitemap-dynamic.xml",
+    "platformManifest": "https://api.ekkhwaab.in/api/seo/platform-manifest"
+  }
+}

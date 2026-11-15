@@ -16,8 +16,10 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# Copy server application
+# Copy server application, pipeline helpers and fixtures
 COPY server.mjs ./
+COPY lib ./lib
+COPY fixtures ./fixtures
 
 # Non-root user for cybersecurity compliance
 USER node

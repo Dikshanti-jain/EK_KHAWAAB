@@ -10,85 +10,38 @@ import { prependFeedPoem } from "@/lib/feed-cache";
 import { useSignInPrompt } from "@/components/SignInPrompt";
 import { PageHead, ScriptSwitch, btnOutline, btnPrimary, card, chip, input, label } from "@/components/kit";
 import { useDocumentSEO } from "@/hooks/useDocumentSEO";
+import { FONT, RATIOS, THEMES, draw, type Ratio, type Theme } from "@/lib/card-render";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/studio")({
   head: () => ({
     meta: [
-      { title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab" },
+      { title: "Card Studio Workspace — Design, Preview & Export | Ek Khwaab" },
       {
         name: "description",
-        content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
+        content:
+          "Design, preview, and export high-resolution 9:16 story cards and 1:1 square shayari posters in a zero-clutter workspace. The preview and PNG use the same canvas renderer.",
       },
-      { property: "og:title", content: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab" },
+      { property: "og:title", content: "Card Studio Workspace — Design, Preview & Export | Ek Khwaab" },
       {
         property: "og:description",
-        content: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
+        content: "A focused workspace for typography, themes, and HD shayari card export.",
       },
       { property: "og:url", content: "https://ekkhwaab.in/studio" },
     ],
     links: [
-      { rel: "canonical", href: "https://ekkhwaab.in/studio" },
+      { rel: "canonical", href: "https://ekkhwaab.in/card-studio" },
     ],
   }),
   component: Studio,
 });
 
-// Canvas paints raw pixels, so theme colours are literal hex here.
-const THEMES = {
-  "Pure White Editorial": { bg: "#FFFFFF", ink: "#0F172A", accent: "#BE123C" },
-  "Soft Ivory Paper": { bg: "#FAF8F5", ink: "#1E3A8A", accent: "#BE123C" },
-  "Royal Ink Blue": { bg: "#1E3A8A", ink: "#FFFFFF", accent: "#FFF1F2" },
-  "Velvet Crimson Red": { bg: "#9F1239", ink: "#FFFFFF", accent: "#FFF1F2" },
-  "Blush Rose Mist": { bg: "#FFF1F2", ink: "#881337", accent: "#BE123C" },
-  "Ice Blue Sanctuary": { bg: "#EFF6FF", ink: "#1E3A8A", accent: "#2563EB" },
-} as const;
-type Theme = keyof typeof THEMES;
-const RATIOS = { "9:16 Story": [1080, 1920], "1:1 Square": [1080, 1080], "4:5 Portrait": [1080, 1350] } as const;
-type Ratio = keyof typeof RATIOS;
-const FONT: Record<Script, string> = { hinglish: "Playfair Display", hindi: "Noto Serif Devanagari", urdu: "Noto Nastaliq Urdu", english: "Playfair Display" };
-
-function draw(c: HTMLCanvasElement, o: { ratio: Ratio; theme: Theme; lines: string[]; sign: string; id: string; showId: boolean; size: number; align: "center" | "left"; script: Script }) {
-  const [W, H] = RATIOS[o.ratio];
-  c.width = W; c.height = H;
-  const x = c.getContext("2d")!;
-  const t = THEMES[o.theme];
-  x.fillStyle = t.bg; x.fillRect(0, 0, W, H);
-  const font = FONT[o.script];
-  const lh = o.size * (o.script === "urdu" ? 2.2 : 1.55);
-  x.font = `${o.script === "hinglish" || o.script === "english" ? "italic 500" : "400"} ${o.size}px "${font}"`;
-  x.fillStyle = t.ink; x.textBaseline = "middle";
-  const rtl = o.script === "urdu";
-  x.direction = rtl ? "rtl" : "ltr";
-  x.textAlign = o.align === "center" ? "center" : rtl ? "right" : "left";
-  const pad = 140, maxW = W - pad * 2;
-  const wrapped: string[] = [];
-  o.lines.forEach((ln) => { let cur = ""; ln.split(" ").forEach((w) => { const test = cur ? `${cur} ${w}` : w; if (x.measureText(test).width > maxW && cur) { wrapped.push(cur); cur = w; } else cur = test; }); wrapped.push(cur); });
-  const block = wrapped.length * lh + (o.showId ? 140 : 0);
-  let y = H / 2 - block / 2 + lh / 2;
-  const tx = o.align === "center" ? W / 2 : rtl ? W - pad : pad;
-  wrapped.forEach((l) => { x.fillText(l, tx, y); y += lh; });
-  x.direction = "ltr";
-  // accent mark
-  x.fillStyle = t.accent; x.beginPath();
-  const mx = o.align === "center" ? W / 2 : pad + 6;
-  x.arc(mx, y + 10, 7, 0, Math.PI * 2); x.fill();
-  if (o.showId) {
-    x.textAlign = o.align === "center" ? "center" : "left";
-    x.fillStyle = t.ink; x.font = `600 34px "Plus Jakarta Sans"`;
-    x.fillText(`@${o.sign}`, o.align === "center" ? W / 2 : pad, y + 80);
-    x.globalAlpha = 0.65; x.font = `500 26px "JetBrains Mono"`;
-    x.fillText(o.id, o.align === "center" ? W / 2 : pad, y + 126); x.globalAlpha = 1;
-  }
-  x.globalAlpha = 0.45; x.fillStyle = t.ink; x.textAlign = "center"; x.font = `500 22px "Plus Jakarta Sans"`;
-  x.fillText("ekkhwaab.in", W / 2, H - 80); x.globalAlpha = 1;
-}
-
 export function Studio() {
   useDocumentSEO({
-    title: "Poetry & Shayari Card Maker – Download HD 9:16 & 1:1 Cards | Ek Khwaab",
-    description: "Create and download high-resolution Hindi, Urdu, and Hinglish shayari quote cards for Instagram Stories, WhatsApp Status, and square posts.",
-    canonicalPath: "/studio",
+    title: "Card Studio Workspace — Design, Preview & Export | Ek Khwaab",
+    description:
+      "Design, preview, and export high-resolution 9:16 story cards and 1:1 square shayari posters in a zero-clutter workspace.",
+    canonicalPath: "/card-studio",
   });
   const { studio, set, user } = useStore();
   const nav = useNavigate();
@@ -147,7 +100,7 @@ export function Studio() {
         toast.error(created.error || "Could not publish your poem.");
         return;
       }
-      set((s) => ({ poems: [created.poem!, ...s.poems] }));
+      set((s) => ({ poems: [created.poem!, ...s.poems], myPoemCount: s.myPoemCount + 1 }));
       prependFeedPoem(qc, created.poem);
       toast.success("Your poem is now live on the feed");
       nav({ to: "/feed" });

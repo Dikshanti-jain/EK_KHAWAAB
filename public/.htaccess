@@ -23,6 +23,13 @@ DirectoryIndex index.html
   RewriteCond %{HTTP_HOST} ^www\.ekkhwaab\.in$ [NC]
   RewriteRule ^ https://ekkhwaab.in%{REQUEST_URI} [L,R=301]
 
+  # 2b. The HTML sitemap alias. Kept as a 301 so the directory has one URL.
+  RewriteRule ^sitemap-index/?$ /directory [L,R=301]
+
+  # 2c. Machine-readable files are never SPA-intercepted. If one is missing
+  #     the request must 404, not return the homepage with status 200.
+  RewriteRule ^(sitemap[^/]*\.xml|rss\.xml|robots\.txt|llms(?:-full)?\.txt|[A-Za-z0-9-]+\.txt)$ - [L]
+
   # 3. Pre-rendered directory index: /dictionary/tagaful → .../index.html
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteCond %{REQUEST_FILENAME}/index.html -f
@@ -47,11 +54,27 @@ DirectoryIndex index.html
 # ----------------------------------------------------------------------------
 <IfModule mod_mime.c>
   AddType application/xml .xml
+  AddType application/rss+xml .rss
   AddType text/plain .txt
   AddType image/avif .avif
   AddType image/webp .webp
   AddType font/woff2 .woff2
   AddType audio/mpeg .mp3
+
+  # Force the exact MIME type per file. A generic .xml mapping is not enough:
+  # RSS readers and IndexNow consumers check the Content-Type header.
+  <Files "rss.xml">
+    ForceType application/rss+xml
+  </Files>
+  <FilesMatch "^sitemap.*\.xml$">
+    ForceType application/xml
+  </FilesMatch>
+  <FilesMatch "^(robots|llms|llms-full)\.txt$">
+    ForceType text/plain
+  </FilesMatch>
+  <FilesMatch "^[A-Za-z0-9-]+\.txt$">
+    ForceType text/plain
+  </FilesMatch>
 </IfModule>
 
 # ----------------------------------------------------------------------------
@@ -83,7 +106,7 @@ DirectoryIndex index.html
 # Per-path robots policy. Global "index, follow" currently leaks indexable
 # /auth, /profile and /letters pages into the index.
 <IfModule mod_setenvif.c>
-  SetEnvIf Request_URI "^/(auth|profile|letters|secret-letters|private-vault|listen-together)" NOINDEX
+  SetEnvIf Request_URI "^/(auth|profile|private-vault)" NOINDEX
 </IfModule>
 <IfModule mod_headers.c>
   Header set X-Robots-Tag "noindex, nofollow, noarchive" env=NOINDEX
@@ -119,7 +142,7 @@ DirectoryIndex index.html
     Header set Cache-Control "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400"
   </FilesMatch>
 
-  <FilesMatch "^(sitemap.*\.xml|robots\.txt)$">
+  <FilesMatch "^(sitemap.*\.xml|rss\.xml|robots\.txt|llms(-full)?\.txt)$">
     Header set Cache-Control "public, max-age=3600, s-maxage=3600"
   </FilesMatch>
 </IfModule>

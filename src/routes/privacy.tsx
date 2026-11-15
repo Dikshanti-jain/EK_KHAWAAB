@@ -25,6 +25,10 @@ export const Route = createFileRoute("/privacy")({
       { name: "author", content: "Dikshanti Jain" },
       { property: "og:title", content: "Privacy Policy — Ek Khwaab" },
       { property: "og:description", content: "Your words are public, but your real identity stays private." },
+      { property: "og:url", content: "https://ekkhwaab.in/privacy" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ekkhwaab.in/privacy" },
     ],
   }),
   component: PrivacyPage,

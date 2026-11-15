@@ -1,6 +1,34 @@
+# Ek Khwaab — https://ekkhwaab.in
+# Public literary platform. Crawlers, RSS readers and AI assistants are welcome.
+#
+# Machine-readable:
+#   Sitemap:    https://ekkhwaab.in/sitemap.xml
+#   RSS:        https://ekkhwaab.in/rss.xml
+#   LLM brief:  https://ekkhwaab.in/llms.txt
+#   Full brief: https://ekkhwaab.in/llms-full.txt
+#   HTML index: https://ekkhwaab.in/directory
+
 User-agent: *
 Allow: /
+Allow: /feed
+Allow: /directory
+Allow: /stages-of-love
+Allow: /ai-poet
+Allow: /letters
+Allow: /dictionary
+Allow: /poetry
+Allow: /topic
+
+# Private or non-content surfaces.
 Disallow: /private-vault
 Disallow: /api/
+Disallow: /profile
+Disallow: /auth
+
+# Faceted and search URLs duplicate the canonical feed.
+Disallow: /*?*q=
+Disallow: /*?*sort=
+Disallow: /*?*page=
+Disallow: /*?*filter=
 
 Sitemap: https://ekkhwaab.in/sitemap.xml

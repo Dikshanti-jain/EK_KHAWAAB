@@ -34,6 +34,7 @@ export default defineConfig({
             if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react";
             if (/node_modules[\\/]@tanstack[\\/](react-router|react-query)[\\/]/.test(id)) return "tanstack";
             if (/node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
+            if (/node_modules[\\/](zod|tailwind-merge|clsx)[\\/]/.test(id)) return "vendor-utils";
             if (/node_modules[\\/]lucide-react[\\/]/.test(id)) return "icons";
             if (/node_modules[\\/]sonner[\\/]/.test(id)) return "sonner";
             return undefined;

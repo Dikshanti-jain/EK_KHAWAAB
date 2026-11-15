@@ -313,6 +313,68 @@ export async function fetchPoemById(id: string): Promise<Poem | null> {
 }
 
 /**
+ * The full comment thread for a live poem's detail page. The feed RPC only
+ * carries the three most recent, so the drawer asks for the whole list once.
+ */
+export async function fetchPoemComments(
+  poemId: string
+): Promise<{ comments: Poem["hashiya"]; error: string | null }> {
+  if (!isLivePoemId(poemId)) return { comments: [], error: null };
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(`
+        id,
+        comment_text,
+        public_shayars (
+          takhallus
+        )
+      `)
+      .eq("poem_id", poemId)
+      .order("created_at", { ascending: true });
+
+    if (error) return { comments: [], error: error.message };
+
+    const rows = (data ?? []) as {
+      id: string;
+      comment_text: string;
+      public_shayars: { takhallus?: string } | null;
+    }[];
+
+    return {
+      comments: rows.map((c) => ({
+        id: c.id,
+        by: c.public_shayars?.takhallus || "Reader",
+        text: c.comment_text,
+      })),
+      error: null,
+    };
+  } catch (err: unknown) {
+    return {
+      comments: [],
+      error: err instanceof Error ? err.message : "Could not load comments.",
+    };
+  }
+}
+
+/**
+ * A poet's published count, used for the rank badge. Returns null when the
+ * feed view is unavailable so the caller can keep its curated fallback.
+ */
+export async function fetchPoetPoemCount(takhallus: string): Promise<number | null> {
+  try {
+    const { count, error } = await supabase
+      .from("safe_poems_feed")
+      .select("id", { count: "exact", head: true })
+      .eq("takhallus", takhallus);
+    if (error) return null;
+    return count ?? 0;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch the signed-in reader's bookmarked poems. Bookmarks are stored as
  * ids, so this joins them back to the public feed view in one extra round trip.
  */

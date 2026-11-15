@@ -15,25 +15,48 @@ import {
   Copy,
   MoreHorizontal,
   Link2,
+  Sparkles,
+  ArrowRight,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { poetId, getPoemSlug, isLivePoemId, type Poem, type Script } from "@/data/poems";
+import { getWordSlug } from "@/data/lughat";
 import { useStore } from "@/lib/store";
 import { patchFeedPoem, removeFeedPoem } from "@/lib/feed-cache";
 import {
   togglePoemLike,
   togglePoemBookmark,
-  addPoemComment,
-  deletePoemComment,
   deletePoem,
   reportContent,
 } from "@/lib/poems.service";
 import { triggerAutoTranslation } from "@/lib/translation.service";
 import { copyPoem, sharePoem } from "@/lib/share";
-import { IdBadge, Pill, ScriptSwitch, Verse, card, input, label, btnPrimary, btnOutline } from "./kit";
+import { detectLughat } from "@/lib/lughat-detect";
+import {
+  IdBadge,
+  Pill,
+  RankBadge,
+  ScriptSwitch,
+  Verse,
+  VerseFrame,
+  card,
+  input,
+  label,
+  btnPrimary,
+  btnOutline,
+  type VerseTone,
+} from "./kit";
+import { CommentDrawer } from "./CommentDrawer";
 import { Modal } from "./Modal";
 import { useSignInPrompt } from "./SignInPrompt";
 import { cn } from "@/lib/utils";
+
+const SURFACES: { id: VerseTone; label: string; bg: string; border: string }[] = [
+  { id: "white", label: "White paper", bg: "#FFFFFF", border: "#E6DEC8" },
+  { id: "cashmere", label: "Warm cashmere", bg: "#FAF6F0", border: "#E6DEC8" },
+  { id: "midnight", label: "Midnight", bg: "#101B33", border: "#101B33" },
+];
 
 export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Script }) {
   const store = useStore();
@@ -42,12 +65,14 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
   const { promptSignIn } = useSignInPrompt();
   const [override, setOverride] = useState<Script | null>(null);
   const [meaning, setMeaning] = useState(false);
+  const [surface, setSurface] = useState<VerseTone>("white");
+  const [seal, setSeal] = useState(0);
   const [drawer, setDrawer] = useState(false);
-  const [reply, setReply] = useState("");
-  const [postingComment, setPostingComment] = useState(false);
   const [ripple, setRipple] = useState(0);
   const [menu, setMenu] = useState(false);
+  const [quickDownloading, setQuickDownloading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const lastTap = useRef(0);
 
   // Author Deletion & Moderation Report States
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -88,6 +113,13 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     };
   }, [menu]);
 
+  // The wax seal blooms for 650 ms, then leaves no residue in the card.
+  useEffect(() => {
+    if (!seal) return;
+    const t = window.setTimeout(() => setSeal(0), 700);
+    return () => window.clearTimeout(t);
+  }, [seal]);
+
   const toggleLike = async () => {
     if (!canWrite || !me) {
       promptSignIn("appreciate");
@@ -126,6 +158,33 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     }
   };
 
+  /** Double-tap always appreciates; it never accidentally removes a like. */
+  const appreciate = async () => {
+    if (!canWrite || !me) {
+      promptSignIn("appreciate");
+      return;
+    }
+    setSeal((n) => n + 1);
+    if (!liked) await toggleLike();
+  };
+
+  const onVersePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a")) return;
+    if (e.pointerType === "mouse") return;
+    const now = Date.now();
+    if (now - lastTap.current < 320) {
+      lastTap.current = 0;
+      void appreciate();
+    } else {
+      lastTap.current = now;
+    }
+  };
+
+  const onVerseDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a")) return;
+    void appreciate();
+  };
+
   const toggleSave = async () => {
     if (!canWrite || !me) {
       promptSignIn("save");
@@ -157,56 +216,7 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     toast.success(saved ? "Removed from Saved Poems" : "Saved to your collection");
   };
 
-  const openComments = () => {
-    if (!canWrite) {
-      promptSignIn("comment");
-      return;
-    }
-    setDrawer(true);
-  };
-
-  const addReply = async () => {
-    if (isCurated || !reply.trim() || postingComment) return;
-    if (!canWrite || !me) {
-      promptSignIn("comment");
-      return;
-    }
-    const replyText = reply.trim();
-    const byName = me.penName;
-    setPostingComment(true);
-    try {
-      const res = await addPoemComment(poem.id, me.poetId, replyText);
-      if (!res.success) {
-        toast.error(res.error || "Could not submit comment.");
-        return;
-      }
-      const next = [
-        ...poem.hashiya,
-        { by: byName, text: replyText, ...(res.commentId ? { id: res.commentId } : {}) },
-      ];
-      store.updatePoem(poem.id, { hashiya: next });
-      patchFeedPoem(qc, poem.id, { hashiya: next });
-      setReply("");
-      toast.success("Comment added");
-    } finally {
-      setPostingComment(false);
-    }
-  };
-
-  const deleteComment = async (comment: Poem["hashiya"][number], index: number) => {
-    if (isCurated || !me) return;
-    if (comment.id) {
-      const res = await deletePoemComment(comment.id, me.poetId);
-      if (!res.success) {
-        toast.error(res.error || "Could not delete the comment.");
-        return;
-      }
-    }
-    const next = poem.hashiya.filter((_, i) => i !== index);
-    store.updatePoem(poem.id, { hashiya: next });
-    patchFeedPoem(qc, poem.id, { hashiya: next });
-    toast("Comment removed");
-  };
+  const openComments = () => setDrawer(true);
 
   const handleDeletePoem = async () => {
     if (isCurated) return;
@@ -223,6 +233,7 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
       poems: s.poems.filter((p) => p.id !== poem.id),
       saved: s.saved.filter((id) => id !== poem.id),
       liked: s.liked.filter((id) => id !== poem.id),
+      myPoemCount: Math.max(0, s.myPoemCount - 1),
     }));
     removeFeedPoem(qc, poem.id);
     setShowDeleteConfirm(false);
@@ -267,6 +278,7 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
         : poem.hindi.length
           ? poem.hindi
           : poem.urdu;
+  const displayScript = currentLines ? script : canonicalScript;
 
   const translationStatus = poem.translationStatus?.[script];
   const isTranslating = translationStatus === "pending" && !currentLines;
@@ -285,6 +297,40 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
     });
   };
 
+  const meaningWords = detectLughat(currentLines || canonicalLines, 4);
+  const showEnglish = script !== "english" && poem.english.length > 0;
+  const canShowMeaning = showEnglish || meaningWords.length > 0;
+  const isMidnight = surface === "midnight";
+
+  const quickDownload = async () => {
+    setMenu(false);
+    setQuickDownloading(true);
+    try {
+      // Loaded on demand so the card renderer never enters the entry chunk.
+      const { renderCardBlob, downloadBlob } = await import("@/lib/card-render");
+      const theme =
+        surface === "midnight"
+          ? "Midnight Sanctuary"
+          : surface === "cashmere"
+            ? "Warm Cashmere"
+            : "Pure White Editorial";
+      const blob = await renderCardBlob({
+        lines: currentLines || canonicalLines,
+        script: displayScript,
+        penName: poem.takhallus,
+        id: poetId(poem.takhallus),
+        theme,
+        ratio: "9:16 Story",
+      });
+      downloadBlob(blob, `ek-khwaab-${getPoemSlug(poem)}-9x16.png`);
+      toast.success("✓ 9:16 Story Card downloaded!");
+    } catch {
+      toast.error("Could not prepare the story card. Try Card Studio.");
+    } finally {
+      setQuickDownloading(false);
+    }
+  };
+
   const act =
     "inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-1 py-2 text-[10px] font-medium text-muted-foreground transition hover:bg-muted hover:text-ink sm:gap-1.5 sm:px-2.5 sm:text-sm";
   const menuItem =
@@ -299,13 +345,11 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
           <IdBadge id={poetId(poem.takhallus)} />
           <Pill tone="red">{poem.mood}</Pill>
           {isAuthor && (
-            <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-semibold text-royal sm:text-xs">
-              Your Verse
-            </span>
+            <RankBadge count={Math.max(1, store.myPoemCount)} prefix="Your Verse" />
           )}
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <ScriptSwitch value={script} onChange={setOverride} meaning={meaning} onMeaning={() => setMeaning(!meaning)} />
+          <ScriptSwitch value={script} onChange={setOverride} />
 
           {/* Secondary actions live here, never in the primary row. */}
           <div className="relative" ref={menuRef}>
@@ -324,6 +368,20 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
                 role="menu"
                 className="absolute right-0 top-full z-50 mt-1 w-52 rounded-2xl border border-hairline bg-popover p-1.5 shadow-float"
               >
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={quickDownloading}
+                  onClick={() => void quickDownload()}
+                  className={menuItem}
+                >
+                  {quickDownloading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Zap className="size-4 text-gold-ink" />
+                  )}
+                  {quickDownloading ? "Painting card…" : "Quick Download"}
+                </button>
                 <button type="button" role="menuitem" onClick={() => { setMenu(false); void toggleSave(); }} className={menuItem}>
                   <Bookmark className={cn("size-4", saved && "fill-current text-royal")} />
                   {saved ? "Remove from Saved Poems" : "Save Poem"}
@@ -396,23 +454,133 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
           </div>
         )}
 
-        <Link
-          to="/poetry/$slug"
-          params={{ slug: getPoemSlug(poem) }}
-          className="block transition-opacity hover:opacity-90"
-          title="Read full verse, script translations and tashreeh"
-        >
-          <Verse lines={currentLines || canonicalLines} script={currentLines ? script : canonicalScript} />
-        </Link>
+        <VerseFrame tone={surface}>
+          {seal > 0 && (
+            <span key={seal} aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 grid place-items-center">
+              <span className="seal-bloom grid size-20 place-items-center rounded-full bg-seal font-serif text-2xl italic text-white shadow-[inset_0_-4px_10px_rgb(0_0_0/0.35),0_10px_30px_rgb(15_23_42/0.25)] sm:size-24 sm:text-3xl">
+                ek
+              </span>
+            </span>
+          )}
 
-        {/* English poetic meaning if toggled and not already in English */}
-        {meaning && script !== "english" && poem.english && poem.english.length > 0 && (
-          <div className="mx-auto mt-4 max-w-lg border-t border-hairline/70 pt-3 text-center text-xs italic text-muted-foreground sm:text-sm">
-            {poem.english.map((l, i) => (
-              <p key={i}>{l}</p>
+          <div
+            onDoubleClick={onVerseDoubleClick}
+            onPointerUp={onVersePointerUp}
+            title="Double-tap to appreciate"
+            className="select-text"
+          >
+            <Verse
+              lines={currentLines || canonicalLines}
+              script={displayScript}
+              ornament
+              className={cn(isMidnight && "text-white [&_.lughat-word]:border-gold/70")}
+            />
+          </div>
+
+          {canShowMeaning && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setMeaning((m) => !m)}
+                aria-expanded={meaning}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-medium transition sm:text-xs",
+                  meaning
+                    ? "border-gold-line bg-cashmere text-gold-ink"
+                    : "border-hairline bg-white/60 text-cashmere-ink hover:border-gold-line hover:text-gold-ink",
+                  isMidnight && "border-gold/25 bg-white/5 text-white/70 hover:border-gold/50 hover:text-white"
+                )}
+              >
+                <Sparkles className="size-3" />
+                Meaning
+              </button>
+            </div>
+          )}
+
+          {meaning && canShowMeaning && (
+            <div
+              className={cn(
+                "mt-4 rounded-xl border p-4 text-left sm:p-5",
+                isMidnight ? "border-gold/25 bg-white/5" : "border-gold-line/70 bg-white/60"
+              )}
+            >
+              {showEnglish && (
+                <div>
+                  <p className={cn("font-mono text-[10px] uppercase tracking-[0.18em]", isMidnight ? "text-gold" : "text-gold-ink")}>
+                    English meaning
+                  </p>
+                  <div
+                    className={cn(
+                      "mt-2 font-serif text-sm italic leading-relaxed sm:text-base",
+                      isMidnight ? "text-white/85" : "text-ink/85"
+                    )}
+                  >
+                    {poem.english.map((l, i) => (
+                      <p key={i}>{l}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {meaningWords.length > 0 && (
+                <div className={cn(showEnglish && "mt-4 border-t pt-3", showEnglish && (isMidnight ? "border-gold/20" : "border-gold-line/60"))}>
+                  <p className={cn("font-mono text-[10px] uppercase tracking-[0.18em]", isMidnight ? "text-gold" : "text-gold-ink")}>
+                    Lughat in this verse
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {meaningWords.map((w) => (
+                      <Link
+                        key={w.roman}
+                        to="/dictionary/$word"
+                        params={{ word: getWordSlug(w) }}
+                        className={cn(
+                          "rounded-full border px-2.5 py-0.5 font-serif text-[11px] italic transition",
+                          isMidnight
+                            ? "border-gold/30 text-white/80 hover:border-gold hover:text-white"
+                            : "border-gold-line bg-cashmere text-cashmere-ink hover:bg-cashmere-hover hover:text-gold-ink"
+                        )}
+                      >
+                        {w.roman}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Three surface dots repaint only this reading panel. */}
+          <div className="mt-5 flex items-center justify-end gap-1.5">
+            <span className="sr-only">Verse background</span>
+            {SURFACES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSurface(s.id)}
+                aria-label={`${s.label} background`}
+                aria-pressed={surface === s.id}
+                className="grid size-6 place-items-center rounded-full transition hover:bg-black/5"
+              >
+                <span
+                  className={cn(
+                    "size-3 rounded-full border transition",
+                    surface === s.id && "ring-2 ring-gold-ink/60 ring-offset-1"
+                  )}
+                  style={{ backgroundColor: s.bg, borderColor: s.border }}
+                />
+              </button>
             ))}
           </div>
-        )}
+        </VerseFrame>
+
+        <div className="mt-3 text-center">
+          <Link
+            to="/poetry/$slug"
+            params={{ slug: getPoemSlug(poem) }}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-subtle transition hover:text-ink sm:text-xs"
+          >
+            Read full verse <ArrowRight className="size-3" />
+          </Link>
+        </div>
 
         {/* Hashtags below verses (NOT drawn on canvas/downloads) */}
         {poem.tags && poem.tags.length > 0 && (
@@ -424,7 +592,7 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
                 onClick={() =>
                   nav({ to: "/feed", search: { q: tag.replace(/^#/, "") } })
                 }
-                className="cursor-pointer rounded-full bg-wash/80 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-royal transition-all hover:bg-royal hover:text-white sm:text-xs"
+                className="cursor-pointer rounded-md border border-gold-line bg-cashmere px-2.5 py-0.5 font-serif text-xs italic text-cashmere-ink transition hover:bg-cashmere-hover"
               >
                 {tag.startsWith("#") ? tag : `#${tag}`}
               </button>
@@ -477,77 +645,18 @@ export function PoemCard({ poem, globalScript }: { poem: Poem; globalScript: Scr
         </button>
       </div>
 
-      {/* Comments — a real modal: Escape, backdrop, scroll lock, 40 px close. */}
-      <Modal
+      {/* Comments — shared with the poem detail page. */}
+      <CommentDrawer
         open={drawer}
         onClose={() => setDrawer(false)}
-        title="Comments"
-        description="Everyone appears only by pen name and poet ID."
-        maxWidth="max-w-lg"
-        footer={
-          isCurated ? (
-            <p className="rounded-xl bg-secondary p-3 text-xs leading-relaxed text-muted-foreground">
-              This is a curated verse from the archive, so comments are closed. Poems published in the
-              live feed are open for conversation.
-            </p>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                placeholder="Write a comment or a reply couplet…"
-                className={input}
-                maxLength={600}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void addReply();
-                  }
-                }}
-              />
-              <button onClick={() => void addReply()} disabled={postingComment} className={btnPrimary}>
-                {postingComment ? <Loader2 className="size-4 animate-spin" /> : "Post"}
-              </button>
-            </div>
-          )
-        }
-      >
-        <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-1">
-          {poem.hashiya.map((h, i) => (
-            <div key={h.id ?? i} className="group relative rounded-xl p-2 transition hover:bg-secondary/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-semibold text-ink">@{h.by}</span>
-                  <IdBadge id={h.by === me?.penName ? me.poetId : poetId(h.by)} />
-                </div>
-                {canWrite && me && h.by === me.penName && (
-                  <button
-                    title="Delete comment"
-                    aria-label="Delete comment"
-                    onClick={() => void deleteComment(h, i)}
-                    className="rounded p-1 text-subtle hover:text-crimson"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{h.text}</p>
-            </div>
-          ))}
-          {!poem.hashiya.length && (
-            <p className="py-6 text-center text-sm text-subtle">
-              {isCurated
-                ? "No comments on this archived verse."
-                : "No comments yet. Be the first to respond to this verse."}
-            </p>
-          )}
-          {!isCurated && poem.hashiya.length >= 3 && (
-            <p className="pt-1 text-center text-[11px] text-subtle">
-              Showing the 3 most recent comments.
-            </p>
-          )}
-        </div>
-      </Modal>
+        poem={poem}
+        isCurated={isCurated}
+        onCommentsChange={(next) => {
+          store.updatePoem(poem.id, { hashiya: next });
+          patchFeedPoem(qc, poem.id, { hashiya: next });
+        }}
+        onRequestSignIn={() => promptSignIn("comment")}
+      />
 
       {/* Author Delete Confirmation Modal */}
       <Modal
