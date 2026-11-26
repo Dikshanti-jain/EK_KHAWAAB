@@ -66,7 +66,9 @@ export function PrivacyPage() {
       localStorage.removeItem("ek-khwaab-v2");
       localStorage.removeItem("ek-khawaab-v2");
           localStorage.removeItem("ek_compose_draft");
-        } catch {}
+        } catch {
+          // ignore storage errors
+        }
         setShowDeleteModal(false);
         toast.success("Your account and private details have been permanently erased.");
         nav({ to: "/" });

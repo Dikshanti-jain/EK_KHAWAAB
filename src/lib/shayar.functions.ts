@@ -364,8 +364,9 @@ export const composeShayari = createServerFn({ method: "POST" })
           },
           error: null,
         };
-      } catch (err: any) {
-        console.warn("Groq AI generation call failed; utilizing verified fallback engine:", err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("Groq AI generation call failed; utilizing verified fallback engine:", msg);
       }
     }
 
@@ -419,16 +420,18 @@ export async function requestShayariGeneration(
         poem: json.poem,
         error: json.error || null,
       };
-    } catch (err: any) {
-      console.warn("[Shayar] Render API call failed, attempting fallback:", err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[Shayar] Render API call failed, attempting fallback:", msg);
     }
   }
 
   // Fallback to serverFn (if running with SSR / dev server)
   try {
     return await composeShayari({ data });
-  } catch (fnErr: any) {
-    console.warn("[Shayar] Server function failed, activating verified poetic engine:", fnErr.message);
+  } catch (fnErr: unknown) {
+    const msg = fnErr instanceof Error ? fnErr.message : String(fnErr);
+    console.warn("[Shayar] Server function failed, activating verified poetic engine:", msg);
     const poem = composeFallbackPoem({
       mode: data.mode,
       seeds: data.seeds && data.seeds.length > 0 ? data.seeds : data.phrases,

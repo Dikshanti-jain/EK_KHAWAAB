@@ -46,7 +46,7 @@ export function Letters() {
     canonicalPath: "/letters",
   });
   const search = useSearch({ strict: false });
-  const queryLetterId = (search as any)?.id;
+  const queryLetterId = (search as Record<string, unknown>)?.["id"] as string | undefined;
   const { studio, letters, set, user } = useStore();
   const [tab, setTab] = useState<"send" | "preview">("send");
   const [isSealing, setIsSealing] = useState(false);

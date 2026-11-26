@@ -256,8 +256,9 @@ export function Feed() {
         updatePoem(newPoem.id, updates);
         patchFeedPoem(qc, newPoem.id, updates);
       });
-    } catch (err: any) {
-      toast.error("Could not post poem: " + (err?.message || "Please try again"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error("Could not post poem: " + (msg || "Please try again"));
     } finally {
       setPosting(false);
     }

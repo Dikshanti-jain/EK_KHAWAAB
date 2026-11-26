@@ -148,8 +148,9 @@ function Profile() {
       } else {
         toast.error(res.error || "Failed to update pen name.");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update pen name.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg || "Failed to update pen name.");
     } finally {
       setPenLoading(false);
     }

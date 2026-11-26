@@ -154,7 +154,9 @@ export function AiPoet() {
       if (savedDraft && !draftText) {
         setDraftText(savedDraft);
       }
-    } catch {}
+    } catch {
+      // ignore storage errors
+    }
   }, []);
 
   const addPhrase = (w: string) => {
@@ -244,8 +246,9 @@ export function AiPoet() {
         if (poetryType === "improve") setShowComparison(true);
         toast.success("Shayar-e-Khwaab has crafted your verse!");
       }
-    } catch (err: any) {
-      toast.error(err.message || "The AI poet could not write right now. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg || "The AI poet could not write right now. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -592,7 +595,7 @@ export function AiPoet() {
                     <label className={label}>Length</label>
                     <select
                       value={length}
-                      onChange={(e) => setLength(e.target.value as any)}
+                      onChange={(e) => setLength(e.target.value as "couplet" | "qata" | "short" | "full")}
                       className={cn(input, "py-1.5 text-xs")}
                     >
                       <option value="couplet">Couplet (2 lines)</option>
@@ -605,7 +608,7 @@ export function AiPoet() {
                     <label className={label}>Diction</label>
                     <select
                       value={vocabComplexity}
-                      onChange={(e) => setVocabComplexity(e.target.value as any)}
+                      onChange={(e) => setVocabComplexity(e.target.value as "conversational" | "classical")}
                       className={cn(input, "py-1.5 text-xs")}
                     >
                       <option value="conversational">Conversational Hindustani</option>

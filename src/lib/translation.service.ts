@@ -205,7 +205,7 @@ Return strictly valid JSON.`;
         signal: controller.signal,
       });
 
-      let responseData: any = null;
+      let responseData: { choices?: Array<{ message?: { content?: string } }> } | null = null;
 
       if (!res.ok) {
         // Fallback to smaller model on rate limit with capped 1 retry
@@ -248,7 +248,7 @@ Return strictly valid JSON.`;
       const parsed = JSON.parse(raw);
 
       // Clean and validate arrays
-      const toLines = (val: any): string[] => {
+      const toLines = (val: unknown): string[] => {
         if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);
         if (typeof val === "string") return val.split("\n").map((x) => x.trim()).filter(Boolean);
         return [];
@@ -268,10 +268,11 @@ Return strictly valid JSON.`;
       };
 
       return { success: true, data: result };
-    } catch (err: any) {
-      console.warn("[TranslationService] Groq translation error, using fallback:", err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[TranslationService] Groq translation error, using fallback:", msg);
       const fallback = composeFallbackTranslation(data.sourceLines, sourceScript);
-      return { success: true, data: fallback, error: err.message };
+      return { success: true, data: fallback, error: msg };
     } finally {
       clearTimeout(timeoutId);
     }
@@ -329,8 +330,9 @@ export async function triggerAutoTranslation(
         if (apiRes.ok) {
           res = await apiRes.json();
         }
-      } catch (apiErr: any) {
-        console.warn("[TranslationService] Render API translation failed, attempting serverFn:", apiErr.message);
+      } catch (apiErr: unknown) {
+        const msg = apiErr instanceof Error ? apiErr.message : String(apiErr);
+        console.warn("[TranslationService] Render API translation failed, attempting serverFn:", msg);
       }
     }
 

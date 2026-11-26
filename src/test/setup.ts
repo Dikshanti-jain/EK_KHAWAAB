@@ -3,7 +3,9 @@ import "@testing-library/jest-dom/vitest";
 if (typeof process.loadEnvFile === "function") {
   try {
     process.loadEnvFile(".env");
-  } catch {}
+  } catch {
+    // .env file is optional in test runs
+  }
 }
 
 Object.defineProperty(window, "scrollTo", {

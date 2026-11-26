@@ -77,7 +77,7 @@ export async function fetchPoems(options: FetchPoemsOptions = {}): Promise<Fetch
 
     // Fetch comments for the fetched poems
     const poemIds = pageRows.map((r) => r.id);
-    let commentsByPoem: Record<string, { by: string; text: string }[]> = {};
+    const commentsByPoem: Record<string, { by: string; text: string }[]> = {};
 
     if (poemIds.length > 0) {
       const { data: commentsData } = await supabase

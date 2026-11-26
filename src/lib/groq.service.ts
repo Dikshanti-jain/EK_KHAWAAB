@@ -117,10 +117,27 @@ export type ShayarResponse = z.infer<typeof ShayarResponseSchema>;
 // 3. SHAYAR-E-KHWAAB SYSTEM PROMPT & PROMPT INJECTION DEFENSE (RT-05)
 // ------------------------------------------------------------------
 
+function stripControlChars(str: string): string {
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (
+      (code <= 0x08) ||
+      code === 0x0b ||
+      code === 0x0c ||
+      (code >= 0x0e && code <= 0x1f) ||
+      code === 0x7f
+    ) {
+      continue;
+    }
+    out += str[i];
+  }
+  return out;
+}
+
 export function sanitizePromptInput(input: string): string {
   if (!input) return "";
-  return input
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+  return stripControlChars(input)
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .trim();
@@ -292,7 +309,7 @@ export async function callGroqShayar(req: ShayarRequest): Promise<ShayarResponse
       signal: controller.signal,
     });
 
-    let responseData: any = null;
+    let responseData: { choices?: Array<{ message?: { content?: string } }> } | null = null;
 
     if (!res.ok) {
       const errText = await res.text();
@@ -300,7 +317,9 @@ export async function callGroqShayar(req: ShayarRequest): Promise<ShayarResponse
       try {
         const parsed = JSON.parse(errText);
         if (parsed.error?.message) errMsg = parsed.error.message;
-      } catch {}
+      } catch {
+        // ignore non-JSON error body
+      }
 
       // If rate limited, wait for the window Groq names (Retry-After header or
       // "try again in 2.6s") instead of hammering it after a fixed 500 ms.
@@ -335,7 +354,9 @@ export async function callGroqShayar(req: ShayarRequest): Promise<ShayarResponse
           try {
             const parsed = JSON.parse(retryText);
             if (parsed.error?.message) retryMsg = parsed.error.message;
-          } catch {}
+          } catch {
+            // ignore non-JSON error body
+          }
           throw new Error(retryMsg);
         }
       } else {
