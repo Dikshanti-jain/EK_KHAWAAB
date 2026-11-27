@@ -395,6 +395,8 @@ export async function requestShayariGeneration(
     (typeof process !== "undefined" && process.env?.["VITE_API_BASE_URL"]);
 
   if (apiBase) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
     try {
       const cleanBase = apiBase.replace(/\/+$/, "");
       // Loaded on demand: a build without VITE_TURNSTILE_SITE_KEY never
@@ -408,6 +410,7 @@ export async function requestShayariGeneration(
           ...(turnstileToken ? { "CF-Turnstile-Response": turnstileToken } : {}),
         },
         body: JSON.stringify(data),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -423,6 +426,8 @@ export async function requestShayariGeneration(
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn("[Shayar] Render API call failed, attempting fallback:", msg);
+    } finally {
+      clearTimeout(timer);
     }
   }
 

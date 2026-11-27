@@ -91,6 +91,8 @@ app.use((_, res, next) => {
 const ALLOWED_ORIGINS = new Set([
   "https://ekkhwaab.in",
   "https://www.ekkhwaab.in",
+  "https://ekkhawaab.in",
+  "https://www.ekkhawaab.in",
   "http://localhost:5173",
   "http://localhost:3000",
   ...(process.env.ALLOWED_ORIGINS

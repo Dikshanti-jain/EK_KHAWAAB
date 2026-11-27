@@ -13,15 +13,16 @@ DirectoryIndex index.html
   RewriteEngine On
   RewriteBase /
 
-  # 1. Force HTTPS. Both conditions must agree, so a Cloudflare "Flexible"
-  #    setup (HTTPS off at origin, X-Forwarded-Proto=https) cannot loop.
+  # 1. Canonical host: alternate domain (ekkhawaab.in) & www → https://ekkhwaab.in, one hop.
+  RewriteCond %{HTTP_HOST} ^(?:www\.)?ekkhawaab\.in$ [NC,OR]
+  RewriteCond %{HTTP_HOST} ^www\.ekkhwaab\.in$ [NC]
+  RewriteRule ^ https://ekkhwaab.in%{REQUEST_URI} [L,R=301]
+
+  # 2. Force HTTPS on canonical apex. Both conditions must agree, so a Cloudflare
+  #    "Flexible" setup (HTTPS off at origin, X-Forwarded-Proto=https) cannot loop.
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-  # 2. Canonical host: www → apex, one hop.
-  RewriteCond %{HTTP_HOST} ^www\.ekkhwaab\.in$ [NC]
-  RewriteRule ^ https://ekkhwaab.in%{REQUEST_URI} [L,R=301]
 
   # 2b. The HTML sitemap alias. Kept as a 301 so the directory has one URL.
   RewriteRule ^sitemap-index/?$ /directory [L,R=301]

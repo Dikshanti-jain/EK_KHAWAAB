@@ -104,31 +104,38 @@ function mergeSeeds(poems: Poem[]): Poem[] {
 
 /* ------------------------------- fetch page ------------------------------ */
 export async function fetchFeedPage(cursor: FeedCursor | null): Promise<FeedPage> {
-  const { data, error } = await supabase.rpc("get_feed_page", {
-    p_cursor_created_at: cursor?.createdAt ?? null,
-    p_cursor_id: cursor?.id ?? null,
-    p_mood: null,
-    p_limit: PAGE_SIZE + 1,
-  });
+  try {
+    const { data, error } = await supabase.rpc("get_feed_page", {
+      p_cursor_created_at: cursor?.createdAt ?? null,
+      p_cursor_id: cursor?.id ?? null,
+      p_mood: null,
+      p_limit: PAGE_SIZE + 1,
+    });
 
-  if (error) {
-    console.error("[feed] rpc failed:", error.message);
-    // First page still renders the curated corpus; later pages just stop.
+    if (error) {
+      console.error("[feed] rpc failed:", error.message);
+      // First page still renders the curated corpus; later pages just stop.
+      return cursor
+        ? { poems: [], nextCursor: null, error: error.message }
+        : { poems: POEMS, nextCursor: null, error: error.message };
+    }
+
+    const rows = (data ?? []) as FeedRow[];
+    const hasMore = rows.length > PAGE_SIZE;
+    const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+
+    const last = page[page.length - 1];
+    return {
+      poems: page.map(toPoem),
+      nextCursor: hasMore && last ? { createdAt: last.created_at, id: last.id } : null,
+      error: null,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Feed unavailable";
     return cursor
-      ? { poems: [], nextCursor: null, error: error.message }
-      : { poems: POEMS, nextCursor: null, error: error.message };
+      ? { poems: [], nextCursor: null, error: msg }
+      : { poems: POEMS, nextCursor: null, error: msg };
   }
-
-  const rows = (data ?? []) as FeedRow[];
-  const hasMore = rows.length > PAGE_SIZE;
-  const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
-
-  const last = page[page.length - 1];
-  return {
-    poems: page.map(toPoem),
-    nextCursor: hasMore && last ? { createdAt: last.created_at, id: last.id } : null,
-    error: null,
-  };
 }
 
 /* --------------------------------- hooks --------------------------------- */

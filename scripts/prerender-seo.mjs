@@ -14,13 +14,17 @@ if (fs.existsSync(DIST_DIR)) {
 }
 fs.mkdirSync(DIST_DIR, { recursive: true });
 
-// 1. Copy all static assets from .output/public into dist/
-const outputPublicDir = path.resolve(".output/public");
-if (fs.existsSync(outputPublicDir)) {
+// 1. Copy all static assets from Nitro's public output (.output/public or .vercel/output/static) into dist/
+const outputPublicCandidates = [
+  path.resolve(".output/public"),
+  path.resolve(".vercel/output/static"),
+];
+const outputPublicDir = outputPublicCandidates.find((dir) => fs.existsSync(dir));
+if (outputPublicDir) {
   fs.cpSync(outputPublicDir, DIST_DIR, { recursive: true });
-  console.log("✓ Copied .output/public assets into dist/");
+  console.log(`✓ Copied ${path.relative(process.cwd(), outputPublicDir)} assets into dist/`);
 } else {
-  console.warn("⚠ .output/public not found. Ensure `vite build` has completed first.");
+  console.warn("⚠ Nitro public output not found (.output/public or .vercel/output/static). Ensure `vite build` has completed first.");
 }
 
 // 2. Ensure public/.htaccess is copied to dist/.htaccess
@@ -43,10 +47,14 @@ if (fs.existsSync(sitemapPath)) {
 
 // 4. Load Nitro server app for SSR static pre-rendering
 console.log("\n--- Starting Static Pre-Rendering for Hostinger (https://ekkhwaab.in) ---");
-const serverEntry = path.resolve(".output/server/index.mjs");
+const serverEntryCandidates = [
+  path.resolve(".output/server/index.mjs"),
+  path.resolve(".vercel/output/functions/__server.func/index.mjs"),
+];
+const serverEntry = serverEntryCandidates.find((entry) => fs.existsSync(entry));
 
-if (!fs.existsSync(serverEntry)) {
-  console.error("❌ Nitro server entry (.output/server/index.mjs) not found. Run `vite build` first.");
+if (!serverEntry) {
+  console.error("❌ Nitro server entry not found (.output/server/index.mjs or .vercel/output/functions/__server.func/index.mjs). Run `vite build` first.");
   process.exit(1);
 }
 
